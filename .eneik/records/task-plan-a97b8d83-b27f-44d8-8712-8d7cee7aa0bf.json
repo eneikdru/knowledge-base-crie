@@ -1,0 +1,237 @@
+{
+  "epics": [
+    {
+      "existingEpicId": null,
+      "title": "Standalone Responsive Knowledge Base & Fast Search Tool",
+      "jtbd": "When an educational resident, researcher, or faculty member accesses the CRIE knowledge base on desktop or mobile, I want a fast, thoughtful, self-contained search and document exploration interface without third-party integration friction, so that I can immediately find and inspect clinical, academic, and normative resources in seconds.",
+      "kanoClass": "Performance",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "Sub-500ms p95 search response time and 0 layout shifts across mobile and desktop viewports",
+      "tocConstraintRef": "Client-side rendering and query retrieval latency bottleneck",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Implement indexed local structured catalog and document index supporting rapid retrieval without external service dependencies",
+        "R2: Provide unified search and multi-facet filtering (specialty, document category, educational level) with synonym expansion for medical and academic abbreviations",
+        "R3: Build fully responsive mobile and desktop client application adhering to WCAG 2.1 AA keyboard navigation and high contrast standards",
+        "R4: Establish shared API and DTO contract between backend data engine and responsive frontend client",
+        "R5: Verify performance, responsive usability, and regression test pyramid across unit, API integration, and E2E journeys"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Define Search and Resource Retrieval API Contract",
+          "roleTag": "BARCAN-TAG-12",
+          "jtbd": "When implementing shared communication contracts for this epic, I want OpenAPI schemas and typed DTOs for fast search and document metadata retrieval, so that frontend and backend developers build against consistent schemas.",
+          "acceptanceCriteria": "Given a search query payload with terms and facet filters, When the schema validator inspects the request, Then it strictly validates against the OpenAPI specification without missing parameter errors.\nGiven a valid search response containing document records and highlight snippets, When parsed by client code, Then all typed DTO fields match expectations.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Contract drift between client and server",
+          "sixSigmaMetric": "100% schema validation compliance for API payloads",
+          "hasUi": false,
+          "requirementRefs": [
+            "R4"
+          ]
+        },
+        {
+          "title": "Optimized In-Memory / SQLite Document Indexing Engine",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing local persistence for this epic, I want a zero-external-dependency indexed SQLite schema and full-text index for normative documents, so that queries execute deterministically under 50ms.",
+          "acceptanceCriteria": "Given the catalog of normative and educational files, When the ingestion parser indexes documents into the SQLite FTS5 table, Then full-text indexes and category foreign keys are correctly populated.\nGiven a query matching medical abbreviations (ФБУН, ГЭК, ГИА), When queried against the database, Then indexed results return in under 50ms without table scans.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Database I/O and query lookup efficiency",
+          "sixSigmaMetric": "Query execution time under 50ms for 99% of requests",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        },
+        {
+          "title": "Fast Search and Faceted Filtering REST API",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing the backend service for this epic, I want lightweight FastAPI endpoints serving search queries, synonym mappings, and document details, so that client apps receive sub-100ms responses.",
+          "acceptanceCriteria": "Given a GET request to /api/search with keywords and category filters, When the endpoint processes the query, Then matching items with highlighted excerpts are returned with HTTP 200.\nGiven an empty or invalid query payload, When the endpoint executes validation, Then a structured HTTP 422 JSON error is returned with clear corrective guidance.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Backend request pipeline latency",
+          "sixSigmaMetric": "Sub-100ms server response time on 95% of API requests",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        },
+        {
+          "title": "Adaptive Desktop and Mobile User Interface",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing the web client for this epic, I want a high-performance adaptive interface with instant search-as-you-type and touch-friendly controls, so that desktop and smartphone users experience zero friction.",
+          "acceptanceCriteria": "Given a smartphone screen width of 360px, When navigating the catalog and facet filters, Then all touch targets exceed 48x48px and no horizontal scrolling occurs.\nGiven a user typing a search query with keyboard navigation, When pressing Tab and Arrow keys, Then visible focus rings guide navigation and document cards open instantaneously.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Client-side rendering speed and mobile layout responsiveness",
+          "sixSigmaMetric": "Cumulative Layout Shift (CLS) equal to 0 and First Contentful Paint under 1.0s",
+          "hasUi": true,
+          "requirementRefs": [
+            "R3"
+          ]
+        },
+        {
+          "title": "Full-Pyramid Test Suite for Responsive Knowledge Base",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying functionality for this epic, I want comprehensive unit, integration, and Playwright E2E test suites, so that fast search and mobile usability remain defect-free.",
+          "acceptanceCriteria": "Given unit tests for the synonym and search indexers, When pytest executes, Then 100% of core search scoring test cases pass.\nGiven an end-to-end user journey on mobile viewport emulation, When searching for an educational program and opening details, Then the document displays successfully with zero console errors.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Defect leakage and mobile regression risk",
+          "sixSigmaMetric": "Zero test regressions and 100% critical E2E path passing rate",
+          "hasUi": false,
+          "requirementRefs": [
+            "R5"
+          ]
+        }
+      ]
+    },
+    {
+      "existingEpicId": null,
+      "title": "Curated Initial Educational and Clinical Corpus Seeding",
+      "jtbd": "When evaluating the deployed system, I want authentic CRIE curriculum and normative materials pre-populated and verified across all catalog sections, so that stakeholders can validate realistic search results immediately upon deployment.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "100% of declared document categories contain authentic validated materials on fresh installation",
+      "tocConstraintRef": "Missing or non-representative seed data preventing verification",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Seed authentic normative programs, discipline annotations, and practice syllabi for Pediatrics, Infectious Diseases, and Epidemiology into repository corpus",
+        "R2: Verify document parsing integrity and metadata extraction across all seeded files",
+        "R3: Execute automated verification ensuring every declared category and search facet contains discoverable sample documents"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Corpus Seed Pipeline & Real Dataset Importer",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When preparing baseline data for this epic, I want automated corpus loaders that ingest authentic CRIE clinical and academic docx/pdf materials, so that the database initializes with production-grade content.",
+          "acceptanceCriteria": "Given the normative corpus catalog and template directory, When the seed loader script executes, Then all educational programs, GIA tasks, and practice regulations are indexed.\nGiven corrupted or unreadable documents, When parsing executes, Then explicit warnings are logged and clean files continue processing without data loss.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Corpus parsing and ingestion throughput",
+          "sixSigmaMetric": "100% successful parsing rate of verified normative documents",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        },
+        {
+          "title": "Corpus Verification and Data Integrity QA",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When validating initial content for this epic, I want automated verification tests that assert complete walkability of all educational categories on a clean setup, so that the acceptance floor is strictly satisfied.",
+          "acceptanceCriteria": "Given a fresh installation seeded with the CRIE corpus, When automated acceptance tests query each category, Then every category returns at least 3 genuine items.\nGiven a specific search for 'Педиатрия' or 'Эпидемиология', When the query runs against seeded data, Then corresponding accredited syllabi and reviews are retrieved.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Coverage gaps in seed documents across specialties",
+          "sixSigmaMetric": "100% category coverage verified in automated seed test suite",
+          "hasUi": false,
+          "requirementRefs": [
+            "R3"
+          ]
+        }
+      ]
+    },
+    {
+      "existingEpicId": null,
+      "title": "User Experience & Search Effectiveness Telemetry (GQM)",
+      "jtbd": "When managing and operating the knowledge base, I want Goal-Question-Metric telemetry measuring whether users find documents quickly on desktop and mobile, so that product performance and user satisfaction are objectively tracked.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "Instrumentation of 100% of GQM metrics with sub-5ms event logging overhead",
+      "tocConstraintRef": "Telemetry overhead and unobservable user search dead-ends",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Define Goal-Question-Metric model tracking search task completion speed, zero-result frequency, and mobile vs desktop session success",
+        "R2: Implement local privacy-compliant metric collection endpoints and storage for search latency and query efficacy",
+        "R3: Build lightweight telemetry dashboard and automated telemetry verification test suite"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "GQM Telemetry Instrumentation & In-Memory Aggregator",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When instrumenting system health for this epic, I want local event collectors logging search latency, click-through ranks, and zero-result queries, so that product outcomes are accurately measured.",
+          "acceptanceCriteria": "Given an anonymous search event or document view, When the telemetry endpoint receives the ping, Then metrics are recorded with zero identifiable personal information.\nGiven high concurrent search queries, When metric logging runs, Then API latency is impacted by less than 5ms.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Telemetry logging lock contention",
+          "sixSigmaMetric": "Zero metric drop rate under standard load",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        },
+        {
+          "title": "Operational Telemetry View and GQM Verification Suite",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When auditing outcome measurements for this epic, I want automated test fixtures verifying that telemetry correctly calculates p95 latency and query success ratios, so that metric reporting is trustworthy.",
+          "acceptanceCriteria": "Given a simulated sequence of successful and failed search queries, When telemetry aggregations are calculated, Then zero-result rates and median query times match known inputs.\nGiven an administrator inspecting operational health, When loading the status endpoint, Then GQM KPI summaries display correctly formatted JSON.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Metric calculation accuracy and reporting lag",
+          "sixSigmaMetric": "100% calculation accuracy for aggregated GQM metrics",
+          "hasUi": true,
+          "requirementRefs": [
+            "R3"
+          ]
+        }
+      ]
+    },
+    {
+      "existingEpicId": null,
+      "title": "Privacy, Data Protection & Accessibility Compliance",
+      "jtbd": "When deploying the platform for educational and clinical staff, I want data subject rights, local backup verification, and strict accessibility compliance, so that all legal and regulatory standards are fulfilled.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "Zero high-severity accessibility defects and 100% verified automated backup/restore cycles",
+      "tocConstraintRef": "Regulatory non-compliance risk and unverified disaster recovery",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Provide automated backup creation and verifiable database restoration routine meeting GDPR Art. 32 availability requirements",
+        "R2: Implement data subject access and export endpoints with strict anonymization for local telemetry and personal data",
+        "R3: Execute automated compliance audit tests covering backup restoration, privacy rights, and WCAG 2.1 AA accessibility standards"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Automated Backup and Tested Disaster Restoration Routine",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When ensuring business continuity for this epic, I want automated snapshot backups and an end-to-end restore verification script, so that data loss risks are eliminated.",
+          "acceptanceCriteria": "Given the active knowledge base SQLite database, When the backup script executes, Then a checksummed encrypted snapshot is generated.\nGiven a corrupted state and a recent snapshot, When the restore routine runs, Then the restored database passes full integrity checks with zero missing records.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Restoration time objective (RTO) and backup integrity verification",
+          "sixSigmaMetric": "100% successful restore rate on automated drill tests",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1"
+          ]
+        },
+        {
+          "title": "Compliance, Data Subject Rights & Accessibility Test Suite",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying regulatory adherence for this epic, I want automated test fixtures auditing WCAG 2.1 AA axe-core compliance, data export capabilities, and restore execution, so that legal requirements are rigorously met.",
+          "acceptanceCriteria": "Given the web application pages, When scanned with axe-core accessibility engine, Then zero critical WCAG 2.1 AA violations are detected.\nGiven a data subject export request, When invoked by an authorized role, Then all relevant stored data is exported in standard JSON format within statutory tolerances.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Accessibility regression in dynamic components",
+          "sixSigmaMetric": "Zero accessibility violations at WCAG 2.1 AA standard",
+          "hasUi": false,
+          "requirementRefs": [
+            "R2",
+            "R3"
+          ]
+        }
+      ]
+    }
+  ]
+}
