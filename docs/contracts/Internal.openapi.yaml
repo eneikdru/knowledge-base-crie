@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: CRIE Institute AI Assistant & Document Generation API
   description: >-
@@ -6,7 +6,7 @@ info:
     normative knowledge, automated generation of official institute orders
     formatted strictly to GOST R 7.0.97-2016 in .docx format, and fast faceted
     search and document metadata retrieval for desktop and mobile clients.
-  version: 1.1.0
+  version: 1.2.0
 servers:
   - url: /api
     description: Internal API server
@@ -34,13 +34,64 @@ paths:
               schema:
                 $ref: '#/components/schemas/SearchResponse'
         '400':
-          description: Validation error due to invalid query terms or facet filters
+          description: Bad request due to malformed JSON or unparseable payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '422':
+          description: Unprocessable Entity with deterministic validation error structures
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorResponse'
         '500':
           description: Search service internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/facets:
+    get:
+      tags:
+        - Documents
+        - Search
+      summary: Get document facet counts and aggregations
+      description: >-
+        Returns available document facets with counts for document types, specialties, and years
+        to populate search filter panels in one click.
+      operationId: getDocumentFacets
+      parameters:
+        - name: query
+          in: query
+          required: false
+          description: Optional search text to restrict facet count calculations
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          description: Filter facet counts by document status
+          schema:
+            type: string
+            enum: [ACTIVE, ARCHIVED, DRAFT, SUPERSEDED]
+            default: ACTIVE
+      responses:
+        '200':
+          description: Facet distributions calculated across active institute documents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentFacetsResponse'
+        '422':
+          description: Validation error for invalid facet query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Internal server error calculating facets
           content:
             application/json:
               schema:
@@ -111,6 +162,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorResponse'
+        '422':
+          description: Unprocessable consultation query payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
         '500':
           description: Assistant processing error
           content:
@@ -151,6 +208,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorResponse'
+        '422':
+          description: Unprocessable order generation parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
         '500':
           description: Document generation engine error
           content:
@@ -186,23 +249,11 @@ components:
         documentTypes:
           type: array
           items:
-            type: string
-            enum:
-              - REGULATIONS
-              - RULES
-              - ORDERS
-              - INSTRUCTIONS
-              - COMMISSION_PROTOCOLS
-              - SYLLABUS_RPD
-              - GIA_PROGRAMS
+            $ref: '#/components/schemas/DocumentTypeEnum'
         specialtyCodes:
           type: array
           items:
-            type: string
-            enum:
-              - "31.08.36"
-              - "31.08.35"
-              - "31.08.19"
+            $ref: '#/components/schemas/SpecialtyCodeEnum'
           example: ["31.08.36"]
         years:
           type: array
@@ -213,6 +264,28 @@ components:
           type: string
           enum: [ACTIVE, ARCHIVED, DRAFT, SUPERSEDED]
           default: ACTIVE
+
+    DocumentTypeEnum:
+      type: string
+      enum:
+        - REGULATIONS
+        - RULES
+        - ORDERS
+        - INSTRUCTIONS
+        - COMMISSION_PROTOCOLS
+        - SYLLABUS_RPD
+        - GIA_PROGRAMS
+      description: Normalized categorization of institute normative and curricular documents
+      example: REGULATIONS
+
+    SpecialtyCodeEnum:
+      type: string
+      enum:
+        - "31.08.36"
+        - "31.08.35"
+        - "31.08.19"
+      description: Medical residency specialty codes supported in CRIE knowledge base
+      example: "31.08.36"
 
     PaginationRequest:
       type: object
@@ -279,11 +352,9 @@ components:
           type: string
           example: "ФГОС ВО 31.08.36 Эпидемиология (уровень подготовки кадров высшей квалификации)"
         documentType:
-          type: string
-          example: "REGULATIONS"
+          $ref: '#/components/schemas/DocumentTypeEnum'
         specialtyCode:
-          type: string
-          example: "31.08.36"
+          $ref: '#/components/schemas/SpecialtyCodeEnum'
         effectiveDate:
           type: string
           format: date
@@ -312,6 +383,10 @@ components:
         value:
           type: string
           example: "REGULATIONS"
+        label:
+          type: string
+          description: Human-readable display label in Russian
+          example: "Положения и регламенты"
         count:
           type: integer
           example: 12
@@ -331,6 +406,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SearchFacetCount'
+
+    DocumentFacetsResponse:
+      type: object
+      required:
+        - facetDistribution
+        - totalDocuments
+      properties:
+        facetDistribution:
+          $ref: '#/components/schemas/SearchFacetDistribution'
+        totalDocuments:
+          type: integer
+          example: 1697
+          description: Total number of documents cataloged in normative repository
 
     SearchResponse:
       type: object
@@ -371,11 +459,9 @@ components:
           type: string
           example: "ФГОС ВО 31.08.36 Эпидемиология"
         documentType:
-          type: string
-          example: "REGULATIONS"
+          $ref: '#/components/schemas/DocumentTypeEnum'
         specialtyCode:
-          type: string
-          example: "31.08.36"
+          $ref: '#/components/schemas/SpecialtyCodeEnum'
         specialtyName:
           type: string
           example: "Эпидемиология"
@@ -462,24 +548,11 @@ components:
       type: object
       properties:
         specialtyCode:
-          type: string
-          enum:
-            - "31.08.36"
-            - "31.08.35"
-            - "31.08.19"
-          example: "31.08.36"
+          $ref: '#/components/schemas/SpecialtyCodeEnum'
         documentTypes:
           type: array
           items:
-            type: string
-            enum:
-              - REGULATIONS
-              - RULES
-              - ORDERS
-              - INSTRUCTIONS
-              - COMMISSION_PROTOCOLS
-              - SYLLABUS_RPD
-              - GIA_PROGRAMS
+            $ref: '#/components/schemas/DocumentTypeEnum'
 
     ConsultationResponse:
       type: object
@@ -538,12 +611,7 @@ components:
         - name
       properties:
         code:
-          type: string
-          enum:
-            - "31.08.36"
-            - "31.08.35"
-            - "31.08.19"
-          example: "31.08.36"
+          $ref: '#/components/schemas/SpecialtyCodeEnum'
         name:
           type: string
           example: "Эпидемиология"
@@ -793,10 +861,10 @@ components:
       properties:
         error:
           type: string
-          example: "Bad Request"
+          example: "Unprocessable Entity"
         message:
           type: string
-          example: "Validation failed for order generation parameters"
+          example: "Validation failed for search query parameters"
         timestamp:
           type: string
           format: date-time
