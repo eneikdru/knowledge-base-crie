@@ -58,13 +58,17 @@ def _compute_facets(index: NormativeInvertedIndex, matched_docs: List[Any]) -> D
     specialties_count: Dict[str, int] = {}
 
     for doc in matched_docs:
-        cat = (doc.get("category") if isinstance(doc, dict) else getattr(doc, "category", None)) or "Other"
+        if isinstance(doc, dict):
+            cat = doc.get("category") or "Other"
+            doc_type = doc.get("doc_type") or cat
+            code = doc.get("code") or "General"
+        else:
+            cat = getattr(doc, "category", None) or "Other"
+            doc_type = getattr(doc, "doc_type", None) or cat
+            code = getattr(doc, "code", None) or "General"
+
         categories_count[cat] = categories_count.get(cat, 0) + 1
-
-        doc_type = (doc.get("doc_type") if isinstance(doc, dict) else getattr(doc, "category", None)) or "Other"
         types_count[doc_type] = types_count.get(doc_type, 0) + 1
-
-        code = (doc.get("code") if isinstance(doc, dict) else getattr(doc, "code", None)) or "General"
         specialties_count[code] = specialties_count.get(code, 0) + 1
 
     result = {
