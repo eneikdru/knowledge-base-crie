@@ -1,0 +1,233 @@
+{
+  "epics": [
+    {
+      "existingEpicId": null,
+      "title": "Institutional Security & Perimeter Token/PIN Authorization Barrier",
+      "jtbd": "When an educational administrator, instructor, or resident accesses the CRIE portal, I want strict perimeter authentication via institutional token or service PIN, so that unauthorized external access is completely blocked and compliance with 152-FZ data protection requirements is maintained.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "100% unauthorized perimeter requests rejected with HTTP 401",
+      "tocConstraintRef": "perimeter-authorization-gate",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Complete isolation of public contour from unauthorized access with mandatory institutional token or service PIN entry screen",
+        "R2: All backend and data API endpoints reject unauthenticated requests with HTTP 401 Unauthorized until valid session establishment",
+        "R3: Institutional token and PIN verification mechanism supporting session token generation and secure client storage"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Define perimeter auth API schema and token verification contracts",
+          "roleTag": "BARCAN-TAG-12",
+          "jtbd": "When implementing institutional security for this epic, I want an unambiguous OpenAPI contract for PIN/token login, session validation, and 401 challenge semantics, so that frontend and backend auth modules integrate smoothly.",
+          "acceptanceCriteria": "Given the auth API OpenAPI specification, When validating POST /api/auth/verify and GET /api/auth/session contracts, Then the schema specifies required institutional token or PIN parameters, token response format, and HTTP 401 error payloads.\nGiven unauthenticated clients, When querying any protected resource defined in OpenAPI, Then the response schema documents a 401 Unauthorized status with WWW-Authenticate header requirements.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "auth-contract-definition",
+          "sixSigmaMetric": "0 schema ambiguities between frontend and backend auth interfaces",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3"]
+        },
+        {
+          "title": "Implement backend institutional token and PIN authentication middleware",
+          "roleTag": "BARCAN-TAG-07",
+          "jtbd": "When implementing perimeter security for this epic, I want FastAPI authentication middleware validating institutional tokens and service PINs, so that all unauthorized requests immediately return 401 Unauthorized.",
+          "acceptanceCriteria": "Given an unauthenticated request to any protected API endpoint, When processed by the FastAPI perimeter middleware, Then the API immediately responds with HTTP 401 Unauthorized without leaking document or assistant metadata.\nGiven a valid institutional token or service PIN submitted to /api/auth/verify, When verified against configured credentials, Then a secure bearer session token is issued with configured TTL.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "backend-auth-enforcement",
+          "sixSigmaMetric": "100% test coverage of 401 enforcement across all registered API routes",
+          "hasUi": false,
+          "requirementRefs": ["R2", "R3"]
+        },
+        {
+          "title": "Build mandatory perimeter authorization screen and session guard",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing perimeter security for this epic, I want a dedicated institutional PIN/token login screen blocking the UI until authenticated, so that unauthorized users cannot inspect the CRIE catalog or tools.",
+          "acceptanceCriteria": "Given a user arriving without an authenticated session, When loading the application in any viewport, Then the full-screen institutional PIN/token authorization modal is rendered and application tabs remain locked.\nGiven a user entering a valid PIN or token, When clicking submit, Then the session is stored securely, the barrier unlocks, and clear visual confirmation is displayed without layout shift.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "frontend-auth-modal",
+          "sixSigmaMetric": "0 accessibility defects on auth screen meeting WCAG 2.1 AA",
+          "hasUi": true,
+          "requirementRefs": ["R1"]
+        },
+        {
+          "title": "Perimeter authorization and 401 barrier automated verification suite",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying perimeter security for this epic, I want automated unit, integration, and E2E security tests, so that no bypass or unauthenticated data leakage is possible across the system.",
+          "acceptanceCriteria": "Given integration tests against protected endpoints, When requests lack valid authorization headers, Then 100% of responses return HTTP 401 Unauthorized.\nGiven an E2E browser test, When attempting direct navigation to catalog and generator screens, Then the user is redirected to the PIN login barrier and access is granted only after successful PIN entry.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "qa-security-validation",
+          "sixSigmaMetric": "0 unauthorized data leakage vulnerabilities detected in test suite",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": "e59b167a-75af-4f81-b7cc-01c00c7b02fd",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Complete removal of 'Copy path' buttons and raw internal filesystem path displays from document cards and modal views",
+        "R2: Eradication of technical placeholder responses and generic boilerplate statements like 'database checked on your request'",
+        "R3: Display human-readable normative document titles with concise annotations and direct one-click DOCX and PDF download buttons",
+        "R4: Comprehensive catalog indexing and semantic faceted exploration for 1,697 institutional documents",
+        "R5: Expert RAG consultant engine providing precise, concise regulatory answers grounded in Rospotrebnadzor normative corpus without filler"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Define document view and RAG consultant API contract",
+          "roleTag": "BARCAN-TAG-12",
+          "jtbd": "When implementing knowledge base enhancements for this epic, I want an OpenAPI specification defining clean document download metadata and concise RAG consultant query/response schemas, so that UI and backend teams develop in parallel.",
+          "acceptanceCriteria": "Given the OpenAPI schema for /api/normative/document/{id}/download and /api/consultant/query, When inspected, Then it defines file download endpoints without raw local path parameters and concise markdown-formatted RAG response fields.\nGiven the search results schema, When validated, Then document items include human-readable title, annotation snippet, and direct file download URLs for DOCX/PDF.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "catalog-rag-contract",
+          "sixSigmaMetric": "0 breaking changes between catalog client and server DTOs",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R3", "R4", "R5"]
+        },
+        {
+          "title": "Implement normative document metadata sanitization and direct download endpoints",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing knowledge base backend services for this epic, I want sanitized document serialization and direct file streaming endpoints, so that raw file paths are stripped and documents can be downloaded directly.",
+          "acceptanceCriteria": "Given an API request to /api/search or /api/v1/normative/search, When the index serializes results, Then relative filesystem paths are omitted from public payloads and human-readable titles and annotations are provided.\nGiven a document ID request to /api/v1/normative/download/{id}, When called, Then the endpoint streams the authentic binary file (DOCX/PDF) with proper Content-Disposition attachment headers.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "doc-download-api",
+          "sixSigmaMetric": "Sub-50ms download endpoint TTFB for normative documents",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R3", "R4"]
+        },
+        {
+          "title": "Implement expert Rospotrebnadzor RAG consultant retrieval engine",
+          "roleTag": "BARCAN-TAG-04",
+          "jtbd": "When implementing the regulatory consultant for this epic, I want a precise RAG retrieval and synthesis pipeline grounded in the 1697 normative corpus, so that answers are factual, regulatory-compliant, and free of fluff or generic placeholders.",
+          "acceptanceCriteria": "Given an inquiry regarding Rospotrebnadzor sanitary regulations, When processed by the RAG consultant service, Then relevant corpus excerpts are retrieved and a concise, cited response is generated without boilerplate or conversational filler.\nGiven an ambiguous query or missing context, When generating guidance, Then the engine provides direct regulatory references rather than generic 'database checked' disclaimers.",
+          "leanValue": "essential",
+          "cynefinDomain": "complex",
+          "tocConstraintRef": "rag-synthesis-latency",
+          "sixSigmaMetric": ">=95% factual grounding accuracy against indexed normative articles",
+          "hasUi": false,
+          "requirementRefs": ["R2", "R4", "R5"]
+        },
+        {
+          "title": "Redesign knowledge base document cards and consultant UI interface",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing the catalog UI for this epic, I want clean document cards showing human-readable titles, annotations, and direct download buttons without tech paths or copy-path controls, so that users experience a professional catalog.",
+          "acceptanceCriteria": "Given the document search results and catalog list, When rendered in desktop or mobile browsers, Then all 'Copy path' buttons and technical filesystem strings are completely absent.\nGiven any document item in the catalog, When inspected, Then it displays a clear human-readable title, brief annotation, and prominent one-click DOCX and PDF download buttons satisfying WCAG 2.1 AA keyboard navigation.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "ui-card-refactor",
+          "sixSigmaMetric": "0 layout overflow issues on 375px mobile viewports",
+          "hasUi": true,
+          "requirementRefs": ["R1", "R2", "R3", "R4"]
+        },
+        {
+          "title": "Full-pyramid test suite for sanitized catalog, direct downloads, and RAG consultant",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying knowledge base updates for this epic, I want unit, integration, and E2E regression tests, so that UI path sanitization, direct file downloads, and RAG answer quality are rigorously confirmed.",
+          "acceptanceCriteria": "Given unit and integration tests, When checking API and index outputs, Then 0 responses contain internal absolute or relative filesystem paths.\nGiven an E2E Playwright test, When searching for an educational program and clicking download, Then the DOCX file is saved with valid binary headers and RAG consultant queries return substantive answers without boilerplate filler.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "qa-catalog-validation",
+          "sixSigmaMetric": "100% passage rate on document download and sanitized UI assertions",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": "87d85378-01b9-44cf-a0b4-76d81047eb95",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Integration with DeepSeek API utilizing configured DEEPSEEK_API_KEY environment credentials",
+        "R2: Generation of official CRIE Academic Council (UMS) meeting minutes in strict compliance with GOST R 7.0.97-2016 (agenda, Gorelov/Romanova quorum, resolutions)",
+        "R3: Generation of official institute director orders in GOST format (State Examination Commission, Candidate Examination Committees, Admissions Commission)",
+        "R4: Generation of examination session schedules for residency cohorts (25OE, 26OE, 25OI, 26OI, 25OP, 26OP) and postgraduate cohorts between January 25 and February 25",
+        "R5: Generation of consolidated curriculum plans for residency (120 credits / 4320 hours) and postgraduate programs",
+        "R6: Generation of faculty staffing and teaching workload certificates for academic departments ensuring degree holder ratio >=70%",
+        "R7: Generation of local institutional normative acts across 9 established institutional regulations and procedures",
+        "R8: One-click direct export and download of generated official documents as authentic .DOCX files formatted to GOST specifications"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Define GOST document generation and DeepSeek proxy API contract",
+          "roleTag": "BARCAN-TAG-12",
+          "jtbd": "When implementing the official document assistant for this epic, I want an OpenAPI contract for document generation parameterization and direct .DOCX binary export, so that the generator UI and LLM backend remain decoupled.",
+          "acceptanceCriteria": "Given the OpenAPI specification for /api/v1/generator/document and /api/v1/generator/export/docx, When inspected, Then it explicitly defines payload structures for UMS minutes, director orders, exam schedules, curricula, staffing certificates, and local acts.\nGiven export endpoints, When reviewed, Then the schema defines standard MIME types for application/vnd.openxmlformats-officedocument.wordprocessingml.document with content disposition metadata.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "gost-contract-alignment",
+          "sixSigmaMetric": "100% parameter coverage across the 6 specified document classes",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8"]
+        },
+        {
+          "title": "Implement GOST R 7.0.97-2016 .DOCX template schemas and builder engine",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing official document generation for this epic, I want a python-docx document builder adhering strictly to GOST R 7.0.97-2016 typography, margins, headers, stamps, and tabular structures, so that exported files meet ministerial standards.",
+          "acceptanceCriteria": "Given input parameters for UMS protocols, director orders, or workload certificates, When processed by the GOST document builder, Then the output .DOCX adheres to GOST margins (left 30mm, right 10mm, top/bottom 20mm), Times New Roman 12-14pt, 1.5 line spacing, and official stamps.\nGiven curriculum and staffing certificate datasets, When exported, Then tables compile credit totals (120 credits / 4320 hours) and faculty degree ratios (>=70%) into compliant tabular layouts.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "docx-gost-engine",
+          "sixSigmaMetric": "0 typographic or formatting deviations from GOST R 7.0.97-2016 standard",
+          "hasUi": false,
+          "requirementRefs": ["R2", "R3", "R4", "R5", "R6", "R7", "R8"]
+        },
+        {
+          "title": "Implement DeepSeek LLM orchestration client for institutional document generation",
+          "roleTag": "BARCAN-TAG-04",
+          "jtbd": "When implementing AI document drafting for this epic, I want a resilient DeepSeek API client utilizing DEEPSEEK_API_KEY with tailored system prompts for institutional governance, so that drafted official texts are accurate and legally sound.",
+          "acceptanceCriteria": "Given a valid DEEPSEEK_API_KEY configured in environment, When requesting generation of UMS minutes, Then the service passes structured prompts including Gorelov/Romanova quorum constraints and retrieves structured resolution drafts.\nGiven a network timeout or upstream API error, When calling DeepSeek, Then the service implements exponential backoff retry and falls back to deterministic institutional template rendering.",
+          "leanValue": "essential",
+          "cynefinDomain": "complex",
+          "tocConstraintRef": "deepseek-orchestration-latency",
+          "sixSigmaMetric": ">=99% successful prompt completion rate without malformed JSON blocks",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5", "R6", "R7"]
+        },
+        {
+          "title": "Implement generator backend endpoints and one-click direct export stream",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing the generator API for this epic, I want FastAPI routes orchestrating generation, validation, and direct .DOCX binary streaming, so that administrative users can trigger and download official files instantly.",
+          "acceptanceCriteria": "Given a POST request to /api/v1/generator/generate with exam session parameters (groups 25OE-26OP, dates 25.01-25.02), When executed, Then the endpoint returns a preview payload and pre-signed one-click download token.\nGiven a GET request to /api/v1/generator/export/{job_id}/docx, When invoked, Then it directly streams the generated .DOCX with valid filename headers in under 2000ms.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "backend-docx-export-speed",
+          "sixSigmaMetric": "< 2.5s total turnaround time for AI generation and binary DOCX export",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8"]
+        },
+        {
+          "title": "Build interactive official document generator UI with one-click .DOCX download",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing the administrative UI for this epic, I want an intuitive web form selecting document classes, configuring parameters, and triggering one-click .DOCX downloads, so that staff create official orders and minutes effortlessly.",
+          "acceptanceCriteria": "Given the document generator interface, When selecting between UMS minutes, director orders, exam schedules, curricula, staffing certificate, and local acts, Then dynamic input forms adapt with validation for required fields.\nGiven generation completion, When the user clicks the prominent 'Download .DOCX' button, Then the file initiates download immediately with progress indication and visible feedback conforming to WCAG 2.1 AA.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "frontend-generator-flow",
+          "sixSigmaMetric": "0 accessibility violations and 100% responsive layout across mobile and desktop",
+          "hasUi": true,
+          "requirementRefs": ["R2", "R3", "R4", "R5", "R6", "R7", "R8"]
+        },
+        {
+          "title": "Automated verification suite for DeepSeek generation and GOST .DOCX export",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying the official document generator for this epic, I want unit, integration, and E2E tests validating prompt formatting, GOST DOCX binary integrity, and one-click download flows, so that generated legal artifacts are defect-free.",
+          "acceptanceCriteria": "Given unit tests for the docx builder, When creating sample minutes, orders, and staffing forms, Then the generated .DOCX archives contain valid XML structures, correct margins, and >=70% faculty ratios.\nGiven an E2E Playwright test, When filling the exam schedule generator form for groups 25OE-26OP and clicking download, Then a valid .DOCX file is delivered to the browser and verified for non-empty binary size.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "qa-generator-verification",
+          "sixSigmaMetric": "100% automated test coverage across all 6 document generation pathways",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8"]
+        }
+      ]
+    }
+  ]
+}
