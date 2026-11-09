@@ -7,6 +7,7 @@
   // Chat State
   let chatQuery = '';
   let isSubmitting = false;
+  let chatError = null;
   let copySuccessId = null;
   let messages = [
     {
@@ -88,34 +89,36 @@
     const queryText = chatQuery;
     chatQuery = '';
     isSubmitting = true;
+    chatError = null;
 
-    // Simulate streaming / responsive DeepSeek assistant integration
-    setTimeout(() => {
-      let replyText = '';
-      let citations = [];
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ query: queryText })
+      });
 
-      if (queryText.toLowerCase().includes('гиа') || queryText.toLowerCase().includes('экзамен')) {
-        replyText = 'В соответствии с Положением о ГИА института, итоговая аттестация включает 3 обязательных этапа:\n1. Компьютерное тестирование (допуск от 70% верных ответов);\n2. Оценка практических навыков в симуляционном центре;\n3. Собеседование по билетам с членами ГЭК.';
-        citations = ['ФГОС ВО 31.08.36', 'Положение об итоговой аттестации ФБУН ЦНИИЭ'];
-      } else if (queryText.toLowerCase().includes('нагрузк') || queryText.toLowerCase().includes('ставк')) {
-        replyText = 'Кафедральная норма годовой педагогической нагрузки ППС составляет 750–900 часов в год. Включает лекции, семинары, клиническую практику и руководство ординаторами.';
-        citations = ['Приказ Минобрнауки №1601', 'Регламент планирования нагрузки ППС'];
-      } else {
-        replyText = `По вашему запросу («${queryText}») проверена нормативная база ФБУН ЦНИИ Эпидемиологии. Требования регламентированы текущими РПД и стандартами Роспотребнадзора. Документ соответствует ГОСТ Р 7.0.97-2016.`;
-        citations = ['ГОСТ Р 7.0.97-2016', 'Устав ФБУН ЦНИИЭ'];
+      if (!response.ok) {
+        throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}`);
       }
 
+      const data = await response.json();
       const assistantMsg = {
-        id: `a-${Date.now()}`,
+        id: data.id || `a-${Date.now()}`,
         sender: 'assistant',
-        text: replyText,
-        citations,
+        text: data.response || data.text || data.message || '',
+        citations: Array.isArray(data.citations) ? data.citations : [],
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
       messages = [...messages, assistantMsg];
+    } catch (err) {
+      chatError = err.message || 'Не удалось получить ответ от ассистента. Проверьте соединение с сервером.';
+    } finally {
       isSubmitting = false;
-    }, 600);
+    }
   }
 
   async function copyToClipboard(text, id) {
@@ -231,6 +234,13 @@
             <div class="message-bubble typing-indicator">
               <span>ИИ-помощник анализирует нормативную базу...</span>
             </div>
+          </div>
+        {/if}
+
+        {#if chatError}
+          <div class="chat-error-banner" role="alert" aria-live="assertive">
+            <span class="error-icon">⚠️</span>
+            <span class="error-text">{chatError}</span>
           </div>
         {/if}
       </div>
@@ -687,6 +697,26 @@
     font-style: italic;
     color: #334155;
     font-size: 0.875rem;
+  }
+
+  .chat-error-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: #fef2f2;
+    border: 1px solid #b91c1c;
+    color: #991b1b;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+  }
+
+  .error-icon {
+    font-size: 1rem;
+  }
+
+  .error-text {
+    font-weight: 500;
   }
 
   .chat-input-area {
