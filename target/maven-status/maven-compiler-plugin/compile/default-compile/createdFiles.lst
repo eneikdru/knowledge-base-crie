@@ -1,0 +1,13 @@
+com/eneik/crie/controller/CrieApiController.class
+com/eneik/telemetry/services/security/InternalSecurityService.class
+com/eneik/crie/controller/WebViewController.class
+com/eneik/telemetry/models/persistence/InternalEntity.class
+com/eneik/telemetry/TelemetrySummary.class
+com/eneik/telemetry/TelemetryEvent.class
+com/eneik/crie/service/DeepSeekService.class
+com/eneik/crie/models/persistence/AcademicWorkloadAnalyticsEntity.class
+com/eneik/crie/CrieAssistantApplication.class
+com/eneik/crie/config/SecurityConfig.class
+com/eneik/telemetry/TelemetryMetricsService.class
+com/eneik/crie/service/NormativeCatalogService.class
+com/eneik/telemetry/services/InternalService.class
