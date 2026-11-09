@@ -1,0 +1,10 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "block",
+      "criticalReason": "Missing required tests for QA Verification task (BARCAN-TAG-06): the PR does not include integration tests for /api/workload/calculate or E2E browser tests for reactive workload calculation (typing 950 hours for reactive overload badge), directly contradicting the task Acceptance Criteria and DoD.",
+      "concerns": []
+    }
+  ]
+}
