@@ -1,0 +1,1 @@
+{"verdicts": [{"sourceIndex": 0, "verdict": "approve", "criticalReason": "", "concerns": [{"text": "Ensure backup encryption key and salt are secured and configurable via environment variables in production.", "severity": "medium"}]}]}
