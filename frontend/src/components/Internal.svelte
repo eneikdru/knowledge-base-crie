@@ -143,13 +143,17 @@
 
 <div class="cnie-container">
   <!-- Header Navigation -->
-  <header class="cnie-header">
+  <header class="cnie-header" role="banner">
     <div class="cnie-title-area">
       <h1 class="cnie-title">ИИ-Помощник & База приказов</h1>
       <p class="cnie-subtitle">ФБУН ЦНИИ Эпидемиологии Роспотребнадзора • ГОСТ Р 7.0.97-2016</p>
     </div>
-    <nav class="cnie-tabs" aria-label="Разделы">
+    <nav class="cnie-tabs" aria-label="Разделы системы" role="tablist">
       <button
+        id="tab-btn-assistant"
+        role="tab"
+        aria-selected={activeTab === 'assistant'}
+        aria-controls="tabpanel-assistant"
         class="tab-btn {activeTab === 'assistant' ? 'active' : ''}"
         on:click={() => (activeTab = 'assistant')}
         type="button"
@@ -157,6 +161,10 @@
         💬 Ассистент
       </button>
       <button
+        id="tab-btn-orders"
+        role="tab"
+        aria-selected={activeTab === 'orders'}
+        aria-controls="tabpanel-orders"
         class="tab-btn {activeTab === 'orders' ? 'active' : ''}"
         on:click={() => (activeTab = 'orders')}
         type="button"
@@ -168,8 +176,14 @@
 
   <!-- Assistant Chat View -->
   {#if activeTab === 'assistant'}
-    <section class="chat-section" aria-label="Диалог с ассистентом">
-      <div class="chat-history" id="chat-history">
+    <section
+      id="tabpanel-assistant"
+      role="tabpanel"
+      aria-labelledby="tab-btn-assistant"
+      class="chat-section"
+      aria-label="Диалог с ассистентом"
+    >
+      <div class="chat-history" id="chat-history" role="log" aria-live="polite">
         {#each messages as msg (msg.id)}
           <div class="message-row {msg.sender}">
             <div class="message-bubble">
@@ -184,9 +198,9 @@
               {#if msg.citations && msg.citations.length > 0}
                 <div class="citations-block">
                   <span class="citation-label">Нормативные ссылки:</span>
-                  <div class="citation-tags">
+                  <div class="citation-tags" role="list">
                     {#each msg.citations as cit}
-                      <span class="citation-tag">{cit}</span>
+                      <span class="citation-tag" role="listitem">{cit}</span>
                     {/each}
                   </div>
                 </div>
@@ -197,7 +211,7 @@
                   type="button"
                   class="action-btn"
                   on:click={() => copyToClipboard(msg.text, msg.id)}
-                  aria-label="Копировать ответ"
+                  aria-label="Копировать ответ ассистента в буфер обмена"
                 >
                   {#if copySuccessId === msg.id}
                     ✓ Скопировано
@@ -211,7 +225,7 @@
         {/each}
 
         {#if isSubmitting}
-          <div class="message-row assistant">
+          <div class="message-row assistant" role="status" aria-live="polite">
             <div class="message-bubble typing-indicator">
               <span>ИИ-помощник анализирует нормативную базу...</span>
             </div>
@@ -219,8 +233,10 @@
         {/if}
       </div>
 
-      <form class="chat-input-area" on:submit|preventDefault={sendChatMessage}>
+      <form class="chat-input-area" on:submit|preventDefault={sendChatMessage} role="search">
+        <label for="chat-input-query" class="sr-only">Введите вопрос по нормативной базе или регламентам</label>
         <textarea
+          id="chat-input-query"
           class="chat-textarea"
           bind:value={chatQuery}
           on:keydown={handleKeyDown}
@@ -232,6 +248,7 @@
           type="submit"
           class="btn-send"
           disabled={!chatQuery.trim() || isSubmitting}
+          aria-label="Отправить вопрос ассистенту"
         >
           Отправить
         </button>
@@ -241,7 +258,13 @@
 
   <!-- Order Generation View -->
   {#if activeTab === 'orders'}
-    <section class="orders-section" aria-label="Генерация проектов приказов">
+    <section
+      id="tabpanel-orders"
+      role="tabpanel"
+      aria-labelledby="tab-btn-orders"
+      class="orders-section"
+      aria-label="Генерация проектов приказов"
+    >
       <div class="order-card">
         <h2 class="card-title">Формирование проекта приказа по ГОСТ Р 7.0.97-2016</h2>
         <p class="card-desc">
@@ -251,7 +274,7 @@
         <form class="order-form" on:submit|preventDefault={generateOrder}>
           <div class="form-group">
             <label for="order-type">Тип приказа</label>
-            <select id="order-type" bind:value={orderType} class="form-control">
+            <select id="order-type" bind:value={orderType} class="form-control" aria-required="true">
               {#each orderTypes as type}
                 <option value={type.id}>{type.label}</option>
               {/each}
@@ -261,7 +284,7 @@
           <div class="form-row">
             <div class="form-group col">
               <label for="order-spec">Специальность</label>
-              <select id="order-spec" bind:value={specialtyCode} class="form-control">
+              <select id="order-spec" bind:value={specialtyCode} class="form-control" aria-required="true">
                 {#each specialties as spec}
                   <option value={spec.code}>{spec.code} {spec.name}</option>
                 {/each}
@@ -276,6 +299,7 @@
                 bind:value={orderNumber}
                 class="form-control"
                 placeholder="ПР-2026/04"
+                aria-required="true"
               />
             </div>
           </div>
@@ -288,11 +312,13 @@
               bind:value={studentName}
               class="form-control"
               placeholder="Иванов Иван Иванович"
+              aria-describedby="order-student-help"
             />
+            <small id="order-student-help" class="help-text">В соответствии с 152-ФЗ данные обрабатываются только локально без передачи в сторонние сервисы.</small>
           </div>
 
           {#if isGeneratingOrder}
-            <div class="progress-wrapper">
+            <div class="progress-wrapper" role="progressbar" aria-valuenow={orderGenerationProgress} aria-valuemin="0" aria-valuemax="100">
               <div class="progress-label">
                 <span>Формирование .docx по стандарту ГОСТ...</span>
                 <span>{orderGenerationProgress}%</span>
@@ -307,7 +333,7 @@
           {/if}
 
           {#if generationSuccess}
-            <div class="success-banner" role="status">
+            <div class="success-banner" role="status" aria-live="polite">
               ✓ Проект приказа успешно сформирован и загружен на ваше устройство.
             </div>
           {/if}
@@ -316,6 +342,7 @@
             type="submit"
             class="btn-generate"
             disabled={isGeneratingOrder}
+            aria-label="Сформировать и скачать проект приказа в формате docx"
           >
             {isGeneratingOrder ? 'Формирование...' : 'Сформировать приказ (.docx)'}
           </button>
@@ -326,6 +353,18 @@
 </div>
 
 <style>
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   .cnie-container {
     display: flex;
     flex-direction: column;
@@ -334,14 +373,14 @@
     margin: 0 auto;
     padding: 1rem;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    color: #1e293b;
+    color: #0f172a;
   }
 
   .cnie-header {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #cbd5e1;
     padding-bottom: 1rem;
     margin-bottom: 1rem;
   }
@@ -362,8 +401,8 @@
   }
 
   .cnie-subtitle {
-    font-size: 0.8125rem;
-    color: #64748b;
+    font-size: 0.875rem;
+    color: #334155;
     margin: 0.25rem 0 0 0;
   }
 
@@ -374,24 +413,27 @@
 
   .tab-btn {
     padding: 0.5rem 1rem;
-    border: 1px solid #cbd5e1;
+    border: 1px solid #64748b;
     background: #f8fafc;
-    color: #475569;
+    color: #1e293b;
     border-radius: 0.375rem;
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
   }
 
-  .tab-btn:hover {
-    background: #f1f5f9;
+  .tab-btn:hover,
+  .tab-btn:focus-visible {
+    background: #e2e8f0;
+    outline: 2px solid #0369a1;
+    outline-offset: 2px;
   }
 
   .tab-btn.active {
-    background: #0284c7;
+    background: #0369a1;
     color: #ffffff;
-    border-color: #0284c7;
+    border-color: #0369a1;
   }
 
   /* Chat View */
@@ -401,7 +443,7 @@
     flex: 1;
     min-height: 480px;
     background: #ffffff;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #cbd5e1;
     border-radius: 0.5rem;
     overflow: hidden;
   }
@@ -436,24 +478,24 @@
   }
 
   .message-row.user .message-bubble {
-    background: #0284c7;
+    background: #0369a1;
     color: #ffffff;
     border-bottom-right-radius: 0;
   }
 
   .message-row.assistant .message-bubble {
     background: #f8fafc;
-    color: #1e293b;
-    border: 1px solid #e2e8f0;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
     border-bottom-left-radius: 0;
   }
 
   .bubble-header {
     display: flex;
     justify-content: space-between;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     margin-bottom: 0.35rem;
-    opacity: 0.85;
+    font-weight: 600;
   }
 
   .bubble-content p {
@@ -466,13 +508,13 @@
   .citations-block {
     margin-top: 0.75rem;
     padding-top: 0.5rem;
-    border-top: 1px dashed #cbd5e1;
+    border-top: 1px dashed #94a3b8;
   }
 
   .citation-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #475569;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #1e293b;
   }
 
   .citation-tags {
@@ -484,11 +526,11 @@
 
   .citation-tag {
     background: #e0f2fe;
-    color: #0369a1;
-    font-size: 0.75rem;
+    color: #075985;
+    font-size: 0.8125rem;
     padding: 0.125rem 0.5rem;
     border-radius: 0.25rem;
-    font-weight: 500;
+    font-weight: 600;
   }
 
   .bubble-actions {
@@ -498,22 +540,25 @@
   }
 
   .action-btn {
-    background: transparent;
-    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    border: 1px solid #64748b;
     border-radius: 0.25rem;
-    font-size: 0.75rem;
-    padding: 0.2rem 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    padding: 0.25rem 0.6rem;
     cursor: pointer;
-    color: #475569;
+    color: #1e293b;
   }
 
-  .action-btn:hover {
-    background: #e2e8f0;
+  .action-btn:hover,
+  .action-btn:focus-visible {
+    background: #f1f5f9;
+    outline: 2px solid #0369a1;
   }
 
   .typing-indicator {
     font-style: italic;
-    color: #64748b;
+    color: #334155;
     font-size: 0.875rem;
   }
 
@@ -522,39 +567,42 @@
     gap: 0.5rem;
     padding: 0.75rem;
     background: #f8fafc;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid #cbd5e1;
   }
 
   .chat-textarea {
     flex: 1;
     padding: 0.5rem 0.75rem;
-    border: 1px solid #cbd5e1;
+    border: 1px solid #64748b;
     border-radius: 0.375rem;
     font-family: inherit;
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
+    color: #0f172a;
     resize: none;
   }
 
-  .chat-textarea:focus {
-    outline: none;
-    border-color: #0284c7;
-    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+  .chat-textarea:focus-visible {
+    outline: 2px solid #0369a1;
+    outline-offset: 1px;
+    border-color: #0369a1;
   }
 
   .btn-send {
     padding: 0 1.25rem;
-    background: #0284c7;
-    color: white;
+    background: #0369a1;
+    color: #ffffff;
     border: none;
     border-radius: 0.375rem;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 0.875rem;
     cursor: pointer;
     transition: background 0.2s;
   }
 
-  .btn-send:hover:not(:disabled) {
-    background: #0369a1;
+  .btn-send:hover:not(:disabled),
+  .btn-send:focus-visible {
+    background: #075985;
+    outline: 2px solid #0369a1;
   }
 
   .btn-send:disabled {
@@ -569,28 +617,28 @@
 
   .order-card {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #cbd5e1;
     border-radius: 0.5rem;
     padding: 1.5rem;
   }
 
   .card-title {
     font-size: 1.125rem;
-    font-weight: 600;
+    font-weight: 700;
     margin: 0 0 0.25rem 0;
     color: #0f172a;
   }
 
   .card-desc {
     font-size: 0.875rem;
-    color: #64748b;
+    color: #334155;
     margin: 0 0 1.5rem 0;
   }
 
   .order-form {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.25rem;
   }
 
   .form-row {
@@ -616,24 +664,29 @@
   }
 
   .form-group label {
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: #334155;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  .help-text {
+    font-size: 0.75rem;
+    color: #475569;
   }
 
   .form-control {
     padding: 0.5rem 0.75rem;
-    border: 1px solid #cbd5e1;
+    border: 1px solid #64748b;
     border-radius: 0.375rem;
     font-size: 0.875rem;
     font-family: inherit;
     color: #0f172a;
   }
 
-  .form-control:focus {
-    outline: none;
-    border-color: #0284c7;
-    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+  .form-control:focus-visible {
+    outline: 2px solid #0369a1;
+    outline-offset: 1px;
+    border-color: #0369a1;
   }
 
   .progress-wrapper {
@@ -647,38 +700,39 @@
     display: flex;
     justify-content: space-between;
     font-size: 0.8125rem;
-    color: #0284c7;
-    font-weight: 500;
+    color: #0369a1;
+    font-weight: 600;
   }
 
   .progress-bar-track {
     width: 100%;
     height: 8px;
-    background: #e2e8f0;
+    background: #cbd5e1;
     border-radius: 4px;
     overflow: hidden;
   }
 
   .progress-bar-fill {
     height: 100%;
-    background: #0284c7;
+    background: #0369a1;
     transition: width 0.25s ease-out;
   }
 
   .success-banner {
-    background: #ecfdf5;
-    border: 1px solid #a7f3d0;
-    color: #065f46;
+    background: #f0fdf4;
+    border: 1px solid #16a34a;
+    color: #14532d;
     padding: 0.75rem 1rem;
     border-radius: 0.375rem;
     font-size: 0.875rem;
+    font-weight: 600;
   }
 
   .btn-generate {
     align-self: flex-start;
     padding: 0.625rem 1.25rem;
-    background: #059669;
-    color: white;
+    background: #15803d;
+    color: #ffffff;
     border: none;
     border-radius: 0.375rem;
     font-weight: 600;
@@ -687,8 +741,10 @@
     transition: background 0.2s;
   }
 
-  .btn-generate:hover:not(:disabled) {
-    background: #047857;
+  .btn-generate:hover:not(:disabled),
+  .btn-generate:focus-visible {
+    background: #166534;
+    outline: 2px solid #15803d;
   }
 
   .btn-generate:disabled {
