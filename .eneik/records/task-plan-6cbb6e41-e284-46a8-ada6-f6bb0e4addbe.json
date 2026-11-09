@@ -1,0 +1,36 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "e59b167a-75af-4f81-b7cc-01c00c7b02fd",
+      "title": null,
+      "jtbd": null,
+      "kanoClass": null,
+      "cynefinDomain": null,
+      "sixSigmaMetric": "0 synthetic client-side records displayed on empty server response",
+      "tocConstraintRef": "frontend/src/components/Internal.svelte mock data coupling",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Remove hardcoded domain document records from Internal.svelte and bind catalog and search views strictly to backend /api/v1/normative/search responses",
+        "R2: Implement explicit empty, loading, error, and present lifecycle states for document list presentation in Internal.svelte without rendering phantom items when backend is empty or unavailable"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Replace synthetic catalog items with server-driven search and lifecycle state handling in Internal.svelte",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing knowledge base search and catalog views for this epic, I want Internal.svelte to render documents strictly returned by the search API with empty, loading, error, and present states, so that no synthetic documents are displayed when the server yields zero rows or is stopped",
+          "acceptanceCriteria": "Given the backend search API returns zero documents, When the user loads or searches in Internal.svelte, Then the page displays the genuine empty state copy and zero document cards.\nGiven a search query is in transit or pending, When viewing the document view, Then an accessible loading indicator is shown without flashing phantom documents.\nGiven the backend service is offline or returns an HTTP error, When the search request fails, Then a clear error state is presented with retry guidance and no synthetic records appear.\nGiven the backend returns valid normative documents, When the response arrives, Then exactly the retrieved documents are rendered with proper metadata and download links.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Internal.svelte hardcoded array removal",
+          "sixSigmaMetric": "100% agreement between API response document count and rendered document card count",
+          "hasUi": true,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        }
+      ]
+    }
+  ]
+}
