@@ -1081,6 +1081,30 @@ components:
           enum: [RELEVANCE, DATE_DESC, DATE_ASC, TITLE_ASC]
           default: RELEVANCE
 
+    SearchResponse:
+      type: object
+      required:
+        - items
+        - pagination
+      properties:
+        items:
+          type: array
+          description: Ranked list of normative and institutional search result items
+          items:
+            $ref: '#/components/schemas/SearchResultItem'
+        total:
+          type: integer
+          description: Total count of matching documents
+          example: 45
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+        facets:
+          $ref: '#/components/schemas/SearchFacetDistribution'
+        executionTimeMs:
+          type: integer
+          description: Search execution time in milliseconds
+          example: 35
+
     SearchFacetFilters:
       type: object
       properties:
@@ -1176,6 +1200,9 @@ components:
 
     DocumentDownloadUrls:
       type: object
+      required:
+        - docx
+        - pdf
       description: Direct file download endpoints without raw local path parameters
       properties:
         docx:
@@ -1192,9 +1219,12 @@ components:
       required:
         - documentId
         - title
+        - annotationSnippet
         - documentType
         - score
         - highlights
+        - downloadUrl
+        - downloadUrls
       properties:
         documentId:
           type: string
