@@ -44,7 +44,8 @@
     if (selectedSpecialty !== 'all') {
       const specMatch = (doc.specialty && doc.specialty.includes(selectedSpecialty)) ||
         (doc.title && doc.title.includes(selectedSpecialty)) ||
-        (doc.description && doc.description.includes(selectedSpecialty));
+        (doc.description && doc.description.includes(selectedSpecialty)) ||
+        (doc.annotation && doc.annotation.includes(selectedSpecialty));
       if (!specMatch) return false;
     }
     if (selectedDocType !== 'all') {
@@ -55,6 +56,24 @@
     }
     return true;
   });
+
+  function getDocxDownloadUrl(doc) {
+    if (doc.docx_url) return doc.docx_url;
+    if (doc.download_url && doc.download_url.endsWith('.docx')) return doc.download_url;
+    if (doc.url && doc.url.endsWith('.docx')) return doc.url;
+    const base = doc.download_url || doc.url || `/api/documents/${doc.id || 'doc'}/download`;
+    if (base.includes('?')) return `${base}&format=docx`;
+    return `${base}?format=docx`;
+  }
+
+  function getPdfDownloadUrl(doc) {
+    if (doc.pdf_url) return doc.pdf_url;
+    if (doc.download_url && doc.download_url.endsWith('.pdf')) return doc.download_url;
+    if (doc.url && doc.url.endsWith('.pdf')) return doc.url;
+    const base = doc.download_url || doc.url || `/api/documents/${doc.id || 'doc'}/download`;
+    if (base.includes('?')) return `${base}&format=pdf`;
+    return `${base}?format=pdf`;
+  }
 
   async function fetchDocuments(searchQuery = '') {
     status = 'loading';
@@ -263,28 +282,48 @@
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
                   <article class="document-card" role="listitem">
+                    <div class="card-header-meta">
+                      {#if doc.category || doc.type}
+                        <span class="badge-doc-type">{doc.category || doc.type}</span>
+                      {/if}
+                      {#if doc.date || doc.created_at}
+                        <time class="doc-date">{doc.date || doc.created_at}</time>
+                      {/if}
+                    </div>
+
                     <h3 class="doc-title">{doc.title || 'Безымянный документ'}</h3>
+
                     {#if doc.author}
                       <p class="doc-author"><strong>Автор:</strong> {doc.author}</p>
                     {/if}
-                    {#if doc.date || doc.created_at}
-                      <p class="doc-date"><strong>Дата:</strong> {doc.date || doc.created_at}</p>
-                    {/if}
-                    {#if doc.description}
-                      <p class="doc-description">{doc.description}</p>
-                    {/if}
-                    <div class="card-actions">
-                      {#if doc.download_url || doc.url}
-                        <a
-                          href={doc.download_url || doc.url}
-                          class="btn-download"
-                          download
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Скачать документ
-                        </a>
-                      {/if}
+
+                    <p class="doc-annotation">
+                      {doc.annotation || doc.description || 'Краткая аннотация и нормативные реквизиты документа ФБУН ЦНИИ Эпидемиологии.'}
+                    </p>
+
+                    <div class="card-actions" role="group" aria-label="Скачать документ">
+                      <a
+                        href={getDocxDownloadUrl(doc)}
+                        class="btn-download btn-download-docx"
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Скачать DOCX: ${doc.title || 'документ'}`}
+                      >
+                        <span class="format-icon" aria-hidden="true">📄</span>
+                        <span>Скачать DOCX</span>
+                      </a>
+                      <a
+                        href={getPdfDownloadUrl(doc)}
+                        class="btn-download btn-download-pdf"
+                        download
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Скачать PDF: ${doc.title || 'документ'}`}
+                      >
+                        <span class="format-icon" aria-hidden="true">📑</span>
+                        <span>Скачать PDF</span>
+                      </a>
                     </div>
                   </article>
                 {/each}
@@ -518,7 +557,7 @@
     color: var(--text-muted);
   }
 
-  .btn-search, .btn-retry, .btn-download {
+  .btn-search, .btn-retry {
     background-color: var(--accent-primary);
     color: #0b1120;
     border: none;
@@ -535,14 +574,12 @@
   }
 
   .btn-search:hover:not(:disabled),
-  .btn-retry:hover:not(:disabled),
-  .btn-download:hover:not(:disabled) {
+  .btn-retry:hover:not(:disabled) {
     background-color: var(--accent-hover);
   }
 
   .btn-search:focus-visible,
-  .btn-retry:focus-visible,
-  .btn-download:focus-visible {
+  .btn-retry:focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
   }
@@ -707,50 +744,129 @@
 
   .document-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 1.25rem;
   }
 
   .document-card {
     border: 1px solid var(--border-subtle);
-    border-radius: 0.5rem;
+    border-radius: 0.625rem;
     padding: 1.25rem;
     background-color: var(--surface);
     display: flex;
     flex-direction: column;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-    transition: box-shadow 0.2s, border-color 0.2s;
+    transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s ease-in-out;
   }
 
   .document-card:hover {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
     border-color: var(--border-strong);
+    transform: translateY(-1px);
+  }
+
+  .card-header-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .badge-doc-type {
+    display: inline-block;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.25rem;
+    background: var(--surface-elevated);
+    color: var(--accent-primary);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .doc-date {
+    font-size: 0.75rem;
+    color: var(--text-muted);
   }
 
   .doc-title {
     margin: 0 0 0.5rem;
-    font-size: 1.125rem;
+    font-size: 1.05rem;
+    line-height: 1.4;
     font-weight: 600;
     color: var(--text-primary);
   }
 
-  .doc-author, .doc-date {
-    margin: 0.25rem 0;
-    font-size: 0.875rem;
+  .doc-author {
+    margin: 0 0 0.5rem;
+    font-size: 0.8125rem;
     color: var(--text-secondary);
   }
 
-  .doc-description {
-    margin: 0.75rem 0 1rem;
+  .doc-annotation {
+    margin: 0.25rem 0 1.25rem;
     font-size: 0.875rem;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     flex: 1;
-    line-height: 1.45;
+    line-height: 1.5;
   }
 
   .card-actions {
     margin-top: auto;
-    padding-top: 0.5rem;
+    padding-top: 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.625rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .btn-download {
+    flex: 1 1 calc(50% - 0.35rem);
+    min-width: 125px;
+    border-radius: 0.375rem;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .btn-download-docx {
+    background-color: var(--accent-primary);
+    color: #0b1120;
+    border: 1px solid var(--accent-primary);
+  }
+
+  .btn-download-docx:hover {
+    background-color: var(--accent-hover);
+    border-color: var(--accent-hover);
+  }
+
+  .btn-download-pdf {
+    background-color: var(--surface-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border-strong);
+  }
+
+  .btn-download-pdf:hover {
+    background-color: var(--border-strong);
+    color: #ffffff;
+  }
+
+  .btn-download:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+
+  .format-icon {
+    font-size: 0.95rem;
   }
 
   /* Mobile Bottom Navigation Bar (WCAG 2.1 AA) */
