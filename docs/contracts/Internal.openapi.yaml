@@ -1,0 +1,377 @@
+openapi: 3.1.0
+info:
+  title: CRIE Internal Knowledge Base API
+  version: 1.0.0
+  description: API contract for normative-methodological knowledge base search, filtering, and facets.
+paths:
+  /api/search:
+    get:
+      summary: Fast text search across normative documents
+      operationId: searchDocuments
+      tags:
+        - Search
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Search query string (title, cipher, keywords)
+          schema:
+            type: string
+        - name: doc_type
+          in: query
+          required: false
+          description: Filter by document type
+          schema:
+            $ref: '#/components/schemas/DocumentType'
+        - name: specialty_code
+          in: query
+          required: false
+          description: Filter by specialty code
+          schema:
+            $ref: '#/components/schemas/SpecialtyCode'
+        - name: page
+          in: query
+          required: false
+          description: Page number (1-based)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          required: false
+          description: Number of items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Search results matching the criteria
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      summary: Advanced search across normative documents
+      operationId: searchDocumentsAdvanced
+      tags:
+        - Search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Search results matching the query payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '422':
+          description: Validation error for invalid payload or query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+
+  /api/documents/facets:
+    get:
+      summary: Retrieve facet counts for normative documents
+      operationId: getDocumentFacets
+      tags:
+        - Facets
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Optional search query to calculate contextual facets for
+          schema:
+            type: string
+        - name: specialty_code
+          in: query
+          required: false
+          description: Optional specialty filter
+          schema:
+            $ref: '#/components/schemas/SpecialtyCode'
+        - name: doc_type
+          in: query
+          required: false
+          description: Optional document type filter
+          schema:
+            $ref: '#/components/schemas/DocumentType'
+      responses:
+        '200':
+          description: Facet distributions by document type and specialty
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacetResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+
+components:
+  schemas:
+    SpecialtyCode:
+      type: string
+      description: Medical residency / postgraduate specialty code
+      enum:
+        - '31.08.36'
+        - '31.08.35'
+        - '31.08.19'
+      example: '31.08.36'
+
+    DocumentType:
+      type: string
+      description: Category/type of normative-methodological document
+      enum:
+        - 'Положения'
+        - 'Регламенты'
+        - 'Порядки'
+        - 'Правила'
+        - 'Инструкции'
+        - 'Протоколы ПК'
+        - 'ГЭК'
+        - 'УМС'
+        - 'Аттестации'
+        - 'РПД'
+        - 'ФОС'
+        - 'РУП'
+        - 'ГИА'
+      example: 'Положения'
+
+    SearchRequest:
+      type: object
+      properties:
+        query:
+          type: string
+          description: Search keywords or phrases
+          default: ''
+        doc_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentType'
+          description: Filter by one or more document types
+        specialty_codes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpecialtyCode'
+          description: Filter by one or more specialty codes
+        academic_year:
+          type: string
+          description: Academic year filter (e.g. 2026/27)
+          example: '2026/27'
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      additionalProperties: false
+
+    DocumentItem:
+      type: object
+      required:
+        - id
+        - title
+        - doc_type
+        - specialty_code
+        - specialty_name
+        - academic_year
+        - cipher
+        - download_url
+      properties:
+        id:
+          type: string
+          description: Unique document identifier
+          example: 'doc-rpd-310836-2026-01'
+        title:
+          type: string
+          description: Full document title
+          example: 'Рабочая программа дисциплины: Эпидемиология инфекционных болезней'
+        doc_type:
+          $ref: '#/components/schemas/DocumentType'
+        specialty_code:
+          $ref: '#/components/schemas/SpecialtyCode'
+        specialty_name:
+          type: string
+          description: Name of the medical specialty
+          example: 'Эпидемиология'
+        academic_year:
+          type: string
+          description: Academic year
+          example: '2026/27'
+        cipher:
+          type: string
+          description: Official registration cipher or classification code
+          example: '31.08.36-EPID-2026'
+        highlights:
+          type: array
+          description: Highlighted matching text fragments containing markup tags
+          items:
+            type: string
+          example:
+            - '...организация противоэпидемических мероприятий при <mark>инфекционных</mark> заболеваниях...'
+        download_url:
+          type: string
+          format: uri
+          description: Direct link to download the document
+          example: 'https://crie.institute/docs/31.08.36/rpd-epid.pdf'
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional institutional metadata
+
+    Pagination:
+      type: object
+      required:
+        - total
+        - page
+        - page_size
+        - total_pages
+      properties:
+        total:
+          type: integer
+          description: Total number of matching documents
+          example: 1697
+        page:
+          type: integer
+          description: Current page number
+          example: 1
+        page_size:
+          type: integer
+          description: Items per page
+          example: 20
+        total_pages:
+          type: integer
+          description: Total number of pages
+          example: 85
+
+    FacetCount:
+      type: object
+      required:
+        - key
+        - count
+      properties:
+        key:
+          type: string
+          description: Facet value identifier
+        label:
+          type: string
+          description: Human-readable display label
+        count:
+          type: integer
+          minimum: 0
+          description: Number of documents matching this facet
+
+    SearchResponse:
+      type: object
+      required:
+        - items
+        - pagination
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentItem'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+        query_latency_ms:
+          type: number
+          description: Query execution time in milliseconds
+          example: 4.2
+        facets:
+          $ref: '#/components/schemas/FacetGroups'
+
+    FacetGroups:
+      type: object
+      required:
+        - by_doc_type
+        - by_specialty
+      properties:
+        by_doc_type:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetCount'
+          example:
+            - key: 'Положения'
+              label: 'Положения'
+              count: 42
+            - key: 'Регламенты'
+              label: 'Регламенты'
+              count: 18
+        by_specialty:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetCount'
+          example:
+            - key: '31.08.36'
+              label: '31.08.36 Эпидемиология'
+              count: 612
+            - key: '31.08.35'
+              label: '31.08.35 Инфекционные болезни'
+              count: 540
+            - key: '31.08.19'
+              label: '31.08.19 Педиатрия'
+              count: 545
+
+    FacetResponse:
+      type: object
+      required:
+        - total_documents
+        - facets
+      properties:
+        total_documents:
+          type: integer
+          description: Total count of documents across institute knowledge base
+          example: 1697
+        facets:
+          $ref: '#/components/schemas/FacetGroups'
+
+    ValidationErrorItem:
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      properties:
+        loc:
+          type: array
+          items:
+            type: string
+          description: Location of the error in path, query, or body
+          example: ['body', 'specialty_codes', '0']
+        msg:
+          type: string
+          description: Deterministic explanation of the validation failure
+          example: 'Input should be 31.08.36, 31.08.35 or 31.08.19'
+        type:
+          type: string
+          description: Error type code
+          example: 'enum'
+
+    HTTPValidationError:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationErrorItem'
