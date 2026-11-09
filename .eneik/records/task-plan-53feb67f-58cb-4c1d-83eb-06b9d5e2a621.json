@@ -1,0 +1,64 @@
+{
+  "epics": [
+    {
+      "existingEpicId": null,
+      "title": "Root Docker Compose & Runtime Launch Orchestration",
+      "jtbd": "When an operator or automated runtime observer inspects the repository, I want a standard root-level docker-compose.yml orchestrating the service stack and exposing a verified health endpoint, so that the product can be deterministically launched and checked for real runtime health.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "100% automated launch success rate via root docker-compose.yml",
+      "tocConstraintRef": "Root-level deployment descriptor absence blocking runtime observation",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Provide a root docker-compose.yml file configuring the CRIE assistant service with container healthcheck on /api/v1/health port 8097."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Implement root docker-compose.yml with healthcheck configuration",
+          "roleTag": "BARCAN-TAG-05",
+          "jtbd": "When implementing docker orchestration for this epic, I want to define a root docker-compose.yml exposing port 8097 and healthcheck against /api/v1/health, so that runtime observation and startup succeed consistently.",
+          "acceptanceCriteria": "Given the repository root without docker-compose.yml\nWhen docker-compose.yml is committed specifying service crie-assistant, Dockerfile build context, port mapping 8097:8097, and /api/v1/health healthcheck\nThen docker compose config passes syntax validation and reports healthy status on container start.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Repository root deployment manifest availability",
+          "sixSigmaMetric": "Zero syntax and schema errors during docker compose validation",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1"
+          ]
+        }
+      ]
+    },
+    {
+      "existingEpicId": null,
+      "title": "Runtime Health Check & Container Observation Verification",
+      "jtbd": "When an automated evaluation harness performs live health checks against the running container, I want verified runtime connectivity returning status 200 on /api/v1/health, so that the product is demonstrably functioning without launcher failures.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "Zero failure responses on launcher /api/v1/health queries",
+      "tocConstraintRef": "Container runtime health probe validation bottleneck",
+      "sourceIndex": 1,
+      "requirements": [
+        "R1: Validate that the running service container launches cleanly and responds with status healthy to the runtime observation probe."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Verify container runtime launch and health check probe response",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying live container health for this epic, I want an automated integration test verifying docker-compose launch and /api/v1/health payload status, so that false-negative runtime observations are eliminated.",
+          "acceptanceCriteria": "Given a clean clone with root docker-compose.yml\nWhen the runtime health evaluation executes against http://localhost:8097/api/v1/health\nThen the response status is 200 with JSON payload containing status healthy.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Verification of operational container health probe",
+          "sixSigmaMetric": "100% pass rate on runtime health smoke verification test",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1"
+          ]
+        }
+      ]
+    }
+  ]
+}
