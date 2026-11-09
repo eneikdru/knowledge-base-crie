@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: CRIE Institute AI Assistant & Document Generation API
   description: >-
@@ -6,7 +6,7 @@ info:
     normative knowledge, automated generation of official institute orders
     formatted strictly to GOST R 7.0.97-2016 in .docx format, and fast faceted
     search and document metadata retrieval for desktop and mobile clients.
-  version: 1.1.0
+  version: 1.2.0
 servers:
   - url: /api
     description: Internal API server
@@ -34,13 +34,74 @@ paths:
               schema:
                 $ref: '#/components/schemas/SearchResponse'
         '400':
-          description: Validation error due to invalid query terms or facet filters
+          description: Bad request due to malformed payload syntax
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '422':
+          description: Unprocessable entity due to semantic schema or facet validation errors
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorResponse'
         '500':
           description: Search service internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/facets:
+    get:
+      tags:
+        - Documents
+      summary: Retrieve document facet distributions and counts
+      description: >-
+        Returns available facet aggregations and counts across document types, specialties,
+        years, and statuses to populate filter controls in one click.
+      operationId: getDocumentFacets
+      parameters:
+        - name: specialtyCodes
+          in: query
+          required: false
+          description: Filter facet distribution counts by one or more specialty codes
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - "31.08.36"
+                - "31.08.35"
+                - "31.08.19"
+          example: ["31.08.36"]
+        - name: documentTypes
+          in: query
+          required: false
+          description: Filter facet distribution counts by document types
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/DocumentTypeEnum'
+      responses:
+        '200':
+          description: Document facet distributions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentFacetsResponse'
+        '422':
+          description: Validation error for filter query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Internal server error retrieving facet distributions
           content:
             application/json:
               schema:
@@ -111,6 +172,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorResponse'
+        '422':
+          description: Validation failure for assistant payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
         '500':
           description: Assistant processing error
           content:
@@ -151,6 +218,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorResponse'
+        '422':
+          description: Validation error for order generation request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
         '500':
           description: Document generation engine error
           content:
@@ -160,6 +233,36 @@ paths:
 
 components:
   schemas:
+    DocumentTypeEnum:
+      type: string
+      description: Types of normative and educational institute documents
+      enum:
+        - REGULATIONS
+        - RULES
+        - ORDERS
+        - INSTRUCTIONS
+        - COMMISSION_PROTOCOLS
+        - SYLLABUS_RPD
+        - GIA_PROGRAMS
+        - DISSERTATION_COUNCIL_REGULATIONS
+        - CURRICULUM_RUP
+        - ASSESSMENT_FOS
+        - POLICIES_PROVISIONS
+        - ATTESTATION_PROTOCOLS
+        - UMS_PROTOCOLS
+        - GEK_PROTOCOLS
+        - PK_PROTOCOLS
+      example: REGULATIONS
+
+    SpecialtyCodeEnum:
+      type: string
+      description: Medical residency specialty codes
+      enum:
+        - "31.08.36"
+        - "31.08.35"
+        - "31.08.19"
+      example: "31.08.36"
+
     SearchRequest:
       type: object
       required:
@@ -186,23 +289,12 @@ components:
         documentTypes:
           type: array
           items:
-            type: string
-            enum:
-              - REGULATIONS
-              - RULES
-              - ORDERS
-              - INSTRUCTIONS
-              - COMMISSION_PROTOCOLS
-              - SYLLABUS_RPD
-              - GIA_PROGRAMS
+            $ref: '#/components/schemas/DocumentTypeEnum'
+          example: ["REGULATIONS", "SYLLABUS_RPD"]
         specialtyCodes:
           type: array
           items:
-            type: string
-            enum:
-              - "31.08.36"
-              - "31.08.35"
-              - "31.08.19"
+            $ref: '#/components/schemas/SpecialtyCodeEnum'
           example: ["31.08.36"]
         years:
           type: array
@@ -239,15 +331,20 @@ components:
       properties:
         currentPage:
           type: integer
+          minimum: 1
           example: 1
         pageSize:
           type: integer
+          minimum: 1
+          maximum: 100
           example: 20
         totalPages:
           type: integer
+          minimum: 0
           example: 3
         totalRecords:
           type: integer
+          minimum: 0
           example: 45
 
     HighlightSnippet:
@@ -279,11 +376,9 @@ components:
           type: string
           example: "ФГОС ВО 31.08.36 Эпидемиология (уровень подготовки кадров высшей квалификации)"
         documentType:
-          type: string
-          example: "REGULATIONS"
+          $ref: '#/components/schemas/DocumentTypeEnum'
         specialtyCode:
-          type: string
-          example: "31.08.36"
+          $ref: '#/components/schemas/SpecialtyCodeEnum'
         effectiveDate:
           type: string
           format: date
@@ -312,12 +407,20 @@ components:
         value:
           type: string
           example: "REGULATIONS"
+        label:
+          type: string
+          description: Human-readable localized facet display name
+          example: "Положения и регламенты"
         count:
           type: integer
+          minimum: 0
           example: 12
 
     SearchFacetDistribution:
       type: object
+      required:
+        - documentTypes
+        - specialtyCodes
       properties:
         documentTypes:
           type: array
@@ -328,6 +431,10 @@ components:
           items:
             $ref: '#/components/schemas/SearchFacetCount'
         years:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchFacetCount'
+        statuses:
           type: array
           items:
             $ref: '#/components/schemas/SearchFacetCount'
@@ -347,12 +454,27 @@ components:
           $ref: '#/components/schemas/PaginationMeta'
         totalMatches:
           type: integer
+          minimum: 0
           example: 45
         facetDistribution:
           $ref: '#/components/schemas/SearchFacetDistribution'
         executionTimeMs:
           type: integer
+          minimum: 0
           example: 38
+
+    DocumentFacetsResponse:
+      type: object
+      required:
+        - facets
+        - totalDocuments
+      properties:
+        totalDocuments:
+          type: integer
+          minimum: 0
+          example: 1697
+        facets:
+          $ref: '#/components/schemas/SearchFacetDistribution'
 
     DocumentMetadataResponse:
       type: object
@@ -371,11 +493,9 @@ components:
           type: string
           example: "ФГОС ВО 31.08.36 Эпидемиология"
         documentType:
-          type: string
-          example: "REGULATIONS"
+          $ref: '#/components/schemas/DocumentTypeEnum'
         specialtyCode:
-          type: string
-          example: "31.08.36"
+          $ref: '#/components/schemas/SpecialtyCodeEnum'
         specialtyName:
           type: string
           example: "Эпидемиология"
@@ -462,24 +582,11 @@ components:
       type: object
       properties:
         specialtyCode:
-          type: string
-          enum:
-            - "31.08.36" # Эпидемиология
-            - "31.08.35" # Инфекционные болезни
-            - "31.08.19" # Педиатрия
-          example: "31.08.36"
+          $ref: '#/components/schemas/SpecialtyCodeEnum'
         documentTypes:
           type: array
           items:
-            type: string
-            enum:
-              - REGULATIONS
-              - RULES
-              - ORDERS
-              - INSTRUCTIONS
-              - COMMISSION_PROTOCOLS
-              - SYLLABUS_RPD
-              - GIA_PROGRAMS
+            $ref: '#/components/schemas/DocumentTypeEnum'
 
     ConsultationResponse:
       type: object
@@ -538,12 +645,7 @@ components:
         - name
       properties:
         code:
-          type: string
-          enum:
-            - "31.08.36"
-            - "31.08.35"
-            - "31.08.19"
-          example: "31.08.36"
+          $ref: '#/components/schemas/SpecialtyCodeEnum'
         name:
           type: string
           example: "Эпидемиология"
@@ -772,15 +874,15 @@ components:
         field:
           type: string
           description: JSON pointer or dot-path of invalid field
-          example: "gostFormatting.margins.leftMm"
+          example: "facets.specialtyCodes[0]"
         message:
           type: string
           description: Human-readable diagnostic description of validation failure
-          example: "Left margin must equal 30 mm per GOST R 7.0.97-2016"
+          example: "Specialty code '99.99.99' is not supported. Must be one of 31.08.36, 31.08.35, 31.08.19."
         code:
           type: string
           description: Programmatic error code
-          example: "INVALID_GOST_MARGIN"
+          example: "INVALID_SPECIALTY_CODE"
         rejectedValue:
           description: The invalid value submitted by client
 
@@ -793,10 +895,10 @@ components:
       properties:
         error:
           type: string
-          example: "Bad Request"
+          example: "Unprocessable Entity"
         message:
           type: string
-          example: "Validation failed for order generation parameters"
+          example: "Validation failed for search query payload"
         timestamp:
           type: string
           format: date-time
@@ -813,9 +915,9 @@ components:
       properties:
         code:
           type: string
-          example: "INTERNAL_GENERATION_ERROR"
+          example: "INTERNAL_SEARCH_ERROR"
         message:
           type: string
-          example: "An unexpected error occurred during document assembly"
+          example: "An unexpected error occurred during search execution"
         details:
           type: string
