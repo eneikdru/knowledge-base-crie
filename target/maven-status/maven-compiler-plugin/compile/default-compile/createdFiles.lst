@@ -1,0 +1,8 @@
+com/crie/corpus/CorpusStatus.class
+com/crie/corpus/CorpusCategory.class
+com/crie/corpus/CorpusSeedLoader$1.class
+com/crie/corpus/CorpusSeedLoader.class
+com/crie/corpus/CorpusParser.class
+com/crie/corpus/CorpusSeedLoader$IngestionResult.class
+com/crie/corpus/CorpusCatalogEntry.class
+com/crie/corpus/CorpusDocument.class
