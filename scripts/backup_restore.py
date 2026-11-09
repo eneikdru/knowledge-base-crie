@@ -148,7 +148,7 @@ def restore_database(snapshot_path: str, target_db_path: str, passphrase: str) -
 
     expected_payload_size = snapshot_data.get("payload_size")
     if expected_payload_size is not None and expected_payload_size != len(raw_bytes):
-        raise ValueError(f"Payload size mismatch: expected {expected_payload_size}, got {len(raw_bytes)}")
+        raise ValueError(f"Snapshot authentication failed: payload size mismatch: expected {expected_payload_size}, got {len(raw_bytes)}")
 
     # Atomic write to target destination
     os.makedirs(os.path.dirname(os.path.abspath(target_db_path)), exist_ok=True)

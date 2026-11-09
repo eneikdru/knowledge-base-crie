@@ -87,15 +87,18 @@ def _filter_docs(
     else:
         matched = []
         for doc in index.documents:
-            if effective_category and effective_category.lower() not in (doc.get("category", "") + " " + doc.get("doc_type", "")).lower():
+            doc_cat = getattr(doc, "category", "") or ""
+            doc_code = getattr(doc, "code", "") or ""
+            doc_rel = getattr(doc, "relative_path", "") or ""
+            if effective_category and effective_category.lower() not in doc_cat.lower():
                 continue
-            if effective_code and effective_code.replace(".", "") not in (doc.get("code", "") + " " + doc.get("relative_path", "")).replace(".", ""):
+            if effective_code and effective_code.replace(".", "") not in (doc_code + " " + doc_rel).replace(".", ""):
                 continue
             matched.append(doc)
         elapsed_ms = 0.5
 
     if doc_type and doc_type != effective_category:
-        matched = [d for d in matched if doc_type.lower() in (d.get("doc_type", "") + " " + d.get("category", "")).lower()]
+        matched = [d for d in matched if doc_type.lower() in (getattr(d, "category", "") or "").lower()]
 
     facets = _compute_facets(index, matched)
     paginated_results = matched[offset : offset + limit]
