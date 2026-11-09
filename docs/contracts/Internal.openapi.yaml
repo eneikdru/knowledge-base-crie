@@ -3,9 +3,9 @@ info:
   title: CRIE Institute AI Assistant & Document Generation API
   description: >-
     Internal API contract defining consultation endpoints with DeepSeek-grounded
-    normative knowledge and automated generation of official institute orders
-    formatted strictly to GOST R 7.0.97-2016 in .docx format.
-  version: 1.0.0
+    normative knowledge, fast search and document metadata retrieval, and automated
+    generation of official institute orders formatted strictly to GOST R 7.0.97-2016 in .docx format.
+  version: 1.1.0
 servers:
   - url: /api
     description: Internal API server
@@ -40,6 +40,76 @@ paths:
                 $ref: '#/components/schemas/ValidationErrorResponse'
         '500':
           description: Assistant processing error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /search:
+    post:
+      tags:
+        - Search
+      summary: Search normative documents, academic regulations, and corpus materials
+      description: >-
+        Executes high-performance lexical and semantic search across the normative catalog,
+        supporting facet filters (specialty code, document type, year) and highlight snippets.
+      operationId: searchDocuments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Matching document records with highlight snippets and facets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          description: Invalid search parameters or malformed facet filters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Search engine execution error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/{documentId}:
+    get:
+      tags:
+        - Documents
+      summary: Retrieve detailed document metadata and structural sections
+      description: Fetches full metadata, versioning, and section hierarchy for a specific catalog document.
+      operationId: getDocumentById
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          description: Unique identifier of the document
+          schema:
+            type: string
+          example: "FGOS-31.08.36-2021"
+      responses:
+        '200':
+          description: Detailed document metadata and content outline
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentDetailResponse'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Resource retrieval error
           content:
             application/json:
               schema:
@@ -173,6 +243,213 @@ components:
         excerpt:
           type: string
           example: "Объем программы ординатуры составляет 120 зачетных единиц..."
+
+    SearchFacetFilters:
+      type: object
+      properties:
+        specialtyCodes:
+          type: array
+          items:
+            type: string
+            enum:
+              - "31.08.36"
+              - "31.08.35"
+              - "31.08.19"
+          description: Filter by medical specialty codes
+        documentTypes:
+          type: array
+          items:
+            type: string
+            enum:
+              - REGULATIONS
+              - RULES
+              - ORDERS
+              - INSTRUCTIONS
+              - COMMISSION_PROTOCOLS
+              - SYLLABUS_RPD
+              - GIA_PROGRAMS
+          description: Filter by categories of institute normative acts
+        yearFrom:
+          type: integer
+          minimum: 2000
+          maximum: 2100
+          example: 2020
+        yearTo:
+          type: integer
+          minimum: 2000
+          maximum: 2100
+          example: 2026
+        onlyActive:
+          type: boolean
+          default: true
+          description: Restrict search results to currently in-force normative acts
+
+    SearchRequest:
+      type: object
+      required:
+        - terms
+      properties:
+        terms:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Search term or keyword phrase
+          example: "проведение ГИА государственная итоговая аттестация протокол"
+        facets:
+          $ref: '#/components/schemas/SearchFacetFilters'
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+          example: 20
+        offset:
+          type: integer
+          minimum: 0
+          default: 0
+          example: 0
+
+    SearchHighlightSnippet:
+      type: object
+      required:
+        - field
+        - snippet
+      properties:
+        field:
+          type: string
+          example: "content"
+        snippet:
+          type: string
+          example: "Порядок утверждения состава <em>государственной экзаменационной комиссии</em>..."
+
+    DocumentSummary:
+      type: object
+      required:
+        - documentId
+        - title
+        - documentType
+        - score
+        - highlights
+      properties:
+        documentId:
+          type: string
+          example: "ORD-GIA-2026"
+        title:
+          type: string
+          example: "Положение о государственной итоговой аттестации ординаторов"
+        documentType:
+          type: string
+          example: "REGULATIONS"
+        specialtyCode:
+          type: string
+          example: "31.08.36"
+        publicationDate:
+          type: string
+          format: date
+          example: "2024-09-01"
+        version:
+          type: string
+          example: "2.1"
+        score:
+          type: number
+          format: float
+          example: 0.94
+        highlights:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchHighlightSnippet'
+
+    SearchResponse:
+      type: object
+      required:
+        - total
+        - limit
+        - offset
+        - results
+      properties:
+        total:
+          type: integer
+          example: 42
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentSummary'
+        facetDistribution:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: integer
+          example:
+            documentTypes:
+              REGULATIONS: 12
+              ORDERS: 8
+            specialtyCodes:
+              "31.08.36": 20
+
+    DocumentSection:
+      type: object
+      required:
+        - sectionId
+        - heading
+        - content
+      properties:
+        sectionId:
+          type: string
+          example: "sec-1.2"
+        heading:
+          type: string
+          example: "1.2 Состав государственной экзаменационной комиссии"
+        content:
+          type: string
+          example: "В состав ГЭК входят ведущие специалисты научно-исследовательских институтов..."
+
+    DocumentDetailResponse:
+      type: object
+      required:
+        - documentId
+        - title
+        - documentType
+        - status
+        - effectiveDate
+        - sections
+      properties:
+        documentId:
+          type: string
+          example: "ORD-GIA-2026"
+        title:
+          type: string
+          example: "Положение о государственной итоговой аттестации ординаторов"
+        documentType:
+          type: string
+          example: "REGULATIONS"
+        specialtyCode:
+          type: string
+          example: "31.08.36"
+        status:
+          type: string
+          enum: [ACTIVE, SUPERSEDED, DRAFT, ARCHIVED]
+          example: ACTIVE
+        version:
+          type: string
+          example: "2.1"
+        effectiveDate:
+          type: string
+          format: date
+          example: "2024-09-01"
+        fileUrl:
+          type: string
+          example: "/api/normative/files/ORD-GIA-2026.pdf"
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentSection'
 
     OrderType:
       type: string
