@@ -45,19 +45,19 @@ class FilterResponse(BaseModel):
     facets: Optional[Dict[str, Dict[str, int]]] = None
 
 
-def _compute_facets(index: NormativeInvertedIndex, matched_docs: List[Dict[str, Any]]) -> Dict[str, Dict[str, int]]:
+def _compute_facets(index: NormativeInvertedIndex, matched_docs: List[Any]) -> Dict[str, Dict[str, int]]:
     types_count: Dict[str, int] = {}
     categories_count: Dict[str, int] = {}
     specialties_count: Dict[str, int] = {}
 
     for doc in matched_docs:
-        cat = doc.get("category") or "Other"
+        cat = (doc.get("category") if isinstance(doc, dict) else getattr(doc, "category", None)) or "Other"
         categories_count[cat] = categories_count.get(cat, 0) + 1
 
-        doc_type = doc.get("doc_type") or "Other"
+        doc_type = (doc.get("doc_type") if isinstance(doc, dict) else getattr(doc, "category", None)) or "Other"
         types_count[doc_type] = types_count.get(doc_type, 0) + 1
 
-        code = doc.get("code") or "General"
+        code = (doc.get("code") if isinstance(doc, dict) else getattr(doc, "code", None)) or "General"
         specialties_count[code] = specialties_count.get(code, 0) + 1
 
     return {
@@ -101,7 +101,7 @@ def _filter_docs(
         matched = [d for d in matched if doc_type.lower() in (getattr(d, "category", "") or "").lower()]
 
     facets = _compute_facets(index, matched)
-    paginated_results = matched[offset : offset + limit]
+    paginated_results = [d.to_dict() if hasattr(d, "to_dict") else d for d in matched[offset : offset + limit]]
 
     return {
         "total_hits": len(matched),
