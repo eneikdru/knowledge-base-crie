@@ -19,14 +19,89 @@
     }
   ];
 
-  // Order Generation State
-  let orderType = 'admission';
-  let studentName = '';
+  // Document Generator State
+  // Document classes according to GOST R 7.0.97-2016 and Brief item 3:
+  // a) UMS minutes, b) Director orders, c) Exam schedules, d) Curricula, e) Staffing certificate, f) Local normative acts
+  const docCategories = [
+    { id: 'ums_protocol', label: 'Протокол заседания УМС (повестка, кворум, решения)' },
+    { id: 'director_order', label: 'Приказ директора института (ГЭК, комиссии, зачисление)' },
+    { id: 'exam_schedule', label: 'Расписание экзаменационной сессии (25ОЭ-26ОП, аспирантура)' },
+    { id: 'curriculum', label: 'Сводный учебный план (ординатура 120 з.е. / аспирантура)' },
+    { id: 'staffing_cert', label: 'Справка о кадровом обеспечении и нагрузке ППС (>=70%)' },
+    { id: 'local_act', label: 'Локальный нормативный акт (положения и регламенты ОЦ)' }
+  ];
+
+  let selectedDocCategory = 'director_order';
+  let docNumber = 'ПР-2026/04';
+  let docDate = new Date().toISOString().split('T')[0];
+  let validationErrors = {};
+
+  // Subtype options for orders
+  const orderSubtypes = [
+    { id: 'admission', label: 'Приказ о зачислении в ординатуру' },
+    { id: 'gek_composition', label: 'Приказ об утверждении состава ГЭК и апелляционной комиссии' },
+    { id: 'cand_commission', label: 'Приказ о создании кандидатских экзаменационных комиссий' },
+    { id: 'admission_board', label: 'Приказ о составе приемной комиссии' },
+    { id: 'gia_admission', label: 'Приказ о допуске к ГИА (3 этапа)' }
+  ];
+  let orderSubtype = 'admission';
+  let recipientName = 'Иванов Иван Иванович';
   let specialtyCode = '31.08.36';
-  let orderNumber = 'ПР-2026/04';
-  let isGeneratingOrder = false;
-  let orderGenerationProgress = 0;
+
+  // UMS Protocol fields
+  let umsProtocolNum = '04/2026';
+  let umsChair = 'Горелов А.В.';
+  let umsSecretary = 'Романова Т.Е.';
+  let umsQuorumPresent = 18;
+  let umsQuorumTotal = 21;
+  let umsAgenda = 'Об утверждении рабочих программ дисциплин и готовности клинических баз к весеннему семестру 2026 г.';
+  let umsResolution = '1. Утвердить рабочие программы дисциплин кафедры эпидемиологии единогласно. 2. Назначить ответственных за контроль практической подготовки.';
+
+  // Exam Schedule fields
+  const examGroupOptions = [
+    { id: '25OE', label: '25ОЭ (Ординатура Эпидемиология, 1 год)' },
+    { id: '26OE', label: '26ОЭ (Ординатура Эпидемиология, 2 год)' },
+    { id: '25OI', label: '25ОИ (Инфекционные болезни, 1 год)' },
+    { id: '26OI', label: '26ОИ (Инфекционные болезни, 2 год)' },
+    { id: '25OP', label: '25ОП (Педиатрия, 1 год)' },
+    { id: '26OP', label: '26ОП (Педиатрия, 2 год)' },
+    { id: 'ASP', label: 'Аспирантура (все направленности)' }
+  ];
+  let selectedExamGroup = '25OE';
+  let examStartDate = '2026-01-25';
+  let examEndDate = '2026-02-25';
+  let examDiscipline = 'Эпидемиология инфекционных болезней и биобезопасность';
+
+  // Curriculum fields
+  let curriculumTrack = 'residency'; // 'residency' (120 ze) or 'postgrad' (180 ze)
+  let totalCredits = 120;
+  let totalAcademicHours = 4320;
+
+  // Staffing certificate fields
+  let deptName = 'Кафедра эпидемиологии и доказательной медицины';
+  let totalFacultyStaff = 14;
+  let docentOrDoctorStaff = 11;
+  $: facultyDegreePercent = totalFacultyStaff > 0 ? Math.round((docentOrDoctorStaff / totalFacultyStaff) * 100) : 0;
+  $: degreeRequirementMet = facultyDegreePercent >= 70;
+
+  // Local act fields
+  const localActTemplates = [
+    { id: 'p_gia', label: 'Положение о государственной итоговой аттестации (ГИА)' },
+    { id: 'p_ordinatura', label: 'Порядок организации и осуществления образовательной деятельности по программам ординатуры' },
+    { id: 'p_aspirantura', label: 'Положение о подготовке научных и научно-педагогических кадров в аспирантуре' },
+    { id: 'p_practice', label: 'Положение о практической подготовке обучающихся' },
+    { id: 'p_ums', label: 'Положение об Учебно-методическом совете (УМС)' },
+    { id: 'p_attestation', label: 'Порядок проведения текущего контроля успеваемости и промежуточной аттестации' },
+    { id: 'p_commission', label: 'Регламент работы апелляционной комиссии' },
+    { id: 'p_kafedra', label: 'Положение о кафедре Образовательного центра' },
+    { id: 'p_portfolio', label: 'Регламент формирования и учета электронного портфолио обучающегося' }
+  ];
+  let selectedLocalAct = 'p_gia';
+
+  let isGeneratingDoc = false;
+  let docGenerationProgress = 0;
   let generationSuccess = false;
+  let generatedDocFilename = '';
 
   // Workload Calculator State
   let departmentNorm = 800; // Standard midpoint of 750–900 h/year
@@ -59,12 +134,27 @@
     { code: '31.08.19', name: 'Педиатрия' }
   ];
 
-  const orderTypes = [
-    { id: 'admission', label: 'Приказ о зачислении в ординатуру' },
-    { id: 'gia_admission', label: 'Приказ о допуске к ГИА (3 этапа)' },
-    { id: 'stipend', label: 'Приказ о назначении государственной стипендии' },
-    { id: 'practice', label: 'Приказ о направлении на практическую подготовку' }
-  ];
+  function validateCurrentDocForm() {
+    const errs = {};
+    if (!docNumber.trim()) {
+      errs.docNumber = 'Обязательное поле: укажите номер документа';
+    }
+    if (selectedDocCategory === 'director_order' && !recipientName.trim()) {
+      errs.recipientName = 'Обязательное поле: укажите ФИО';
+    }
+    if (selectedDocCategory === 'ums_protocol') {
+      if (!umsAgenda.trim()) errs.umsAgenda = 'Укажите повестку дня';
+      if (!umsResolution.trim()) errs.umsResolution = 'Укажите постановление/решение УМС';
+    }
+    if (selectedDocCategory === 'exam_schedule' && !examDiscipline.trim()) {
+      errs.examDiscipline = 'Укажите наименование дисциплины';
+    }
+    if (selectedDocCategory === 'staffing_cert' && (!deptName.trim() || totalFacultyStaff <= 0)) {
+      errs.staffing = 'Укажите кафедру и корректное число ППС';
+    }
+    validationErrors = errs;
+    return Object.keys(errs).length === 0;
+  }
 
   function resetWorkloadToStandard() {
     lectureHours = 120;
@@ -140,37 +230,64 @@
     }
   }
 
-  async function generateOrder() {
-    if (isGeneratingOrder) return;
-    isGeneratingOrder = true;
-    orderGenerationProgress = 10;
+  async function triggerDocumentGeneration() {
+    if (!validateCurrentDocForm()) return;
+    if (isGeneratingDoc) return;
+
+    isGeneratingDoc = true;
+    docGenerationProgress = 15;
     generationSuccess = false;
 
-    const interval = setInterval(() => {
-      orderGenerationProgress += 25;
-      if (orderGenerationProgress >= 100) {
-        clearInterval(interval);
-        finishOrderGeneration();
+    const progressTimer = setInterval(() => {
+      docGenerationProgress += 25;
+      if (docGenerationProgress >= 100) {
+        clearInterval(progressTimer);
+        finishDocDownload();
       }
-    }, 250);
+    }, 200);
   }
 
-  function finishOrderGeneration() {
-    isGeneratingOrder = false;
+  function finishDocDownload() {
+    isGeneratingDoc = false;
     generationSuccess = true;
 
-    // Trigger automatic download of GOST-compliant .docx draft
-    const selectedOrderObj = orderTypes.find(t => t.id === orderType);
-    const docTitle = selectedOrderObj ? selectedOrderObj.label : 'Проект приказа';
-    const specObj = specialties.find(s => s.code === specialtyCode);
-    
-    const content = `ФЕДЕРАЛЬНОЕ БЮДЖЕТНОЕ УЧРЕЖДЕНИЕ НАУКИ\nЦЕНТРАЛЬНЫЙ НАУЧНО-ИССЛЕДОВАТЕЛЬСКИЙ ИНСТИТУТ ЭПИДЕМИОЛОГИИ\nФЕДЕРАЛЬНОЙ СЛУЖБЫ ПО НАДЗОРУ В СФЕРЕ ЗАЩИТЫ ПРАВ ПОТРЕБИТЕЛЕЙ И БЛАГОПОЛУЧИЯ ЧЕЛОВЕКА\n\nПРИКАЗ\n${orderNumber}\nг. Москва\n\n${docTitle.toUpperCase()}\n\nВ соответствии с ГОСТ Р 7.0.97-2016, образовательной программой высшего образования по специальности ${specialtyCode} (${specObj ? specObj.name : ''}):\nОбучающийся: ${studentName || 'Иванов И.И.'}\n\nДиректор института, академик РАН\nДата: ${new Date().toLocaleDateString('ru-RU')}`;
+    const headerText = `ФЕДЕРАЛЬНОЕ БЮДЖЕТНОЕ УЧРЕЖДЕНИЕ НАУКИ\nЦЕНТРАЛЬНЫЙ НАУЧНО-ИССЛЕДОВАТЕЛЬСКИЙ ИНСТИТУТ ЭПИДЕМИОЛОГИИ\nФЕДЕРАЛЬНОЙ СЛУЖБЫ ПО НАДЗОРУ В СФЕРЕ ЗАЩИТЫ ПРАВ ПОТРЕБИТЕЛЕЙ И БЛАГОПОЛУЧИЯ ЧЕЛОВЕКА\nОБРАЗОВАТЕЛЬНЫЙ ЦЕНТР\n(соответствие ГОСТ Р 7.0.97-2016, шрифт Times New Roman 14pt, поля: левое 30 мм, правое 15 мм)\n`;
 
-    const blob = new Blob([content], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    let bodyText = '';
+    let downloadFilename = `GOST_Document_${selectedDocCategory}.docx`;
+
+    if (selectedDocCategory === 'ums_protocol') {
+      downloadFilename = `Protokol_UMS_${umsProtocolNum.replace(/\//g, '-')}.docx`;
+      bodyText = `\nПРОТОКОЛ ЗАСЕДАНИЯ УЧЕБНО-МЕТОДИЧЕСКОГО СОВЕТА\n№ ${umsProtocolNum} от ${docDate}\nг. Москва\n\nПредседатель: академик РАН, д.м.н., проф. ${umsChair}\nСекретарь: ${umsSecretary}\nПрисутствовали: ${umsQuorumPresent} из ${umsQuorumTotal} членов УМС (Кворум соблюден).\n\nПОВЕСТКА ДНЯ:\n${umsAgenda}\n\nПОСТАНОВИЛИ:\n${umsResolution}\n\nПредседатель УМС: ___________________ / ${umsChair} /\nСекретарь УМС: ___________________ / ${umsSecretary} /`;
+    } else if (selectedDocCategory === 'director_order') {
+      const subtypeObj = orderSubtypes.find(o => o.id === orderSubtype);
+      const specObj = specialties.find(s => s.code === specialtyCode);
+      downloadFilename = `Prikaz_${orderSubtype}_${specialtyCode}.docx`;
+      bodyText = `\nПРИКАЗ ДИРЕКТОРА ИНСТИТУТА\n${docNumber} от ${docDate}\nг. Москва\n\n${subtypeObj ? subtypeObj.label.toUpperCase() : 'ОФИЦИАЛЬНЫЙ ПРИКАЗ'}\n\nВ соответствии с Федеральным законом «Об образовании в РФ» № 273-ФЗ, ГОСТ Р 7.0.97-2016 и программами подготовки по направлению ${specialtyCode} (${specObj ? specObj.name : ''}):\n1. Кандидат / Обучающийся: ${recipientName}\n2. Назначить ответственных за исполнение руководителей профильных структурных подразделений.\n\nДиректор института, академик РАН ___________________ / В.Г. Акимкин /`;
+    } else if (selectedDocCategory === 'exam_schedule') {
+      const groupObj = examGroupOptions.find(g => g.id === selectedExamGroup);
+      downloadFilename = `Raspisanie_Sessii_${selectedExamGroup}_2026.docx`;
+      bodyText = `\nРАСПИСАНИЕ ЗИМНЕЙ ЭКЗАМЕНАЦИОННОЙ СЕССИИ\nПериод: с ${examStartDate} по ${examEndDate}\nУчебная группа: ${groupObj ? groupObj.label : selectedExamGroup}\nДисциплина: ${examDiscipline}\nФорма контроля: Промежуточная аттестация (компьютерное тестирование + практические навыки + устное собеседование)\n\nУтверждено Директором ОЦ: ___________________`;
+    } else if (selectedDocCategory === 'curriculum') {
+      downloadFilename = `Uchebniy_Plan_${curriculumTrack}_${totalCredits}ze.docx`;
+      bodyText = `\nСВОДНЫЙ УЧЕБНЫЙ ПЛАН\nУровень образования: ${curriculumTrack === 'residency' ? 'Ординатура' : 'Аспирантура'}\nТрудоемкость: ${totalCredits} з.е. (${totalAcademicHours} академических часов)\nСрок освоения: 2 года (очная форма)\nСтруктура: Блок 1 (Дисциплины) - 42 з.е., Блок 2 (Практика) - 72 з.е., Блок 3 (ГИА) - 6 з.е.\nНормативный базис: ФГОС ВО 31.08.36 / ГОСТ Р 7.0.97-2016.`;
+    } else if (selectedDocCategory === 'staffing_cert') {
+      downloadFilename = `Spravka_Kadrovoe_Obespechenie_${facultyDegreePercent}pct.docx`;
+      bodyText = `\nСПРАВКА О КАДРОВОМ ОБЕСПЕЧЕНИИ И УЧЕБНОЙ НАГРУЗКЕ ППС\nПодразделение: ${deptName}\nОбщее число научно-педагогических работников: ${totalFacultyStaff}\nЧисло преподавателей с учеными степенями (д.м.н., к.м.н., доценты, профессора): ${docentOrDoctorStaff}\nОстепененность кафедры: ${facultyDegreePercent}% (Норматив ФГОС ВО: >=70% - ${degreeRequirementMet ? 'СОБЛЮДЕН' : 'НЕ СОБЛЮДЕН'})\nСредняя годовая нагрузка на 1.0 ставку ППС: 800 часов.`;
+    } else if (selectedDocCategory === 'local_act') {
+      const actObj = localActTemplates.find(a => a.id === selectedLocalAct);
+      downloadFilename = `LNA_${selectedLocalAct}.docx`;
+      bodyText = `\nЛОКАЛЬНЫЙ НОРМАТИВНЫЙ АКТ ОБРАЗОВАТЕЛЬНОГО ЦЕНТРА\nРег. № ${docNumber} от ${docDate}\n\n${actObj ? actObj.label.toUpperCase() : 'ЛОКАЛЬНЫЙ АКТ'}\n\n1. ОБЩИЕ ПОЛОЖЕНИЯ\n1.1. Настоящий локальный нормативный акт разработан в соответствии с Федеральным законом от 29.12.2012 № 273-ФЗ «Об образовании в Российской Федерации», приказами Роспотребнадзора и ГОСТ Р 7.0.97-2016.\n1.2. Действие настоящего документа распространяется на всех работников, профессорско-преподавательский состав, ординаторов и аспирантов института.`;
+    }
+
+    const fullContent = `${headerText}\n${bodyText}\n\nДокумент сгенерирован автоматически системой ЦНИИ Эпидемиологии: ${new Date().toLocaleString('ru-RU')}`;
+
+    generatedDocFilename = downloadFilename;
+    const blob = new Blob([fullContent], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Prikaz_${orderType}_${specialtyCode}.docx`;
+    a.download = downloadFilename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -268,95 +385,297 @@
     </section>
   {/if}
 
-  <!-- Order Generation View -->
+  <!-- Official Document Generator View (Slice 547b86fb) -->
   {#if activeTab === 'orders'}
     <section
       id="tabpanel-orders"
       role="tabpanel"
       aria-labelledby="tab-btn-orders"
       class="orders-section"
-      aria-label="Генерация проектов приказов"
+      aria-label="Генератор официальных документов"
     >
       <div class="order-card">
-        <h2 class="card-title">Формирование проекта приказа по ГОСТ Р 7.0.97-2016</h2>
-        <p class="card-desc">
-          Генерация документа Word (.docx) с реквизитами Роспотребнадзора, полями 30/15 мм и шрифтом Times New Roman 14pt.
-        </p>
+        <div class="generator-header">
+          <h2 class="card-title">Генератор официальных документов ОЦ по ГОСТ Р 7.0.97-2016</h2>
+          <p class="card-desc">
+            Прямой экспорт и скачивание стандартизированных .DOCX файлов в один клик: протоколы УМС, приказы директора института, экзаменационные сессии, учебные планы, кадровые справки и локальные акты.
+          </p>
+        </div>
 
-        <form class="order-form" on:submit|preventDefault={generateOrder}>
+        <form class="order-form" on:submit|preventDefault={triggerDocumentGeneration} novalidate>
+          <!-- Document Class Selection -->
           <div class="form-group">
-            <label for="order-type">Тип приказа</label>
-            <select id="order-type" bind:value={orderType} class="form-control" aria-required="true">
-              {#each orderTypes as type}
-                <option value={type.id}>{type.label}</option>
+            <label for="doc-category" class="field-label">Класс официального документа <span class="required-asterisk">*</span></label>
+            <select
+              id="doc-category"
+              bind:value={selectedDocCategory}
+              class="form-control form-control-primary"
+              aria-required="true"
+            >
+              {#each docCategories as cat}
+                <option value={cat.id}>{cat.label}</option>
               {/each}
             </select>
           </div>
 
+          <!-- Shared standard header fields -->
           <div class="form-row">
             <div class="form-group col">
-              <label for="order-spec">Специальность</label>
-              <select id="order-spec" bind:value={specialtyCode} class="form-control" aria-required="true">
-                {#each specialties as spec}
-                  <option value={spec.code}>{spec.code} {spec.name}</option>
-                {/each}
-              </select>
+              <label for="doc-num" class="field-label">Регистрационный номер документа <span class="required-asterisk">*</span></label>
+              <input
+                id="doc-num"
+                type="text"
+                bind:value={docNumber}
+                class="form-control {validationErrors.docNumber ? 'input-error' : ''}"
+                placeholder="ПР-2026/04"
+                aria-required="true"
+                aria-invalid={!!validationErrors.docNumber}
+                aria-describedby={validationErrors.docNumber ? 'doc-num-error' : undefined}
+              />
+              {#if validationErrors.docNumber}
+                <span id="doc-num-error" class="error-msg" role="alert">{validationErrors.docNumber}</span>
+              {/if}
             </div>
 
             <div class="form-group col">
-              <label for="order-num">Номер приказа</label>
+              <label for="doc-date" class="field-label">Дата утверждения / составления</label>
               <input
-                id="order-num"
-                type="text"
-                bind:value={orderNumber}
+                id="doc-date"
+                type="date"
+                bind:value={docDate}
                 class="form-control"
-                placeholder="ПР-2026/04"
                 aria-required="true"
               />
             </div>
           </div>
 
-          <div class="form-group">
-            <label for="order-student">ФИО обучающегося / сотрудников</label>
-            <input
-              id="order-student"
-              type="text"
-              bind:value={studentName}
-              class="form-control"
-              placeholder="Иванов Иван Иванович"
-              aria-describedby="order-student-help"
-            />
-            <small id="order-student-help" class="help-text">В соответствии с 152-ФЗ данные обрабатываются только локально без передачи в сторонние сервисы.</small>
-          </div>
+          <!-- Dynamic Form Section: A) UMS PROTOCOL -->
+          {#if selectedDocCategory === 'ums_protocol'}
+            <fieldset class="dynamic-fieldset">
+              <legend class="fieldset-legend">Параметры протокола заседания УМС</legend>
+              <div class="form-row">
+                <div class="form-group col">
+                  <label for="ums-chair" class="field-label">Председатель УМС</label>
+                  <input id="ums-chair" type="text" bind:value={umsChair} class="form-control" />
+                </div>
+                <div class="form-group col">
+                  <label for="ums-secretary" class="field-label">Секретарь заседания</label>
+                  <input id="ums-secretary" type="text" bind:value={umsSecretary} class="form-control" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group col">
+                  <label for="ums-quorum-p" class="field-label">Присутствуют членов УМС</label>
+                  <input id="ums-quorum-p" type="number" min="1" max="50" bind:value={umsQuorumPresent} class="form-control" />
+                </div>
+                <div class="form-group col">
+                  <label for="ums-quorum-t" class="field-label">Общий состав совета</label>
+                  <input id="ums-quorum-t" type="number" min="1" max="50" bind:value={umsQuorumTotal} class="form-control" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="ums-agenda" class="field-label">Повестка дня заседания <span class="required-asterisk">*</span></label>
+                <textarea id="ums-agenda" rows="2" bind:value={umsAgenda} class="form-control {validationErrors.umsAgenda ? 'input-error' : ''}"></textarea>
+                {#if validationErrors.umsAgenda}
+                  <span class="error-msg" role="alert">{validationErrors.umsAgenda}</span>
+                {/if}
+              </div>
+              <div class="form-group">
+                <label for="ums-resolution" class="field-label">Постановили (проект решения) <span class="required-asterisk">*</span></label>
+                <textarea id="ums-resolution" rows="3" bind:value={umsResolution} class="form-control {validationErrors.umsResolution ? 'input-error' : ''}"></textarea>
+                {#if validationErrors.umsResolution}
+                  <span class="error-msg" role="alert">{validationErrors.umsResolution}</span>
+                {/if}
+              </div>
+            </fieldset>
+          {/if}
 
-          {#if isGeneratingOrder}
-            <div class="progress-wrapper" role="progressbar" aria-valuenow={orderGenerationProgress} aria-valuemin="0" aria-valuemax="100">
+          <!-- Dynamic Form Section: B) DIRECTOR ORDER -->
+          {#if selectedDocCategory === 'director_order'}
+            <fieldset class="dynamic-fieldset">
+              <legend class="fieldset-legend">Параметры приказа директора института</legend>
+              <div class="form-row">
+                <div class="form-group col">
+                  <label for="order-subtype" class="field-label">Разновидность приказа</label>
+                  <select id="order-subtype" bind:value={orderSubtype} class="form-control">
+                    {#each orderSubtypes as st}
+                      <option value={st.id}>{st.label}</option>
+                    {/each}
+                  </select>
+                </div>
+                <div class="form-group col">
+                  <label for="order-spec" class="field-label">Специальность / Профиль</label>
+                  <select id="order-spec" bind:value={specialtyCode} class="form-control">
+                    {#each specialties as spec}
+                      <option value={spec.code}>{spec.code} {spec.name}</option>
+                    {/each}
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="recipient-name" class="field-label">ФИО обучающегося / членов комиссии <span class="required-asterisk">*</span></label>
+                <input
+                  id="recipient-name"
+                  type="text"
+                  bind:value={recipientName}
+                  class="form-control {validationErrors.recipientName ? 'input-error' : ''}"
+                  placeholder="Иванов Иван Иванович"
+                  aria-describedby="recipient-name-help"
+                />
+                <small id="recipient-name-help" class="help-text">В соответствии с 152-ФЗ данные обрабатываются строго на стороне клиента без передачи во внешние сети.</small>
+                {#if validationErrors.recipientName}
+                  <span class="error-msg" role="alert">{validationErrors.recipientName}</span>
+                {/if}
+              </div>
+            </fieldset>
+          {/if}
+
+          <!-- Dynamic Form Section: C) EXAM SCHEDULE -->
+          {#if selectedDocCategory === 'exam_schedule'}
+            <fieldset class="dynamic-fieldset">
+              <legend class="fieldset-legend">Параметры экзаменационной сессии</legend>
+              <div class="form-row">
+                <div class="form-group col">
+                  <label for="exam-group" class="field-label">Учебная группа ординатуры / аспирантуры</label>
+                  <select id="exam-group" bind:value={selectedExamGroup} class="form-control">
+                    {#each examGroupOptions as eg}
+                      <option value={eg.id}>{eg.label}</option>
+                    {/each}
+                  </select>
+                </div>
+                <div class="form-group col">
+                  <label for="exam-discipline" class="field-label">Наименование дисциплины <span class="required-asterisk">*</span></label>
+                  <input id="exam-discipline" type="text" bind:value={examDiscipline} class="form-control {validationErrors.examDiscipline ? 'input-error' : ''}" />
+                  {#if validationErrors.examDiscipline}
+                    <span class="error-msg" role="alert">{validationErrors.examDiscipline}</span>
+                  {/if}
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group col">
+                  <label for="exam-start" class="field-label">Начало сессии (по регламенту с 25.01)</label>
+                  <input id="exam-start" type="date" bind:value={examStartDate} class="form-control" />
+                </div>
+                <div class="form-group col">
+                  <label for="exam-end" class="field-label">Окончание сессии (по регламенту до 25.02)</label>
+                  <input id="exam-end" type="date" bind:value={examEndDate} class="form-control" />
+                </div>
+              </div>
+            </fieldset>
+          {/if}
+
+          <!-- Dynamic Form Section: D) CURRICULUM -->
+          {#if selectedDocCategory === 'curriculum'}
+            <fieldset class="dynamic-fieldset">
+              <legend class="fieldset-legend">Параметры сводного учебного плана</legend>
+              <div class="form-row">
+                <div class="form-group col">
+                  <label for="curr-track" class="field-label">Уровень образовательной программы</label>
+                  <select id="curr-track" bind:value={curriculumTrack} on:change={() => {
+                    if (curriculumTrack === 'residency') {
+                      totalCredits = 120;
+                      totalAcademicHours = 4320;
+                    } else {
+                      totalCredits = 180;
+                      totalAcademicHours = 6480;
+                    }
+                  }} class="form-control">
+                    <option value="residency">Ординатура (120 з.е. / 4320 ч.)</option>
+                    <option value="postgrad">Аспирантура (180 з.е. / 6480 ч.)</option>
+                  </select>
+                </div>
+                <div class="form-group col">
+                  <label for="curr-credits" class="field-label">Трудоемкость (з.е.)</label>
+                  <input id="curr-credits" type="number" bind:value={totalCredits} class="form-control" readonly />
+                </div>
+                <div class="form-group col">
+                  <label for="curr-hours" class="field-label">Всего академических часов</label>
+                  <input id="curr-hours" type="number" bind:value={totalAcademicHours} class="form-control" readonly />
+                </div>
+              </div>
+            </fieldset>
+          {/if}
+
+          <!-- Dynamic Form Section: E) STAFFING CERTIFICATE -->
+          {#if selectedDocCategory === 'staffing_cert'}
+            <fieldset class="dynamic-fieldset">
+              <legend class="fieldset-legend">Кадровое обеспечение и остепененность кафедры</legend>
+              <div class="form-group">
+                <label for="dept-title" class="field-label">Наименование кафедры <span class="required-asterisk">*</span></label>
+                <input id="dept-title" type="text" bind:value={deptName} class="form-control" />
+              </div>
+              <div class="form-row">
+                <div class="form-group col">
+                  <label for="total-staff" class="field-label">Всего преподавателей (ППС)</label>
+                  <input id="total-staff" type="number" min="1" max="100" bind:value={totalFacultyStaff} class="form-control" />
+                </div>
+                <div class="form-group col">
+                  <label for="docent-staff" class="field-label">С учеными степенями (д.м.н., к.м.н.)</label>
+                  <input id="docent-staff" type="number" min="0" max={totalFacultyStaff} bind:value={docentOrDoctorStaff} class="form-control" />
+                </div>
+              </div>
+              <div class="staffing-status-box {degreeRequirementMet ? 'status-ok' : 'status-warning'}">
+                <span class="status-indicator">{degreeRequirementMet ? '✓' : '⚠️'}</span>
+                <div>
+                  <strong>Остепененность кафедры: {facultyDegreePercent}%</strong>
+                  <span>(Квалификационное требование ФГОС ВО: не менее 70% — {degreeRequirementMet ? 'выполнено' : 'внимание: ниже порога'})</span>
+                </div>
+              </div>
+            </fieldset>
+          {/if}
+
+          <!-- Dynamic Form Section: F) LOCAL ACT -->
+          {#if selectedDocCategory === 'local_act'}
+            <fieldset class="dynamic-fieldset">
+              <legend class="fieldset-legend">Локальные нормативные акты института (9 регламентов ОЦ)</legend>
+              <div class="form-group">
+                <label for="local-act-select" class="field-label">Выберите типовой локальный нормативный акт</label>
+                <select id="local-act-select" bind:value={selectedLocalAct} class="form-control">
+                  {#each localActTemplates as act}
+                    <option value={act.id}>{act.label}</option>
+                  {/each}
+                </select>
+              </div>
+            </fieldset>
+          {/if}
+
+          <!-- Progress and feedback indicators conforming to WCAG 2.1 AA -->
+          {#if isGeneratingDoc}
+            <div class="progress-wrapper" role="progressbar" aria-valuenow={docGenerationProgress} aria-valuemin="0" aria-valuemax="100">
               <div class="progress-label">
-                <span>Формирование .docx по стандарту ГОСТ...</span>
-                <span>{orderGenerationProgress}%</span>
+                <span>Формирование документа по ГОСТ Р 7.0.97-2016...</span>
+                <span>{docGenerationProgress}%</span>
               </div>
               <div class="progress-bar-track">
-                <div
-                  class="progress-bar-fill"
-                  style="width: {orderGenerationProgress}%"
-                ></div>
+                <div class="progress-bar-fill" style="width: {docGenerationProgress}%"></div>
               </div>
             </div>
           {/if}
 
           {#if generationSuccess}
             <div class="success-banner" role="status" aria-live="polite">
-              ✓ Проект приказа успешно сформирован и загружен на ваше устройство.
+              <span class="success-check">✓</span>
+              <div>
+                <strong>Документ успешно сгенерирован и загружен:</strong>
+                <span class="filename-tag">{generatedDocFilename}</span>
+              </div>
             </div>
           {/if}
 
+          <!-- One-click Download Button -->
           <button
             type="submit"
-            class="btn-generate"
-            disabled={isGeneratingOrder}
-            aria-label="Сформировать и скачать проект приказа в формате docx"
+            class="btn-download-docx"
+            disabled={isGeneratingDoc}
+            aria-label="Сгенерировать и скачать официальный документ в формате DOCX"
           >
-            {isGeneratingOrder ? 'Формирование...' : 'Сформировать приказ (.docx)'}
+            {#if isGeneratingDoc}
+              <span class="spinner-icon" aria-hidden="true">⏳</span>
+              <span>Формирование DOCX...</span>
+            {:else}
+              <span class="download-icon" aria-hidden="true">📄</span>
+              <span>Скачать .DOCX в один клик</span>
+            {/if}
           </button>
         </form>
       </div>
@@ -767,7 +1086,7 @@
     cursor: not-allowed;
   }
 
-  /* Orders View */
+  /* Document Generator Section */
   .orders-section {
     flex: 1;
   }
@@ -779,17 +1098,22 @@
     padding: 1.5rem;
   }
 
+  .generator-header {
+    margin-bottom: 1.5rem;
+  }
+
   .card-title {
     font-size: 1.125rem;
     font-weight: 700;
-    margin: 0 0 0.25rem 0;
+    margin: 0 0 0.35rem 0;
     color: #0f172a;
   }
 
   .card-desc {
     font-size: 0.875rem;
     color: #334155;
-    margin: 0 0 1.5rem 0;
+    margin: 0;
+    line-height: 1.4;
   }
 
   .order-form {
@@ -820,15 +1144,26 @@
     flex: 1;
   }
 
-  .form-group label {
+  .field-label {
     font-size: 0.875rem;
     font-weight: 600;
     color: #1e293b;
   }
 
+  .required-asterisk {
+    color: #b91c1c;
+    font-weight: 700;
+  }
+
   .help-text {
     font-size: 0.75rem;
     color: #475569;
+  }
+
+  .error-msg {
+    font-size: 0.75rem;
+    color: #b91c1c;
+    font-weight: 600;
   }
 
   .form-control {
@@ -838,6 +1173,18 @@
     font-size: 0.875rem;
     font-family: inherit;
     color: #0f172a;
+    background-color: #ffffff;
+  }
+
+  .form-control-primary {
+    border-color: #0284c7;
+    background-color: #f0f9ff;
+    font-weight: 600;
+  }
+
+  .form-control.input-error {
+    border-color: #b91c1c;
+    background-color: #fef2f2;
   }
 
   .form-control-sm {
@@ -848,6 +1195,49 @@
     outline: 2px solid #0369a1;
     outline-offset: 1px;
     border-color: #0369a1;
+  }
+
+  .dynamic-fieldset {
+    border: 1px solid #cbd5e1;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    background-color: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 0;
+  }
+
+  .fieldset-legend {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #0369a1;
+    padding: 0 0.5rem;
+  }
+
+  .staffing-status-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+  }
+
+  .staffing-status-box.status-ok {
+    background-color: #dcfce7;
+    border: 1px solid #16a34a;
+    color: #14532d;
+  }
+
+  .staffing-status-box.status-warning {
+    background-color: #fef3c7;
+    border: 1px solid #d97706;
+    color: #92400e;
+  }
+
+  .status-indicator {
+    font-size: 1.25rem;
   }
 
   .progress-wrapper {
@@ -876,41 +1266,72 @@
   .progress-bar-fill {
     height: 100%;
     background: #0369a1;
-    transition: width 0.25s ease-out;
+    transition: width 0.2s ease-out;
   }
 
   .success-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
     background: #f0fdf4;
     border: 1px solid #16a34a;
     color: #14532d;
     padding: 0.75rem 1rem;
     border-radius: 0.375rem;
     font-size: 0.875rem;
-    font-weight: 600;
   }
 
-  .btn-generate {
+  .success-check {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #15803d;
+  }
+
+  .filename-tag {
+    display: inline-block;
+    margin-left: 0.35rem;
+    font-family: monospace;
+    background: #dcfce7;
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.25rem;
+    color: #166534;
+  }
+
+  .btn-download-docx {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     align-self: flex-start;
-    padding: 0.625rem 1.25rem;
+    padding: 0.75rem 1.5rem;
     background: #15803d;
     color: #ffffff;
     border: none;
     border-radius: 0.375rem;
-    font-weight: 600;
-    font-size: 0.875rem;
+    font-weight: 700;
+    font-size: 0.9375rem;
     cursor: pointer;
-    transition: background 0.2s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: background 0.2s, transform 0.1s;
   }
 
-  .btn-generate:hover:not(:disabled),
-  .btn-generate:focus-visible {
+  .btn-download-docx:hover:not(:disabled),
+  .btn-download-docx:focus-visible {
     background: #166534;
     outline: 2px solid #15803d;
+    outline-offset: 2px;
   }
 
-  .btn-generate:disabled {
+  .btn-download-docx:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .btn-download-docx:disabled {
     background: #94a3b8;
     cursor: not-allowed;
+  }
+
+  .download-icon {
+    font-size: 1.1rem;
   }
 
   /* Workload Calculator Section */
