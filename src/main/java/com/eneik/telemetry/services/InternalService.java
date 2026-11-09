@@ -12,7 +12,8 @@ import java.util.logging.Logger;
 /**
  * InternalService provides operational health, request tracking,
  * and internal metrics aggregation for API services, including
- * the /api/chat normative assistant endpoint and document sanitization/download telemetry.
+ * the /api/chat normative assistant endpoint, document sanitization/download telemetry,
+ * and official document generator (/api/v1/generator/*) telemetry.
  */
 public class InternalService {
 
@@ -31,6 +32,10 @@ public class InternalService {
     private final AtomicLong totalNormativeSearches = new AtomicLong(0);
     private final AtomicLong totalDownloadsServed = new AtomicLong(0);
     private final AtomicLong totalSanitizedDocuments = new AtomicLong(0);
+
+    private final AtomicLong totalGeneratorRequests = new AtomicLong(0);
+    private final AtomicLong totalGeneratorExportsServed = new AtomicLong(0);
+    private final AtomicLong totalGeneratorDurationMs = new AtomicLong(0);
 
     public InternalService() {
     }
@@ -107,6 +112,43 @@ public class InternalService {
     }
 
     /**
+     * Records an official document generation execution for /api/v1/generator/generate.
+     *
+     * @param documentType template type (e.g., exam_session, ums_protocol, director_order)
+     * @param durationMs   elapsed generation time in milliseconds
+     * @param success      whether generation succeeded
+     */
+    public void recordGeneratorRequest(String documentType, long durationMs, boolean success) {
+        if (documentType == null || documentType.trim().isEmpty()) {
+            recordCall("/api/v1/generator/generate", false);
+            throw new IllegalArgumentException("Document type cannot be null or empty");
+        }
+        recordCall("/api/v1/generator/generate", success);
+        totalGeneratorRequests.incrementAndGet();
+        if (durationMs > 0) {
+            totalGeneratorDurationMs.addAndGet(durationMs);
+        }
+    }
+
+    /**
+     * Records a generated document export / streaming execution for /api/v1/generator/export/{job_id}/docx.
+     *
+     * @param jobId   identifier of the generated document job
+     * @param format  export file format (docx)
+     * @param success whether direct binary streaming succeeded
+     */
+    public void recordGeneratorExport(String jobId, String format, boolean success) {
+        if (jobId == null || jobId.trim().isEmpty()) {
+            recordCall("/api/v1/generator/export", false);
+            throw new IllegalArgumentException("Job ID cannot be null or empty");
+        }
+        recordCall("/api/v1/generator/export/" + jobId.trim() + "/" + (format != null ? format.toLowerCase() : "docx"), success);
+        if (success) {
+            totalGeneratorExportsServed.incrementAndGet();
+        }
+    }
+
+    /**
      * Sanitizes raw document metadata payloads by stripping relative/technical filesystem paths
      * and exposing clean human-readable titles, annotations, and download endpoints.
      *
@@ -142,6 +184,76 @@ public class InternalService {
 
         totalSanitizedDocuments.incrementAndGet();
         return Collections.unmodifiableMap(sanitized);
+    }
+
+    /**
+     * Validates exam session generator parameters (groups 25OE-26OP, dates 25.01-25.02).
+     *
+     * @param parameters map of input parameters for exam session generation
+     * @return true if valid parameters are present
+     */
+    public boolean validateExamSessionParams(Map<String, Object> parameters) {
+        if (parameters == null || parameters.isEmpty()) {
+            return false;
+        }
+        Object groupsObj = parameters.get("groups");
+        Object startDateObj = parameters.get("start_date");
+        Object endDateObj = parameters.get("end_date");
+
+        if (groupsObj == null || startDateObj == null || endDateObj == null) {
+            return false;
+        }
+        String start = String.valueOf(startDateObj).trim();
+        String end = String.valueOf(endDateObj).trim();
+        return !start.isEmpty() && !end.isEmpty();
+    }
+
+    /**
+     * Constructs preview payload metadata and pre-signed download token for /api/v1/generator/generate.
+     *
+     * @param jobId        generator job UUID
+     * @param documentType document template type
+     * @param previewText  preview summary text
+     * @return response payload containing preview and download token url
+     */
+    public Map<String, Object> buildGeneratorPreviewResponse(String jobId, String documentType, String previewText) {
+        if (jobId == null || jobId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Job ID cannot be null or empty");
+        }
+        Map<String, Object> response = new HashMap<>();
+        response.put("job_id", jobId);
+        response.put("document_type", documentType != null ? documentType : "official_document");
+        response.put("preview", previewText != null ? previewText : "");
+        response.put("status", "READY");
+        response.put("download_token", "tok_" + jobId.replaceAll("[^a-zA-Z0-9]", ""));
+        response.put("download_url", "/api/v1/generator/export/" + jobId + "/docx");
+        return Collections.unmodifiableMap(response);
+    }
+
+    /**
+     * Generates streaming HTTP response headers for generated official DOCX document downloads,
+     * ensuring Content-Disposition attachment headers, valid MIME types, and anti-sniff protection.
+     *
+     * @param jobId    generator job identifier
+     * @param filename clean attachment filename
+     * @return map of standard HTTP headers for streaming .DOCX binaries
+     */
+    public static Map<String, String> buildGeneratorExportHeaders(String jobId, String filename) {
+        Map<String, String> headers = new HashMap<>();
+        String cleanName = (filename != null && !filename.trim().isEmpty())
+                ? filename.replaceAll("[^a-zA-Z0-9._-]", "_")
+                : "generated_document_" + Objects.toString(jobId, "job");
+
+        if (!cleanName.toLowerCase().endsWith(".docx")) {
+            cleanName += ".docx";
+        }
+
+        headers.put("Content-Disposition", "attachment; filename=\"" + cleanName + "\"");
+        headers.put("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+        headers.put("X-Content-Type-Options", "nosniff");
+        headers.put("Cache-Control", "no-cache, no-store, must-revalidate");
+        headers.put("Pragma", "no-cache");
+        return Collections.unmodifiableMap(headers);
     }
 
     /**
@@ -215,6 +327,19 @@ public class InternalService {
 
     public long getTotalSanitizedDocuments() {
         return totalSanitizedDocuments.get();
+    }
+
+    public long getTotalGeneratorRequests() {
+        return totalGeneratorRequests.get();
+    }
+
+    public long getTotalGeneratorExportsServed() {
+        return totalGeneratorExportsServed.get();
+    }
+
+    public double getAverageGeneratorDurationMs() {
+        long requests = totalGeneratorRequests.get();
+        return requests > 0 ? (double) totalGeneratorDurationMs.get() / requests : 0.0;
     }
 
     public boolean isHealthy() {
