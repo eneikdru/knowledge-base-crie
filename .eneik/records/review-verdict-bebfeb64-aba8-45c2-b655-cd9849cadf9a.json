@@ -1,1 +1,0 @@
-{"verdicts": [{"sourceIndex": 0, "verdict": "approve", "criticalReason": "", "concerns": [{"text": "Ensure continuous visual regression and contrast ratio checks on all viewports down to 375px", "severity": "low"}]}]}
