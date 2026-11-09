@@ -1,0 +1,294 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "e59b167a-75af-4f81-b7cc-01c00c7b02fd",
+      "title": "Standalone Responsive Knowledge Base & Fast Search Tool",
+      "jtbd": "When an educational resident, researcher, or faculty member accesses the CRIE knowledge base on desktop or mobile, I want a fast, thoughtful, self-contained search and document exploration interface without third-party integration friction, so that I can immediately find and inspect clinical, academic, and normative resources in seconds.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "Sub-50ms search latency on 1,697 documents with zero dropped queries",
+      "tocConstraintRef": "In-memory inverted index and faceted filter throughput",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Index and catalog all 1,697 institutional documents including RPD 2026/27, FOS, RUP curricula, GIA programs, and dissertation council regulations.",
+        "R2: Sub-millisecond full-text and token search over discipline titles, specialty codes, and metadata keywords.",
+        "R3: One-click faceted filtering by document type (Regulations, Orders, Procedures, Rules, Instructions, Protocols of PK, GEK, UMS, attestations) and by specialty (31.08.36 Epidemiology, 31.08.35 Infectious Diseases, 31.08.19 Pediatrics).",
+        "R4: Universal responsive mobile-first UI with bottom navigation bar (Assistant, Knowledge Base, Orders, Workload) and PWA manifest for home-screen installation."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Define Search and Document Facet REST Contract",
+          "roleTag": "BARCAN-TAG-12",
+          "jtbd": "When implementing shared communication contracts for this epic, I want OpenAPI specifications for search and faceted querying, so that frontend and backend developers build against consistent schema interfaces.",
+          "acceptanceCriteria": "Given the OpenAPI 3.1 specification for `/api/search` and `/api/documents/facets`,\nWhen validating request schema with specialty codes ('31.08.36', '31.08.35', '31.08.19') and document types,\nThen responses match strict JSON schema with pagination, highlighted fragments, and facet counts.\nGiven an invalid query payload,\nWhen sent to `/api/search`,\nThen the contract returns 422 Unprocessable Entity with deterministic validation error structures.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "API contract ambiguity between web client and Python service",
+          "sixSigmaMetric": "100% schema validation compliance in automated contract linters",
+          "hasUi": false,
+          "requirementRefs": ["R2", "R3"]
+        },
+        {
+          "title": "Implement High-Performance Inverted Index and Filter Engine",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing storage and query indexing for this epic, I want an in-memory tokenized index of the 1,697 normative documents, so that queries execute in under 10 milliseconds without external search daemons.",
+          "acceptanceCriteria": "Given the catalog file `data/normative/corpus_catalog.json` containing 1,697 documents,\nWhen the indexing service boots,\nThen all records are parsed, tokenized, and indexed by discipline, code, and category in memory.\nGiven search queries with Russian morphology and abbreviations (e.g., 'РПД', 'ГИА', 'ГЭК'),\nWhen querying the index,\nThen search results return accurate matches with snippet extraction in under 10ms.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Memory footprint and tokenization efficiency on startup",
+          "sixSigmaMetric": "Query execution time < 10ms for 99th percentile across 1,697 records",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        },
+        {
+          "title": "Implement Fast Search and Faceting REST Endpoints",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing backend endpoints for this epic, I want lightweight FastAPI routes for searching and filtering the normative catalog, so that the mobile and desktop web interface can query resources instantly.",
+          "acceptanceCriteria": "Given a running FastAPI application,\nWhen a GET request is received at `/api/search?q=Педиатрия&type=Положения&specialty=31.08.19`,\nThen the endpoint returns status 200 with matching documents and filter facet counts.\nGiven an empty search query with only facet filters,\nWhen the client calls `/api/documents/filter`,\nThen all documents matching the selected specialty and category are returned without error.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "FastAPI handler serialization latency",
+          "sixSigmaMetric": "Zero serialization errors and latency < 25ms end-to-end",
+          "hasUi": false,
+          "requirementRefs": ["R2", "R3"]
+        },
+        {
+          "title": "Implement Responsive Mobile-First Search and Bottom Nav UI",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing client-side presentation for this epic, I want an accessible responsive search interface with one-click facet chips, bottom navigation, and PWA manifest, so that residents and faculty enjoy instant mobile and desktop discovery.",
+          "acceptanceCriteria": "Given a user on a mobile viewport (375px width),\nWhen viewing the application,\nThen the bottom navigation bar displays four tabs ('Ассистент', 'База знаний', 'Приказы', 'Нагрузка') with WCAG 2.1 AA focus and contrast.\nGiven the search interface,\nWhen the user taps on specialty or document type filter chips,\nThen the document list filters dynamically in real-time without page reload.\nGiven a PWA installation prompt,\nWhen the web app is loaded,\nThen a valid `manifest.webmanifest` and service worker register for home screen installation.",
+          "leanValue": "valuable",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Mobile viewport rendering and touch target ergonomics",
+          "sixSigmaMetric": "Lighthouse Accessibility score >= 98 and First Contentful Paint < 1.0s",
+          "hasUi": true,
+          "requirementRefs": ["R3", "R4"]
+        },
+        {
+          "title": "Verify Search Accuracy, Facet Filtering, and Responsive Journey Across Test Pyramid",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When implementing verification for this epic, I want unit, integration, and E2E test suites covering index accuracy, API latency, and responsive mobile journeys, so that search defects are caught automatically.",
+          "acceptanceCriteria": "Given unit tests for the tokenization and filter index,\nWhen executed with test corpora,\nThen term normalization, Russian stemming, and facet combinations pass with 100% assertion coverage.\nGiven integration tests against `/api/search` and `/api/documents/facets`,\nWhen stress-tested with concurrent filter requests,\nThen all responses return 200 OK within 50ms without data race conditions.\nGiven an end-to-end test in headless browser simulation,\nWhen a user enters 'Инфекционные болезни', filters by '31.08.35', and clicks a document,\nThen the correct normative document details are rendered on screen.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Automated CI test coverage across test pyramid",
+          "sixSigmaMetric": "Zero test failures and > 90% branch coverage on search modules",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": null,
+      "title": "Personal AI Regulatory Assistant & GOST Order Generator",
+      "jtbd": "When an educational administrator, instructor, or resident needs regulatory guidance or administrative drafts, I want an AI assistant grounded in institutional knowledge and a one-click GOST R 7.0.97-2016 .docx order generator, so that official administrative tasks are executed accurately in seconds.",
+      "kanoClass": "Attractive",
+      "cynefinDomain": "complex",
+      "sixSigmaMetric": "100% adherence to GOST R 7.0.97-2016 formatting and > 95% regulatory citation accuracy",
+      "tocConstraintRef": "LLM prompt synthesis and deterministic DOCX document compilation",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Regulatory AI assistant knowledge grounded in FGOS VO, academic year calendar, 3 mandatory stages of GIA, SanPiN, and candidate minimum requirements.",
+        "R2: Interactive instant consultation answering resident and faculty inquiries on practice hours, exam admission, commission members, and VAK publication rules.",
+        "R3: One-click project generation of official institutional orders (enrollment, GIA admission, scholarship allocation) in Microsoft Word (.docx) format conforming strictly to GOST R 7.0.97-2016 (Times New Roman 14pt, 30mm left / 15mm right margins, Rospotrebnadzor requisites)."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Define Assistant Prompt Context and Order Template Contract",
+          "roleTag": "BARCAN-TAG-12",
+          "jtbd": "When implementing shared interfaces for this epic, I want strict schemas for consultation prompts and GOST order generation parameters, so that frontend UI and backend generation engine operate in lockstep.",
+          "acceptanceCriteria": "Given OpenAPI schema for `/api/assistant/chat` and `/api/orders/generate`,\nWhen client passes consultation queries or order parameters (type, student reference, commission members),\nThen request payloads validate against JSON schema specifying mandatory GOST metadata fields.\nGiven an invalid order generation request,\nWhen submitted without required template fields,\nThen the server returns 400 Bad Request with field-level diagnostic messages.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Order generation schema contract definition",
+          "sixSigmaMetric": "Zero contract mismatch errors between frontend and backend",
+          "hasUi": false,
+          "requirementRefs": ["R2", "R3"]
+        },
+        {
+          "title": "Implement Regulatory Assistant Knowledge Context and Consultation Service",
+          "roleTag": "BARCAN-TAG-04",
+          "jtbd": "When implementing AI assistance for this epic, I want a grounded prompt orchestrator with institutional memory of FGOS VO, GIA stages, SanPiN, and VAK requirements, so that inquiries receive legally accurate, hallucination-free guidance.",
+          "acceptanceCriteria": "Given an inquiry regarding GIA three-stage admission or practice hours,\nWhen processed by the assistant consultation engine,\nThen the generated response quotes applicable FGOS VO, SanPiN, or institutional regulation clauses without fabricated requirements.\nGiven a query regarding candidate exams or VAK publication thresholds,\nWhen evaluated by the assistant service,\nThen specific journal indexation requirements (VAK list, peer-reviewed standards) are precisely detailed in the output text.",
+          "leanValue": "essential",
+          "cynefinDomain": "complex",
+          "tocConstraintRef": "Context window retrieval precision and citation grounding",
+          "sixSigmaMetric": "Citation hallucination rate < 1.0% in golden evaluation benchmark",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        },
+        {
+          "title": "Implement GOST R 7.0.97-2016 Word Document (.docx) Generator",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing document generation for this epic, I want a Python DOCX compilation service producing institutional orders with Times New Roman 14pt, 30mm/15mm margins, and Rospotrebnadzor requisites, so that administrators receive official-ready files.",
+          "acceptanceCriteria": "Given an order request for enrollment, GIA admission, or scholarship allocation,\nWhen generated via `/api/orders/generate`,\nThen the resulting .docx file strictly conforms to GOST R 7.0.97-2016 with 30mm left margin, 15mm right margin, and 14pt Times New Roman typography.\nGiven generated order files,\nWhen opened with standard Microsoft Word or LibreOffice tools,\nThen Rospotrebnadzor institution header requisites, preamble, numbering, and signature blocks render without visual or XML corruption.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "OpenXML styling compliance and table/margin geometry precision",
+          "sixSigmaMetric": "100% pass rate in automated OpenXML schema and geometry validation checks",
+          "hasUi": false,
+          "requirementRefs": ["R3"]
+        },
+        {
+          "title": "Implement Assistant Chat Dialog and Order Draft Generation UI",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing user interface components for this epic, I want an interactive chat window and order generation form accessible on mobile and desktop, so that staff can easily query regulatory topics and download generated order drafts.",
+          "acceptanceCriteria": "Given a user navigating to the 'Ассистент' or 'Приказы' tabs,\nWhen entering questions into the chat box,\nThen streaming responses display with markdown formatting, regulatory citations, and instant copy buttons.\nGiven the 'Приказы' generation screen,\nWhen the user selects order type and enters parameters, then clicks 'Сформировать приказ',\nThen progress is displayed, and the resulting `.docx` file downloads automatically to the user's device.",
+          "leanValue": "valuable",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Mobile chat layout stability and file download handling",
+          "sixSigmaMetric": "Zero UI freezes during generation and 100% successful download initiation",
+          "hasUi": true,
+          "requirementRefs": ["R2", "R3"]
+        },
+        {
+          "title": "Verify AI Consultations and Document Format Compliance Across Test Pyramid",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When implementing automated verification for this epic, I want comprehensive unit, integration, and E2E tests validating regulatory consultation responses and GOST .docx formatting, so that regressions are eliminated.",
+          "acceptanceCriteria": "Given unit tests for the GOST document generator,\nWhen generating enrollment and GIA orders,\nThen margin measurements (30mm/15mm), font families ('Times New Roman'), and font sizes (14pt) assert strictly true.\nGiven integration tests for `/api/assistant/chat` and `/api/orders/generate`,\nWhen called with valid and boundary inputs,\nThen API status codes and returned binary MIME types (`application/vnd.openxmlformats-officedocument.wordprocessingml.document`) pass inspection.\nGiven an end-to-end browser test,\nWhen requesting an order generation via the web form,\nThen the downloaded file is verified for non-zero length and valid ZIP/OpenXML headers.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Automated DOCX file parsing and integration test harness",
+          "sixSigmaMetric": "100% test pass rate across the unit, integration, and UI test pyramid",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": null,
+      "title": "Faculty Teaching Workload Express Calculator",
+      "jtbd": "When a department head or faculty member plans pedagogical activities, I want an interactive express calculator computing annual hours and FTE rate against departmental norms (750-900 hrs/year) with instant overload/underload alerts, so that teaching loads are balanced and compliant with labor regulations.",
+      "kanoClass": "Performance",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "100% numerical calculation accuracy with real-time recalculation < 50ms",
+      "tocConstraintRef": "Workload formula accuracy and reactive state recalculation",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Interactive annual pedagogical workload computation accepting lecture hours, seminars, practical training, postgraduate supervision, and state examination board (GEK) participation.",
+        "R2: Instant full-time equivalent (FTE) rate calculation based on departmental norm bounds (750 to 900 hours/year).",
+        "R3: Real-time visual threshold warnings for workload overload (> 1.0 FTE or > norm ceiling) or underload (< 1.0 FTE or < norm floor) with clear numerical discrepancy indicators."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Define Workload Calculation Model and Validation Rules",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing domain data models for this epic, I want Pydantic data schemas and calculation formulas for teaching load categories and FTE rates, so that mathematical logic is centralized and consistent.",
+          "acceptanceCriteria": "Given teaching workload input parameters (lectures, seminars, practice, supervision, GEK),\nWhen calculated against departmental norms between 750 and 900 hours,\nThen total hours, FTE fraction, and overload/underload status compute with exact floating-point precision.\nGiven negative hour inputs or invalid norm ranges,\nWhen validated by the schema,\nThen validation fails with descriptive field-level error messages.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Workload calculation schema and arithmetic accuracy",
+          "sixSigmaMetric": "Zero arithmetic drift and 100% validation coverage",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        },
+        {
+          "title": "Implement Faculty Workload REST Service Endpoints",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing backend services for this epic, I want a calculation endpoint `/api/workload/calculate` evaluating submitted teaching hours, so that clients receive validated FTE breakdowns and status flags.",
+          "acceptanceCriteria": "Given a POST request to `/api/workload/calculate` with valid hour categories,\nWhen processed by the endpoint,\nThen response returns 200 OK with total hours, calculated FTE rate, and overload/underload warnings.\nGiven boundary inputs where hours exactly equal 750 or 900,\nWhen sent to the endpoint,\nThen status indicates balanced workload with zero warning flags.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Endpoint throughput and response formatting",
+          "sixSigmaMetric": "API latency < 15ms for 99th percentile",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3"]
+        },
+        {
+          "title": "Implement Interactive Workload Calculator Tab in Responsive UI",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing user-facing calculator views for this epic, I want an interactive mobile and desktop form with real-time recalculation, gauge meters, and alert badges, so that faculty immediately visualize their workload status.",
+          "acceptanceCriteria": "Given the 'Нагрузка' tab in the application UI,\nWhen user enters or adjusts hour values in lecture, seminar, practice, postgraduate, or GEK fields,\nThen total hours and FTE rate recalculate immediately without submitting a page reload.\nGiven a calculated total exceeding the department ceiling (e.g. > 900 hrs),\nWhen displayed on screen,\nThen a high-contrast amber/red warning banner indicates overload with the excess hour differential.\nGiven a calculated total below the department floor (e.g. < 750 hrs),\nWhen displayed on screen,\nThen an informative warning indicates underload with the deficit hour count.",
+          "leanValue": "valuable",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Reactive client state updates and accessible contrast indicators",
+          "sixSigmaMetric": "Zero UI lag (< 16ms frame budget) during input field changes",
+          "hasUi": true,
+          "requirementRefs": ["R1", "R2", "R3"]
+        },
+        {
+          "title": "Verify Workload Calculations and UI Reactive Indicators Across Test Pyramid",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When implementing automated test suites for this epic, I want unit tests for formula logic, integration tests for API endpoints, and E2E tests for reactive UI warnings, so that calculation defects are prevented.",
+          "acceptanceCriteria": "Given unit tests for the workload formula engine,\nWhen tested across boundary norms (750h, 850h, 900h) and random load vectors,\nThen calculated FTE values and overload boolean flags match expected mathematical truth.\nGiven integration tests against `/api/workload/calculate`,\nWhen invalid payloads and edge cases are submitted,\nThen HTTP response codes and error payloads strictly validate.\nGiven an end-to-end test in a browser session,\nWhen typing 950 total hours into the workload form,\nThen the overload badge dynamically appears with correct excess value.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "End-to-end browser assertion of reactive form states",
+          "sixSigmaMetric": "100% test pass rate across unit, integration, and E2E suites",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": "63e9be05-24ca-4269-b118-5632d91c97e6",
+      "title": "Privacy, Data Protection & Accessibility Compliance",
+      "jtbd": "When deploying the platform for educational and clinical staff, I want data subject rights, local backup verification, and strict accessibility compliance, so that all legal and regulatory standards are fulfilled.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "Zero real personal data exposure in external models and 100% cryptographic integrity on backups",
+      "tocConstraintRef": "De-identification tokenization gateway and 152-FZ compliance boundary",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Strict 152-FZ compliance ensuring real personal data (full names, passport numbers) are never transmitted to external neural network APIs.",
+        "R2: Anonymized synthetic avatar identity system with standard identifiers (ORD-XXXX for residents, ASP-XXXX for postgraduates, FAC-XXXX for faculty members) for all internal operations.",
+        "R3: Cryptographic local backup and verified restore mechanism for institutional catalog and session metadata ensuring data availability.",
+        "R4: Universal accessibility compliance (WCAG 2.1 Level AA) with visible keyboard focus, 4.5:1 text contrast, and labeled touch targets across all mobile and desktop screens."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Implement 152-FZ Avatar De-Identification and Masking Tokenizer",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing data protection for this epic, I want an automated masking and pseudonymization engine converting student and faculty PII into synthetic avatars (ORD-XXXX, ASP-XXXX, FAC-XXXX), so that external LLMs never ingest identifying personal data.",
+          "acceptanceCriteria": "Given input text containing personal names, passport numbers, or emails,\nWhen processed by the de-identification sanitizer before external API dispatch,\nThen real PII is replaced with deterministically mapped synthetic avatar IDs ('ORD-XXXX', 'ASP-XXXX', 'FAC-XXXX').\nGiven synthetic avatar payloads in `data/avatars/synthetic_avatars.json`,\nWhen queried by the system,\nThen avatar metadata resolves locally without exposing original real-world identity data.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "PII detection regex/NER accuracy and pseudonymization lookup speed",
+          "sixSigmaMetric": "Zero unmasked personal data leakage (0.00 DPMO) across all outbound prompts",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        },
+        {
+          "title": "Implement Security and Anonymization Gateway Middleware",
+          "roleTag": "BARCAN-TAG-07",
+          "jtbd": "When implementing request filtering for this epic, I want FastAPI middleware enforcing PII sanitization and avatar substitution on all assistant and order endpoints, so that 152-FZ compliance is structurally guaranteed.",
+          "acceptanceCriteria": "Given any request sent to `/api/assistant/chat` or `/api/orders/generate`,\nWhen passing through the security gateway middleware,\nThen request bodies are inspected and sanitized to ensure zero unmasked PII reaches outbound handlers.\nGiven an administrative inspection request for avatar mappings,\nWhen performed by unauthorized roles,\nThen access is denied with 403 Forbidden.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Middleware processing overhead and security boundary enforcement",
+          "sixSigmaMetric": "Zero bypass vulnerabilities and middleware latency overhead < 5ms",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        },
+        {
+          "title": "Integrate and Automate Encrypted Backup and Verified Restore Routine",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing disaster recovery for this epic, I want automated SQLite snapshot encryption and verified restoration testing via scripts/backup_restore.py, so that catalog and state data availability is mathematically verified.",
+          "acceptanceCriteria": "Given an active database holding catalog and avatar state,\nWhen `backup_database` runs,\nThen an encrypted, HMAC-SHA256 authenticated snapshot is written with SHA-256 integrity tag.\nGiven an encrypted backup snapshot file,\nWhen `restore_database` runs against a target destination,\nThen HMAC integrity and SHA-256 checksums verify, and `PRAGMA integrity_check` returns 'ok'.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Cryptographic key derivation and backup restoration verification time",
+          "sixSigmaMetric": "100% backup verification rate and zero integrity check failures",
+          "hasUi": false,
+          "requirementRefs": ["R3"]
+        },
+        {
+          "title": "Verify 152-FZ Anonymization, Backup Integrity, and WCAG 2.1 AA Compliance Across Test Pyramid",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying regulatory and privacy invariants for this epic, I want unit, integration, and UI accessibility tests covering avatar pseudonymization, backup restoration, and keyboard operability, so that compliance standards are maintained.",
+          "acceptanceCriteria": "Given unit tests for synthetic avatar generation and PII masking,\nWhen supplied with strings containing Russian names and passport numbers,\nThen zero PII leaks through and synthetic identifiers ('ORD-XXXX', etc.) are substituted correctly.\nGiven automated tests for `scripts/backup_restore.py` in `tests/test_backup_restore.py`,\nWhen executing round-trip backup and restore with tampered and valid snapshots,\nThen valid snapshots restore cleanly while tampered snapshots fail authentication with ValueError.\nGiven automated accessibility audit across all UI tabs,\nWhen evaluated with axe-core or WCAG 2.1 AA linters,\nThen zero color contrast, keyboard navigation, or form label violations occur.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "End-to-end security and accessibility audit coverage in CI",
+          "sixSigmaMetric": "Zero accessibility violations and 100% automated privacy test pass rate",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4"]
+        }
+      ]
+    }
+  ]
+}
