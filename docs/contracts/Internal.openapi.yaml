@@ -1,0 +1,472 @@
+openapi: 3.0.3
+info:
+  title: CRIE Institute AI Assistant & Document Generation API
+  description: >-
+    Internal API contract defining consultation endpoints with DeepSeek-grounded
+    normative knowledge and automated generation of official institute orders
+    formatted strictly to GOST R 7.0.97-2016 in .docx format.
+  version: 1.0.0
+servers:
+  - url: /api
+    description: Internal API server
+paths:
+  /assistant/chat:
+    post:
+      tags:
+        - Assistant
+      summary: Submit a consultation query to the personal AI assistant
+      description: >-
+        Provides legally grounded, accurate consultation using institute standards,
+        FGOS VO, academic calendar, GIA stages, SanPiN, and VAK requirements.
+      operationId: submitConsultationQuery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultationRequest'
+      responses:
+        '200':
+          description: Successful consultation response with verified legal references
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsultationResponse'
+        '400':
+          description: Invalid request parameters or missing context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Assistant processing error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /orders/generate:
+    post:
+      tags:
+        - Order Generation
+      summary: Generate an official institute order draft in MS Word (.docx) format
+      description: >-
+        Generates official orders (enrollment, admission to GIA, scholarship appointment)
+        compliant with GOST R 7.0.97-2016 requirements (Times New Roman 14pt, 30/15 mm margins,
+        Rospotrebnadzor requisites).
+      operationId: generateOrderDocument
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderGenerationRequest'
+      responses:
+        '200':
+          description: Order draft generated successfully (returns binary docx or generation result)
+          content:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderGenerationResponse'
+        '400':
+          description: Validation error due to missing mandatory GOST fields or commission details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Document generation engine error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ConsultationRequest:
+      type: object
+      required:
+        - query
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+          description: Optional persistent session ID for multi-turn dialogue memory
+        query:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          description: User inquiry regarding academic hours, exam admission, commissions, or VAK requirements
+          example: "Каковы публикационные требования ВАК для допуска к защите кандидатской диссертации по эпидемиологии?"
+        targetAudience:
+          type: string
+          enum: [FACULTY, STUDENT, POSTGRADUATE, ADMINISTRATION]
+          default: FACULTY
+        contextFilters:
+          $ref: '#/components/schemas/NormativeFilter'
+
+    NormativeFilter:
+      type: object
+      properties:
+        specialtyCode:
+          type: string
+          enum:
+            - "31.08.36" # Эпидемиология
+            - "31.08.35" # Инфекционные болезни
+            - "31.08.19" # Педиатрия
+          example: "31.08.36"
+        documentTypes:
+          type: array
+          items:
+            type: string
+            enum:
+              - REGULATIONS
+              - RULES
+              - ORDERS
+              - INSTRUCTIONS
+              - COMMISSION_PROTOCOLS
+              - SYLLABUS_RPD
+              - GIA_PROGRAMS
+
+    ConsultationResponse:
+      type: object
+      required:
+        - answer
+        - legalGrounding
+        - timestamp
+      properties:
+        answer:
+          type: string
+          description: Comprehensive legally grounded response
+        legalGrounding:
+          type: array
+          description: Citations to specific normative acts, FGOS VO standards, SanPiN, or local institute regulations
+          items:
+            $ref: '#/components/schemas/LegalReference'
+        suggestedActions:
+          type: array
+          items:
+            type: string
+          description: Recommended next steps, e.g. order draft generation
+        timestamp:
+          type: string
+          format: date-time
+
+    LegalReference:
+      type: object
+      required:
+        - documentName
+        - articleOrClause
+      properties:
+        documentId:
+          type: string
+        documentName:
+          type: string
+          example: "ФГОС ВО 31.08.36 Эпидемиология"
+        articleOrClause:
+          type: string
+          example: "Раздел IV, п. 4.3.2"
+        excerpt:
+          type: string
+          example: "Объем программы ординатуры составляет 120 зачетных единиц..."
+
+    OrderType:
+      type: string
+      enum:
+        - ADMISSION_TO_GIA
+        - ENROLLMENT
+        - SCHOLARSHIP_APPOINTMENT
+      example: ADMISSION_TO_GIA
+
+    SpecialtyInfo:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+          enum:
+            - "31.08.36"
+            - "31.08.35"
+            - "31.08.19"
+          example: "31.08.36"
+        name:
+          type: string
+          example: "Эпидемиология"
+
+    StudentReference:
+      type: object
+      required:
+        - studentId
+        - fullName
+        - specialty
+      properties:
+        studentId:
+          type: string
+          example: "STU-2026-0891"
+        fullName:
+          type: string
+          example: "Иванов Алексей Петрович"
+        specialty:
+          $ref: '#/components/schemas/SpecialtyInfo'
+        academicGroup:
+          type: string
+          example: "ОРД-ЭПИ-2026-1"
+        studyYear:
+          type: integer
+          minimum: 1
+          maximum: 6
+          example: 2
+
+    CommissionMember:
+      type: object
+      required:
+        - role
+        - fullName
+        - academicDegree
+        - position
+      properties:
+        role:
+          type: string
+          enum: [CHAIRMAN, MEMBER, SECRETARY]
+          example: CHAIRMAN
+        fullName:
+          type: string
+          example: "Смирнов Виктор Дмитриевич"
+        academicDegree:
+          type: string
+          example: "д-р мед. наук, профессор"
+        position:
+          type: string
+          example: "Заведующий кафедрой эпидемиологии"
+
+    RospotrebnadzorRequisites:
+      type: object
+      required:
+        - organizationName
+        - supervisoryAuthority
+        - okpo
+        - inn
+        - city
+      properties:
+        organizationName:
+          type: string
+          default: "ФБУН ЦНИИ Эпидемиологии Роспотребнадзора"
+          example: "ФБУН ЦНИИ Эпидемиологии Роспотребнадзора"
+        supervisoryAuthority:
+          type: string
+          default: "Федеральная служба по надзору в сфере защиты прав потребителей и благополучия человека"
+        okpo:
+          type: string
+          pattern: '^\\d{8}$'
+          example: "01897362"
+        inn:
+          type: string
+          pattern: '^\\d{10}$'
+          example: "7720015689"
+        city:
+          type: string
+          default: "Москва"
+          example: "Москва"
+
+    GostFormattingParameters:
+      type: object
+      required:
+        - standard
+        - fontFamily
+        - fontSizePt
+        - margins
+      properties:
+        standard:
+          type: string
+          enum: ["GOST_R_7_0_97_2016"]
+          default: "GOST_R_7_0_97_2016"
+        fontFamily:
+          type: string
+          enum: ["Times New Roman"]
+          default: "Times New Roman"
+        fontSizePt:
+          type: integer
+          enum: [14]
+          default: 14
+        lineSpacing:
+          type: number
+          default: 1.5
+        margins:
+          type: object
+          required:
+            - leftMm
+            - rightMm
+            - topMm
+            - bottomMm
+          properties:
+            leftMm:
+              type: integer
+              enum: [30]
+              default: 30
+            rightMm:
+              type: integer
+              enum: [15]
+              default: 15
+            topMm:
+              type: integer
+              enum: [20]
+              default: 20
+            bottomMm:
+              type: integer
+              enum: [20]
+              default: 20
+
+    OrderGenerationRequest:
+      type: object
+      required:
+        - orderType
+        - registrationDate
+        - students
+        - commissionMembers
+        - gostFormatting
+        - requisites
+      properties:
+        orderType:
+          $ref: '#/components/schemas/OrderType'
+        orderNumber:
+          type: string
+          description: Optional pre-assigned order number. If omitted, generated automatically.
+          example: "2026-ОД/145"
+        registrationDate:
+          type: string
+          format: date
+          example: "2026-11-10"
+        headerTitle:
+          type: string
+          description: Order heading title
+          example: "О допуске ординаторов 2 года обучения к государственной итоговой аттестации"
+        preambleText:
+          type: string
+          description: Justification preamble clause
+          example: "В соответствии с Федеральным законом «Об образовании в РФ», ФГОС ВО и положением о проведении ГИА..."
+        students:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/StudentReference'
+        commissionMembers:
+          type: array
+          minItems: 3
+          items:
+            $ref: '#/components/schemas/CommissionMember'
+        gostFormatting:
+          $ref: '#/components/schemas/GostFormattingParameters'
+        requisites:
+          $ref: '#/components/schemas/RospotrebnadzorRequisites'
+        signerName:
+          type: string
+          default: "Директор института"
+          example: "Акимкин В.Г."
+        signerTitle:
+          type: string
+          default: "Директор ФБУН ЦНИИ Эпидемиологии Роспотребнадзора, академик РАН"
+
+    OrderGenerationResponse:
+      type: object
+      required:
+        - orderId
+        - orderNumber
+        - generatedAt
+        - downloadUrl
+        - documentStatus
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        orderNumber:
+          type: string
+          example: "2026-ОД/145"
+        documentStatus:
+          type: string
+          enum: [DRAFT, READY, FAILED]
+          example: READY
+        generatedAt:
+          type: string
+          format: date-time
+        downloadUrl:
+          type: string
+          example: "/api/orders/download/78b54a0d-bfd7-43d3-b7e9-04162f32b912.docx"
+        pageCount:
+          type: integer
+          example: 3
+        complianceSummary:
+          type: object
+          properties:
+            standard:
+              type: string
+              example: "ГОСТ Р 7.0.97-2016"
+            fontVerified:
+              type: boolean
+              example: true
+            marginsVerified:
+              type: boolean
+              example: true
+
+    FieldDiagnosticError:
+      type: object
+      required:
+        - field
+        - message
+        - code
+      properties:
+        field:
+          type: string
+          description: JSON pointer or dot-path of invalid field
+          example: "gostFormatting.margins.leftMm"
+        message:
+          type: string
+          description: Human-readable diagnostic description of validation failure
+          example: "Left margin must equal 30 mm per GOST R 7.0.97-2016"
+        code:
+          type: string
+          description: Programmatic error code
+          example: "INVALID_GOST_MARGIN"
+        rejectedValue:
+          description: The invalid value submitted by client
+
+    ValidationErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+        - errors
+      properties:
+        error:
+          type: string
+          example: "Bad Request"
+        message:
+          type: string
+          example: "Validation failed for order generation parameters"
+        timestamp:
+          type: string
+          format: date-time
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldDiagnosticError'
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: "INTERNAL_GENERATION_ERROR"
+        message:
+          type: string
+          example: "An unexpected error occurred during document assembly"
+        details:
+          type: string
