@@ -1,0 +1,229 @@
+{
+  "schema_version": "1.0",
+  "privacy_compliance": "152-FZ Zero-Knowledge Synthetic Avatars",
+  "avatars_count": 24,
+  "avatars": [
+    {
+      "id": "ORD-0001",
+      "role": "ординатор",
+      "full_name_pseudonym": "Иванов_1 Иван Иванович",
+      "specialty_code": "31.08.35",
+      "specialty_name": "Инфекционные болезни",
+      "study_year": 2,
+      "budget_type": "бюджет",
+      "curriculum_code": "РУП-2026-27"
+    },
+    {
+      "id": "ORD-0002",
+      "role": "ординатор",
+      "full_name_pseudonym": "Иванов_2 Иван Иванович",
+      "specialty_code": "31.08.36",
+      "specialty_name": "Эпидемиология",
+      "study_year": 1,
+      "budget_type": "договор",
+      "curriculum_code": "РУП-2026-27"
+    },
+    {
+      "id": "ORD-0003",
+      "role": "ординатор",
+      "full_name_pseudonym": "Иванов_3 Иван Иванович",
+      "specialty_code": "31.08.19",
+      "specialty_name": "Педиатрия",
+      "study_year": 2,
+      "budget_type": "бюджет",
+      "curriculum_code": "РУП-2026-27"
+    },
+    {
+      "id": "ORD-0004",
+      "role": "ординатор",
+      "full_name_pseudonym": "Иванов_4 Иван Иванович",
+      "specialty_code": "31.08.35",
+      "specialty_name": "Инфекционные болезни",
+      "study_year": 1,
+      "budget_type": "договор",
+      "curriculum_code": "РУП-2026-27"
+    },
+    {
+      "id": "ORD-0005",
+      "role": "ординатор",
+      "full_name_pseudonym": "Иванов_5 Иван Иванович",
+      "specialty_code": "31.08.36",
+      "specialty_name": "Эпидемиология",
+      "study_year": 2,
+      "budget_type": "бюджет",
+      "curriculum_code": "РУП-2026-27"
+    },
+    {
+      "id": "ORD-0006",
+      "role": "ординатор",
+      "full_name_pseudonym": "Иванов_6 Иван Иванович",
+      "specialty_code": "31.08.19",
+      "specialty_name": "Педиатрия",
+      "study_year": 1,
+      "budget_type": "договор",
+      "curriculum_code": "РУП-2026-27"
+    },
+    {
+      "id": "ORD-0007",
+      "role": "ординатор",
+      "full_name_pseudonym": "Иванов_7 Иван Иванович",
+      "specialty_code": "31.08.35",
+      "specialty_name": "Инфекционные болезни",
+      "study_year": 2,
+      "budget_type": "бюджет",
+      "curriculum_code": "РУП-2026-27"
+    },
+    {
+      "id": "ORD-0008",
+      "role": "ординатор",
+      "full_name_pseudonym": "Иванов_8 Иван Иванович",
+      "specialty_code": "31.08.36",
+      "specialty_name": "Эпидемиология",
+      "study_year": 1,
+      "budget_type": "договор",
+      "curriculum_code": "РУП-2026-27"
+    },
+    {
+      "id": "ORD-0009",
+      "role": "ординатор",
+      "full_name_pseudonym": "Иванов_9 Иван Иванович",
+      "specialty_code": "31.08.19",
+      "specialty_name": "Педиатрия",
+      "study_year": 2,
+      "budget_type": "бюджет",
+      "curriculum_code": "РУП-2026-27"
+    },
+    {
+      "id": "ORD-0010",
+      "role": "ординатор",
+      "full_name_pseudonym": "Иванов_10 Иван Иванович",
+      "specialty_code": "31.08.35",
+      "specialty_name": "Инфекционные болезни",
+      "study_year": 1,
+      "budget_type": "договор",
+      "curriculum_code": "РУП-2026-27"
+    },
+    {
+      "id": "ASP-0001",
+      "role": "аспирант",
+      "full_name_pseudonym": "Петров_1 Петр Петрович",
+      "specialty_code": "31.08.35",
+      "specialty_name": "Инфекционные болезни",
+      "study_year": 2,
+      "dissertation_topic_sample": "Эпидемиологический мониторинг природно-очаговых инфекций кластера №1",
+      "scientific_advisor_id": "FAC-0001"
+    },
+    {
+      "id": "ASP-0002",
+      "role": "аспирант",
+      "full_name_pseudonym": "Петров_2 Петр Петрович",
+      "specialty_code": "31.08.36",
+      "specialty_name": "Эпидемиология",
+      "study_year": 3,
+      "dissertation_topic_sample": "Эпидемиологический мониторинг природно-очаговых инфекций кластера №2",
+      "scientific_advisor_id": "FAC-0002"
+    },
+    {
+      "id": "ASP-0003",
+      "role": "аспирант",
+      "full_name_pseudonym": "Петров_3 Петр Петрович",
+      "specialty_code": "31.08.19",
+      "specialty_name": "Педиатрия",
+      "study_year": 1,
+      "dissertation_topic_sample": "Эпидемиологический мониторинг природно-очаговых инфекций кластера №3",
+      "scientific_advisor_id": "FAC-0003"
+    },
+    {
+      "id": "ASP-0004",
+      "role": "аспирант",
+      "full_name_pseudonym": "Петров_4 Петр Петрович",
+      "specialty_code": "31.08.35",
+      "specialty_name": "Инфекционные болезни",
+      "study_year": 2,
+      "dissertation_topic_sample": "Эпидемиологический мониторинг природно-очаговых инфекций кластера №4",
+      "scientific_advisor_id": "FAC-0004"
+    },
+    {
+      "id": "ASP-0005",
+      "role": "аспирант",
+      "full_name_pseudonym": "Петров_5 Петр Петрович",
+      "specialty_code": "31.08.36",
+      "specialty_name": "Эпидемиология",
+      "study_year": 3,
+      "dissertation_topic_sample": "Эпидемиологический мониторинг природно-очаговых инфекций кластера №5",
+      "scientific_advisor_id": "FAC-0001"
+    },
+    {
+      "id": "FAC-0001",
+      "role": "преподаватель",
+      "full_name_pseudonym": "Смирнов Сергей Николаевич",
+      "academic_degree": "доктор медицинских наук",
+      "academic_title": "профессор",
+      "department": "Кафедра эпидемиологии и инфекционных болезней",
+      "planned_hours_2026": 500
+    },
+    {
+      "id": "FAC-0002",
+      "role": "преподаватель",
+      "full_name_pseudonym": "Кузнецов Сергей Николаевич",
+      "academic_degree": "доктор медицинских наук",
+      "academic_title": "профессор",
+      "department": "Кафедра эпидемиологии и инфекционных болезней",
+      "planned_hours_2026": 550
+    },
+    {
+      "id": "FAC-0003",
+      "role": "преподаватель",
+      "full_name_pseudonym": "Попов Сергей Николаевич",
+      "academic_degree": "кандидат медицинских наук",
+      "academic_title": "доцент",
+      "department": "Кафедра эпидемиологии и инфекционных болезней",
+      "planned_hours_2026": 600
+    },
+    {
+      "id": "FAC-0004",
+      "role": "преподаватель",
+      "full_name_pseudonym": "Васильев Сергей Николаевич",
+      "academic_degree": "кандидат медицинских наук",
+      "academic_title": "доцент",
+      "department": "Кафедра эпидемиологии и инфекционных болезней",
+      "planned_hours_2026": 650
+    },
+    {
+      "id": "FAC-0005",
+      "role": "преподаватель",
+      "full_name_pseudonym": "Соколов Сергей Николаевич",
+      "academic_degree": "кандидат медицинских наук",
+      "academic_title": "доцент",
+      "department": "Кафедра эпидемиологии и инфекционных болезней",
+      "planned_hours_2026": 700
+    },
+    {
+      "id": "FAC-0006",
+      "role": "преподаватель",
+      "full_name_pseudonym": "Михайлов Сергей Николаевич",
+      "academic_degree": "кандидат медицинских наук",
+      "academic_title": "доцент",
+      "department": "Кафедра эпидемиологии и инфекционных болезней",
+      "planned_hours_2026": 750
+    },
+    {
+      "id": "ADM-0001",
+      "role": "администрация",
+      "full_name_pseudonym": "Администратор_1 А.А.",
+      "position": "Директор образовательного центра"
+    },
+    {
+      "id": "ADM-0002",
+      "role": "администрация",
+      "full_name_pseudonym": "Администратор_2 А.А.",
+      "position": "Начальник учебного отдела"
+    },
+    {
+      "id": "ADM-0003",
+      "role": "администрация",
+      "full_name_pseudonym": "Администратор_3 А.А.",
+      "position": "Секретарь ГЭК"
+    }
+  ]
+}
