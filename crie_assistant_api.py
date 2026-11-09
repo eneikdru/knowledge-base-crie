@@ -292,3 +292,8 @@ from crie.workload.schemas import (
 @app.post("/api/workload/calculate", response_model=WorkloadCalculationResult)
 def calculate_teaching_workload(payload: TeachingWorkloadInput):
     return calculate_workload(payload)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("crie_assistant_api:app", host="0.0.0.0", port=8097, reload=False)
