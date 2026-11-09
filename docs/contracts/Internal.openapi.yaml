@@ -4,9 +4,10 @@ info:
   description: >-
     Internal API contract defining consultation endpoints with DeepSeek-grounded
     normative knowledge, automated generation of official institute orders
-    formatted strictly to GOST R 7.0.97-2016 in .docx format, and fast faceted
-    search and document metadata retrieval for desktop and mobile clients.
-  version: 1.2.0
+    formatted strictly to GOST R 7.0.97-2016 in .docx format, direct normative
+    document download endpoints, concise RAG consultant queries, and fast
+    faceted search and document metadata retrieval for desktop and mobile clients.
+  version: 1.3.0
 servers:
   - url: /api
     description: Internal API server
@@ -96,6 +97,186 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  /api/normative/document/{id}/download:
+    get:
+      tags:
+        - Normative Documents
+      summary: Download normative document in DOCX or PDF format
+      description: >-
+        Safe binary document download endpoint identified strictly by opaque document
+        identifier without exposing or accepting raw local filesystem paths.
+      operationId: downloadNormativeDocumentApi
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Canonical unique identifier of the normative document
+          schema:
+            type: string
+            example: "DOC-2026-FGOS-310836"
+        - name: format
+          in: query
+          required: false
+          description: Requested file format variant (docx or pdf)
+          schema:
+            type: string
+            enum: [docx, pdf]
+            default: docx
+      responses:
+        '200':
+          description: Document binary payload stream (DOCX or PDF)
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: "attachment; filename=\"DOC-2026-FGOS-310836.docx\""
+            Content-Type:
+              schema:
+                type: string
+                example: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          content:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Invalid document ID or format parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '404':
+          description: Document resource not found in repository
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal error streaming normative file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /normative/document/{id}/download:
+    get:
+      tags:
+        - Normative Documents
+      summary: Download normative document (root route alias)
+      description: Root alias for downloading normative documents safely by identifier without raw paths.
+      operationId: downloadNormativeDocumentRoot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Canonical unique identifier of the normative document
+          schema:
+            type: string
+            example: "DOC-2026-FGOS-310836"
+        - name: format
+          in: query
+          required: false
+          description: Requested file format variant (docx or pdf)
+          schema:
+            type: string
+            enum: [docx, pdf]
+            default: docx
+      responses:
+        '200':
+          description: Document binary payload stream
+          content:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/consultant/query:
+    post:
+      tags:
+        - RAG Consultant
+      summary: Query the expert RAG consultant on normative and Rospotrebnadzor base
+      description: >-
+        Submits queries to the expert RAG consultant, returning concise, structured,
+        markdown-formatted responses without conversational fluff, backed by citations
+        with direct document download links.
+      operationId: queryRagConsultantApi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RagConsultantQueryRequest'
+      responses:
+        '200':
+          description: Concise markdown response grounded in normative documents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagConsultantQueryResponse'
+        '400':
+          description: Invalid request body or empty query text
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '422':
+          description: Unprocessable query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: RAG inference and knowledge retrieval engine error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /consultant/query:
+    post:
+      tags:
+        - RAG Consultant
+      summary: Query the expert RAG consultant (root route alias)
+      description: Root alias for querying the expert RAG consultant.
+      operationId: queryRagConsultantRoot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RagConsultantQueryRequest'
+      responses:
+        '200':
+          description: Concise markdown response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagConsultantQueryResponse'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
 
   /search:
     post:
@@ -403,6 +584,18 @@ components:
           type: string
           description: Canonical repository path or URI to the document file
           example: "data/normative/regulations/polozhenie_attestatsiya_2026.pdf"
+        downloadUrl:
+          type: string
+          description: Direct download URL without raw local paths
+          example: "/api/normative/document/DOC-2026-ORD-ATTEST-01/download"
+        downloadDocxUrl:
+          type: string
+          description: Direct DOCX download URL
+          example: "/api/normative/document/DOC-2026-ORD-ATTEST-01/download?format=docx"
+        downloadPdfUrl:
+          type: string
+          description: Direct PDF download URL
+          example: "/api/normative/document/DOC-2026-ORD-ATTEST-01/download?format=pdf"
         score:
           type: number
           format: float
@@ -590,7 +783,12 @@ components:
           example: "DOC-2026-FGOS-310836"
         title:
           type: string
+          description: Human-readable official title of the document
           example: "ФГОС ВО 31.08.36 Эпидемиология (уровень подготовки кадров высшей квалификации)"
+        annotationSnippet:
+          type: string
+          description: Concise human-readable annotation snippet highlighting key relevance
+          example: "Объем программы ординатуры составляет 120 з.е. независимо от применяемых образовательных технологий."
         documentType:
           $ref: '#/components/schemas/DocumentTypeEnum'
         specialtyCode:
@@ -613,6 +811,18 @@ components:
         resourceUri:
           type: string
           example: "/api/documents/DOC-2026-FGOS-310836"
+        downloadUrl:
+          type: string
+          description: Direct file download URL
+          example: "/api/normative/document/DOC-2026-FGOS-310836/download"
+        downloadDocxUrl:
+          type: string
+          description: Direct file download URL for DOCX format
+          example: "/api/normative/document/DOC-2026-FGOS-310836/download?format=docx"
+        downloadPdfUrl:
+          type: string
+          description: Direct file download URL for PDF format
+          example: "/api/normative/document/DOC-2026-FGOS-310836/download?format=pdf"
 
     SearchFacetCount:
       type: object
@@ -752,7 +962,15 @@ components:
         downloadUrl:
           type: string
           nullable: true
-          example: "/api/documents/DOC-2026-FGOS-310836/download"
+          example: "/api/normative/document/DOC-2026-FGOS-310836/download"
+        downloadDocxUrl:
+          type: string
+          nullable: true
+          example: "/api/normative/document/DOC-2026-FGOS-310836/download?format=docx"
+        downloadPdfUrl:
+          type: string
+          nullable: true
+          example: "/api/normative/document/DOC-2026-FGOS-310836/download?format=pdf"
         createdAt:
           type: string
           format: date-time
@@ -835,6 +1053,97 @@ components:
         excerpt:
           type: string
           example: "Объем программы ординатуры составляет 120 зачетных единиц..."
+        downloadUrl:
+          type: string
+          example: "/api/normative/document/DOC-2026-FGOS-310836/download"
+
+    RagConsultantQueryRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          description: Inquisitive question regarding institute normative corpus or Rospotrebnadzor standards
+          example: "Каков порядок формирования экзаменационных комиссий и кворум УМС?"
+        specialtyCode:
+          $ref: '#/components/schemas/SpecialtyCodeEnum'
+        maxSources:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+          example: 5
+        contextCategory:
+          type: string
+          description: Category context filter (ordinatura, aspirantura, commissions, schedule, workload)
+          example: "commissions"
+
+    RagSourceDocument:
+      type: object
+      required:
+        - documentId
+        - title
+        - downloadUrl
+      properties:
+        documentId:
+          type: string
+          description: Canonical document identifier
+          example: "DOC-2026-REG-UMS-01"
+        title:
+          type: string
+          description: Human-readable official title of normative act
+          example: "Положение об учебно-методическом совете (УМС)"
+        articleOrClause:
+          type: string
+          description: Specific clause, section, or article number
+          example: "Раздел II, п. 3.1"
+        snippet:
+          type: string
+          description: Verbatim text passage excerpt proving grounding
+          example: "Кворум заседания УМС считается достигнутым при присутствии не менее 2/3 членов комиссии..."
+        downloadUrl:
+          type: string
+          description: Direct download URL without raw filesystem paths
+          example: "/api/normative/document/DOC-2026-REG-UMS-01/download"
+        downloadDocxUrl:
+          type: string
+          description: Direct DOCX download URL
+          example: "/api/normative/document/DOC-2026-REG-UMS-01/download?format=docx"
+        downloadPdfUrl:
+          type: string
+          description: Direct PDF download URL
+          example: "/api/normative/document/DOC-2026-REG-UMS-01/download?format=pdf"
+
+    RagConsultantQueryResponse:
+      type: object
+      required:
+        - markdownAnswer
+        - sources
+        - latencyMs
+      properties:
+        markdownAnswer:
+          type: string
+          description: Concise, structured markdown-formatted response without conversational filler
+          example: "### Порядок формирования комиссий и кворум\n- **Кворум УМС**: Заседание правомочно при участии не менее 2/3 списочного состава (Горелов/Романова).\n- **Решения**: Принимаются простым большинством голосов.\n- **Комиссии**: Состав ГЭК утверждается приказом директора не позднее 1 ноября."
+        answerMarkdown:
+          type: string
+          description: Markdown-formatted answer alias for client compatibility
+        conciseAnswer:
+          type: string
+          description: Single-sentence executive takeaway
+          example: "Кворум УМС составляет не менее 2/3 членов, председатели ГЭК утверждаются до 1 ноября."
+        sources:
+          type: array
+          description: Grounding normative documents with human-readable titles, snippets, and direct download links
+          items:
+            $ref: '#/components/schemas/RagSourceDocument'
+        latencyMs:
+          type: integer
+          description: Search retrieval and answer synthesis latency in milliseconds
+          example: 142
 
     OrderType:
       type: string
