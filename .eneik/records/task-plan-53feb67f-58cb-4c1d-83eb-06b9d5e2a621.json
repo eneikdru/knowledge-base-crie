@@ -1,0 +1,68 @@
+{
+  "epics": [
+    {
+      "existingEpicId": null,
+      "title": "Containerized Deployment Stack and Root Orchestration",
+      "jtbd": "When an operator or automated test runner deploys the CRIE assistant repository, I want a root-level docker-compose.yml configuration with an explicit health-check endpoint, so that the full application stack can be launched and verified reliably in runtime environments.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "Zero deployment startup failures across clean repository clones",
+      "tocConstraintRef": "Absence of root docker-compose specification preventing runtime verification",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Root-level docker-compose.yml file defining service build and port mapping for the FastAPI knowledge base assistant",
+        "R2: Service-level health check configuration querying /api/v1/health with defined interval, timeout, and retries"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Add Dockerfile and root docker-compose.yml with healthcheck probe",
+          "roleTag": "BARCAN-TAG-05",
+          "jtbd": "When implementing container orchestration for this epic, I want to define a root docker-compose.yml and container specification exposing /api/v1/health, so that runtime observation and startup verification succeed immediately.",
+          "acceptanceCriteria": "Given a clean clone of the repository, When docker compose config or docker compose up is invoked, Then the service builds successfully and maps port 8097.\nGiven the containerized crie-assistant service running, When Docker evaluates service health against /api/v1/health, Then the health status transitions to healthy with HTTP 200 return code.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Root compose launch descriptor missing in repository",
+          "sixSigmaMetric": "100% container boot and health probe pass rate",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        }
+      ]
+    },
+    {
+      "existingEpicId": null,
+      "title": "Runtime Observation and Health Probe Verification",
+      "jtbd": "When an automated evaluator runs runtime health diagnostics on the repository, I want the launcher to locate docker-compose.yml and confirm the healthy state of the crie-assistant container, so that runtime validation produces verified evidence instead of missing-file errors.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "100% pass rate on runtime observation health checks",
+      "tocConstraintRef": "Runtime launcher failure due to missing docker-compose.yml",
+      "sourceIndex": 1,
+      "requirements": [
+        "R1: Resolution of docker-compose.yml not found error during repo root evaluation",
+        "R2: Automated verification verifying container startup and healthy API response code"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Validate runtime launcher execution and health endpoint contract",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying runtime observation for this epic, I want an automated test asserting that docker-compose.yml exists at the repository root and passes compose validation and health probe assertions, so that the launcher diagnostic failure is completely resolved.",
+          "acceptanceCriteria": "Given the repository root directory, When the launcher inspects the workspace, Then docker-compose.yml is found and valid.\nGiven the started container stack, When querying /api/v1/health, Then status equals healthy and all service capabilities are verified.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Launcher diagnostic failure on repo root inspection",
+          "sixSigmaMetric": "Zero runtime observation launcher errors",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        }
+      ]
+    }
+  ]
+}
