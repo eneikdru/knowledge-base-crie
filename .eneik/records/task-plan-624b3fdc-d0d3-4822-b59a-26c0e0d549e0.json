@@ -1,0 +1,34 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "e59b167a-75af-4f81-b7cc-01c00c7b02fd",
+      "title": "Standalone Responsive Knowledge Base & Fast Search Tool",
+      "jtbd": "When an educational resident, researcher, or faculty member accesses the CRIE knowledge base on desktop or mobile, I want a fast, thoughtful, self-contained search and document exploration interface without third-party integration friction, so that I can immediately find and inspect clinical, academic, and normative resources in seconds.",
+      "kanoClass": "Performance",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "Visual discrepancy rate < 0.1% against approved design mockup across viewport breakpoints",
+      "tocConstraintRef": "Frontend UI rendering and design alignment bottleneck",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Implement pixel-perfect styling, typography, and responsive layout in existing frontend components matching approved design mockup design/approved/20261109022009-mockup/mockup.html"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Implement pixel-perfect design alignment from approved mockup in frontend",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing the approved design mockup for this epic, I want to update existing frontend Svelte components to match design/approved/20261109022009-mockup/mockup.html, so that the knowledge base search interface delivers a pixel-perfect, responsive user experience.",
+          "acceptanceCriteria": "Given the approved design mockup asset at design/approved/20261109022009-mockup/mockup.html,\nWhen the frontend components in frontend/src/ are updated to replicate the layout, color palette, spacing, and typography,\nThen the rendered UI matches the approved mockup pixel-perfect on desktop and mobile viewports with zero visual regressions.\nGiven the updated frontend interface,\nWhen running visual inspection and UI component tests,\nThen all search input elements, facet filters, and document result cards render with correct responsive styling and pass verification.",
+          "leanValue": "valuable",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Frontend template and stylesheet synchronization",
+          "sixSigmaMetric": "Mockup visual fidelity score >= 99% with zero responsive layout breakage",
+          "hasUi": true,
+          "requirementRefs": [
+            "R1"
+          ]
+        }
+      ]
+    }
+  ]
+}
