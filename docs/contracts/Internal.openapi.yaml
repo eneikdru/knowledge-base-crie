@@ -1,0 +1,390 @@
+openapi: 3.1.0
+info:
+  title: CRIE Normative Knowledge Base Search and Document Facet API
+  description: Internal API contract for fast querying, full-text search with highlight snippets, and single-click faceted filtering across institutional normative materials.
+  version: 1.0.0
+servers:
+  - url: /api
+    description: Primary API server
+paths:
+  /search:
+    get:
+      summary: Fast full-text and faceted search across normative documents
+      description: Returns paginated search results with highlighted fragments and facet breakdowns matching search query and filters.
+      operationId: searchDocuments
+      parameters:
+        - name: q
+          in: query
+          description: Search keywords, discipline title, or document reference code
+          required: false
+          schema:
+            type: string
+            maxLength: 500
+        - name: specialty
+          in: query
+          description: Residency specialty code filter
+          required: false
+          schema:
+            $ref: '#/components/schemas/SpecialtyCode'
+        - name: doc_type
+          in: query
+          description: Normative document type filter
+          required: false
+          schema:
+            $ref: '#/components/schemas/DocumentType'
+        - name: academic_year
+          in: query
+          description: Academic year filter
+          required: false
+          schema:
+            type: string
+            pattern: '^\d{4}/\d{2}$'
+            example: '2026/27'
+        - name: page
+          in: query
+          description: Page index (1-based)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          description: Number of documents per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Search results with pagination and facet distribution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '422':
+          description: Validation error for invalid search parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+    post:
+      summary: Complex faceted search payload
+      description: Alternative endpoint for complex multi-selection search queries.
+      operationId: searchDocumentsPost
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Search results matching the complex filter criteria
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '422':
+          description: Unprocessable entity validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+
+  /documents/facets:
+    get:
+      summary: Retrieve facet counts and metadata
+      description: Returns document distribution counts grouped by document type, specialty code, and academic year.
+      operationId: getDocumentFacets
+      parameters:
+        - name: q
+          in: query
+          description: Optional keyword query to compute contextual facet distribution
+          required: false
+          schema:
+            type: string
+        - name: specialty
+          in: query
+          description: Filter by specialty code before aggregating facets
+          required: false
+          schema:
+            $ref: '#/components/schemas/SpecialtyCode'
+        - name: doc_type
+          in: query
+          description: Filter by document type before aggregating facets
+          required: false
+          schema:
+            $ref: '#/components/schemas/DocumentType'
+      responses:
+        '200':
+          description: Aggregate facet counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacetCountsResponse'
+        '422':
+          description: Validation error for invalid filter parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+
+components:
+  schemas:
+    SpecialtyCode:
+      type: string
+      description: Standard medical residency specialty code
+      enum:
+        - '31.08.36'
+        - '31.08.35'
+        - '31.08.19'
+      example: '31.08.36'
+
+    DocumentType:
+      type: string
+      description: Institutional normative document type
+      enum:
+        - 'Положения'
+        - 'Регламенты'
+        - 'Порядки'
+        - 'Правила'
+        - 'Инструкции'
+        - 'Протоколы ПК'
+        - 'ГЭК'
+        - 'УМС'
+        - 'Аттестации'
+        - 'РПД'
+        - 'ФОС'
+        - 'РУП'
+        - 'ГИА'
+      example: 'Положения'
+
+    SearchRequest:
+      type: object
+      properties:
+        q:
+          type: string
+          description: Free-text search term or code
+        specialties:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpecialtyCode'
+          description: Multi-select list of specialty codes
+        doc_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentType'
+          description: Multi-select list of document types
+        academic_year:
+          type: string
+          pattern: '^\d{4}/\d{2}$'
+          example: '2026/27'
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      additionalProperties: false
+
+    DocumentSummary:
+      type: object
+      required:
+        - id
+        - title
+        - doc_type
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 'd9b2d63d-a5f1-4fc3-a5c8-ec8cbdf35f31'
+        title:
+          type: string
+          example: 'Рабочая программа дисциплины: Эпидемиология инфекционных болезней'
+        code:
+          type: string
+          nullable: true
+          example: 'РПД-2026-31.08.36-01'
+        doc_type:
+          $ref: '#/components/schemas/DocumentType'
+        specialties:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpecialtyCode'
+        academic_year:
+          type: string
+          example: '2026/27'
+        department:
+          type: string
+          example: 'Кафедра эпидемиологии'
+        file_size_bytes:
+          type: integer
+          example: 1048576
+        file_url:
+          type: string
+          format: uri
+          example: '/files/rpd-epidemiology-2026.pdf'
+        highlighted_fragments:
+          type: array
+          items:
+            type: string
+          description: Excerpts with matching keywords highlighted via <mark> tags
+          example:
+            - '...организация противоэпидемических мероприятий по специальности <mark>31.08.36</mark>...'
+        relevance_score:
+          type: number
+          format: float
+          description: Search relevance score
+          example: 0.985
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-09-01T10:00:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          example: '2026-10-15T14:30:00Z'
+      additionalProperties: false
+
+    FacetCountItem:
+      type: object
+      required:
+        - key
+        - label
+        - count
+      properties:
+        key:
+          type: string
+          example: '31.08.36'
+        label:
+          type: string
+          example: '31.08.36 Эпидемиология'
+        count:
+          type: integer
+          minimum: 0
+          example: 542
+      additionalProperties: false
+
+    FacetGroup:
+      type: object
+      required:
+        - facet_name
+        - items
+      properties:
+        facet_name:
+          type: string
+          example: 'specialties'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetCountItem'
+      additionalProperties: false
+
+    FacetCountsResponse:
+      type: object
+      required:
+        - total_documents
+        - facets
+      properties:
+        total_documents:
+          type: integer
+          minimum: 0
+          example: 1697
+        facets:
+          type: object
+          required:
+            - doc_types
+            - specialties
+          properties:
+            doc_types:
+              $ref: '#/components/schemas/FacetGroup'
+            specialties:
+              $ref: '#/components/schemas/FacetGroup'
+            academic_years:
+              $ref: '#/components/schemas/FacetGroup'
+          additionalProperties: false
+      additionalProperties: false
+
+    SearchResponse:
+      type: object
+      required:
+        - items
+        - total_count
+        - page
+        - page_size
+        - total_pages
+        - facets
+        - search_time_ms
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentSummary'
+        total_count:
+          type: integer
+          minimum: 0
+          example: 124
+        page:
+          type: integer
+          minimum: 1
+          example: 1
+        page_size:
+          type: integer
+          minimum: 1
+          example: 20
+        total_pages:
+          type: integer
+          minimum: 0
+          example: 7
+        search_time_ms:
+          type: number
+          format: float
+          description: Search execution time in milliseconds
+          example: 14.8
+        facets:
+          $ref: '#/components/schemas/FacetCountsResponse'
+      additionalProperties: false
+
+    ValidationErrorDetail:
+      type: object
+      required:
+        - field
+        - message
+        - code
+      properties:
+        field:
+          type: string
+          example: 'specialty'
+        message:
+          type: string
+          example: "Value 'unknown' is not a valid SpecialtyCode. Allowed values: '31.08.36', '31.08.35', '31.08.19'."
+        code:
+          type: string
+          example: 'invalid_choice'
+      additionalProperties: false
+
+    ValidationErrorResponse:
+      type: object
+      required:
+        - error
+        - status
+        - details
+      properties:
+        error:
+          type: string
+          example: 'Unprocessable Entity'
+        status:
+          type: integer
+          example: 422
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationErrorDetail'
+      additionalProperties: false
