@@ -238,3 +238,14 @@ def get_categories():
 def get_specialties():
     index = get_normative_index()
     return {"specialties": index.get_specialties()}
+
+
+from crie.workload.schemas import (
+    TeachingWorkloadInput,
+    WorkloadCalculationResult,
+    calculate_workload,
+)
+
+@app.post("/api/workload/calculate", response_model=WorkloadCalculationResult)
+def calculate_teaching_workload(payload: TeachingWorkloadInput):
+    return calculate_workload(payload)

@@ -54,6 +54,7 @@ class WorkloadCalculationResult(BaseModel):
     departmental_norm: float = Field(..., description="Departmental norm used for calculation")
     fte_rate: float = Field(..., description="Calculated FTE fraction (e.g., 1.0 = full stake)")
     status: WorkloadStatus = Field(..., description="Workload balance status (UNDERLOAD, NORMAL, OVERLOAD)")
+    is_overload: bool = Field(default=False, description="True if total_hours > departmental_norm")
     status_message: str = Field(..., description="Human-readable explanatory summary")
 
 
@@ -91,10 +92,13 @@ def calculate_workload(input_data: TeachingWorkloadInput) -> WorkloadCalculation
             f"({input_data.departmental_norm:.1f} ч). Доля ставки: {fte_rate:.2f}."
         )
 
+    is_overload = total_hours > input_data.departmental_norm
+
     return WorkloadCalculationResult(
         total_hours=total_hours,
         departmental_norm=input_data.departmental_norm,
         fte_rate=fte_rate,
         status=status,
+        is_overload=is_overload,
         status_message=status_message,
     )
