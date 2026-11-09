@@ -47,6 +47,7 @@ class FilterResponse(BaseModel):
 
 _FULL_FACETS_CACHE: Optional[Dict[str, Dict[str, int]]] = None
 _SEARCH_CACHE: Dict[Any, Dict[str, Any]] = {}
+_FACETS_QUERY_CACHE: Dict[Any, Dict[str, Any]] = {}
 
 
 def _compute_facets(index: NormativeInvertedIndex, matched_docs: List[Any]) -> Dict[str, Dict[str, int]]:
@@ -140,7 +141,7 @@ def health_check():
     }
 
 
-@app.get("/api/search", response_model=SearchResponse)
+@app.get("/api/search")
 def fast_search(
     q: Optional[str] = Query(default="", description="Search query text"),
     type: Optional[str] = Query(default=None, description="Document type filter"),
@@ -161,13 +162,13 @@ def fast_search(
         limit=limit,
         offset=offset,
     )
-    return SearchResponse(
-        query=q or "",
-        total_hits=search_output["total_hits"],
-        elapsed_ms=search_output["elapsed_ms"],
-        results=search_output["results"],
-        facets=search_output["facets"],
-    )
+    return {
+        "query": q or "",
+        "total_hits": search_output["total_hits"],
+        "elapsed_ms": search_output["elapsed_ms"],
+        "results": search_output["results"],
+        "facets": search_output["facets"],
+    }
 
 
 @app.get("/api/documents/facets")
@@ -175,16 +176,23 @@ def get_documents_facets(
     query: Optional[str] = Query(default=None),
     status: Optional[str] = Query(default=None),
 ):
+    cache_key = (query, status)
+    if cache_key in _FACETS_QUERY_CACHE:
+        return _FACETS_QUERY_CACHE[cache_key]
+
     index = get_normative_index()
     if query and query.strip():
         res = index.search(query=query.strip(), limit=len(index.documents))
         docs = res.get("results", [])
     else:
         docs = index.documents
-    return {
+    out = {
         "facets": _compute_facets(index, docs),
         "total_documents": len(docs),
     }
+    if len(_FACETS_QUERY_CACHE) < 200:
+        _FACETS_QUERY_CACHE[cache_key] = out
+    return out
 
 
 @app.get("/api/documents/filter", response_model=FilterResponse)
