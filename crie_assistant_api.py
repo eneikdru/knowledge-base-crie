@@ -202,21 +202,22 @@ def post_documents_filter(payload: FilterRequest):
 
 @app.get("/api/v1/normative/search", response_model=SearchResponse)
 def search_normative(
-    query: str = Query(..., min_length=1, description="Search query string"),
+    query: Optional[str] = Query(None, description="Search query string"),
     category: Optional[str] = Query(None, description="Filter by document category"),
     code: Optional[str] = Query(None, description="Filter by educational specialty code"),
     limit: int = Query(20, ge=1, le=100, description="Maximum results to return"),
 ):
     index = get_normative_index()
+    q_str = query or ""
     search_output = _filter_docs(
         index=index,
-        q=query,
+        q=q_str,
         category=category,
         code=code,
         limit=limit,
     )
     return SearchResponse(
-        query=query,
+        query=q_str,
         total_hits=search_output["total_hits"],
         elapsed_ms=search_output["elapsed_ms"],
         results=search_output["results"],

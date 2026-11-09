@@ -146,6 +146,10 @@ def restore_database(snapshot_path: str, target_db_path: str, passphrase: str) -
     if computed_checksum != expected_checksum:
         raise ValueError(f"Checksum mismatch: expected {expected_checksum}, got {computed_checksum}")
 
+    expected_payload_size = snapshot_data.get("payload_size")
+    if expected_payload_size is not None and expected_payload_size != len(raw_bytes):
+        raise ValueError(f"Payload size mismatch: expected {expected_payload_size}, got {len(raw_bytes)}")
+
     # Atomic write to target destination
     os.makedirs(os.path.dirname(os.path.abspath(target_db_path)), exist_ok=True)
     temp_dest = target_db_path + ".restore_tmp"

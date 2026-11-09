@@ -55,7 +55,7 @@ def normalize_russian_token(token: str) -> str:
         for suffix in (
             "ость", "ение", "ание", "ями", "ами", "ого", "его", "ому", "ему",
             "ыми", "ых", "их", "ую", "юю", "ие", "ые", "ое", "ее", "ов", "ев",
-            "ей", "ам", "ям", "ах", "ях", "ом", "ем", "ой", "ей", "ию", "ии",
+            "ей", "ам", "ям", "ах", "ях", "ом", "ем", "ой", "ей", "ый", "ий", "ию", "ии",
             "ия", "а", "я", "о", "е", "ы", "и", "у", "ю"
         ):
             if token.endswith(suffix) and len(token) - len(suffix) >= 3:
@@ -255,6 +255,14 @@ class NormativeInvertedIndex:
         self.total_docs = len(self.documents)
         return self.total_docs
 
+    def get_doc(self, doc_id: int) -> Optional[NormativeDocument]:
+        if 0 <= doc_id < len(self.documents) and self.documents[doc_id].doc_id == doc_id:
+            return self.documents[doc_id]
+        for d in self.documents:
+            if d.doc_id == doc_id:
+                return d
+        return None
+
     def search(
         self,
         query: str,
@@ -305,12 +313,14 @@ class NormativeInvertedIndex:
             spec_lower = specialty.strip().lower()
             matched_doc_ids = {
                 doc_id for doc_id in matched_doc_ids
-                if self.documents[doc_id].specialty and spec_lower in self.documents[doc_id].specialty.lower()
+                if self.get_doc(doc_id) and self.get_doc(doc_id).specialty and spec_lower in self.get_doc(doc_id).specialty.lower()
             }
 
         scored_results: List[Tuple[float, NormativeDocument, str]] = []
         for doc_id in matched_doc_ids:
-            doc = self.documents[doc_id]
+            doc = self.get_doc(doc_id)
+            if not doc:
+                continue
             score = 0.0
             name_lower = doc.file_name.lower()
             disc_lower = doc.discipline.lower()
