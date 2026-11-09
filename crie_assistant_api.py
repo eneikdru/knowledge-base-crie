@@ -46,6 +46,7 @@ class FilterResponse(BaseModel):
 
 
 _FULL_FACETS_CACHE: Optional[Dict[str, Dict[str, int]]] = None
+_SEARCH_CACHE: Dict[Any, Dict[str, Any]] = {}
 
 
 def _compute_facets(index: NormativeInvertedIndex, matched_docs: List[Any]) -> Dict[str, Dict[str, int]]:
@@ -94,6 +95,10 @@ def _filter_docs(
     effective_code = code or specialty
     effective_category = category or doc_type
 
+    cache_key = (q, effective_category, doc_type, effective_code, specialty, limit, offset)
+    if cache_key in _SEARCH_CACHE:
+        return _SEARCH_CACHE[cache_key]
+
     raw_res = index.search(
         query=(q or "").strip(),
         category=effective_category,
@@ -113,12 +118,15 @@ def _filter_docs(
     facets = _compute_facets(index, matched)
     paginated_results = [d.to_dict() if hasattr(d, "to_dict") else d for d in matched[offset : offset + limit]]
 
-    return {
+    output = {
         "total_hits": len(matched),
         "elapsed_ms": elapsed_ms,
         "results": paginated_results,
         "facets": facets,
     }
+    if len(_SEARCH_CACHE) < 500:
+        _SEARCH_CACHE[cache_key] = output
+    return output
 
 
 @app.get("/health")
