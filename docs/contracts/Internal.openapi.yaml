@@ -1,15 +1,100 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: CRIE Institute AI Assistant & Document Generation API
   description: >-
     Internal API contract defining consultation endpoints with DeepSeek-grounded
-    normative knowledge and automated generation of official institute orders
-    formatted strictly to GOST R 7.0.97-2016 in .docx format.
-  version: 1.0.0
+    normative knowledge, normative document search with faceted filtering,
+    and automated generation of official institute orders formatted strictly to GOST R 7.0.97-2016 in .docx format.
+  version: 1.1.0
 servers:
   - url: /api
     description: Internal API server
 paths:
+  /search:
+    post:
+      tags:
+        - Normative Search
+      summary: Fast full-text search across institute normative documents
+      description: >-
+        Performs sub-millisecond full-text and keyword search across 1,697 institute normative documents
+        (RPD 2026/27, FOS, RUP curricula, GIA programs, dissertation council regulations) with support for
+        multi-attribute filtering, highlighted match fragments, and pagination.
+      operationId: searchNormativeDocuments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Search results successfully retrieved with matches, pagination, and facets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '422':
+          description: Validation error in search query or filter parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '500':
+          description: Internal search engine error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/facets:
+    get:
+      tags:
+        - Normative Search
+      summary: Retrieve facet counters and available filters for normative documents
+      description: >-
+        Provides aggregate counts of institute documents partitioned by document types and specialty codes
+        (31.08.36 Epidemiology, 31.08.35 Infectious Diseases, 31.08.19 Pediatrics) to power 1-click filter UI.
+      operationId: getDocumentFacets
+      parameters:
+        - name: query
+          in: query
+          required: false
+          description: Optional search query text to calculate contextual facet distributions
+          schema:
+            type: string
+            maxLength: 500
+        - name: specialtyCode
+          in: query
+          required: false
+          description: Filter facet counts by specialty code
+          schema:
+            $ref: '#/components/schemas/SpecialtyCode'
+        - name: documentType
+          in: query
+          required: false
+          description: Filter facet counts by document category
+          schema:
+            $ref: '#/components/schemas/DocumentCategory'
+      responses:
+        '200':
+          description: Aggregate facet counts successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentFacetsResponse'
+        '422':
+          description: Invalid query parameters supplied for facet retrieval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '500':
+          description: Internal facet calculation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /assistant/chat:
     post:
       tags:
@@ -38,6 +123,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorResponse'
+        '422':
+          description: Validation error in consultation payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
         '500':
           description: Assistant processing error
           content:
@@ -78,6 +169,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorResponse'
+        '422':
+          description: Unprocessable entity schema failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
         '500':
           description: Document generation engine error
           content:
@@ -87,6 +184,264 @@ paths:
 
 components:
   schemas:
+    SpecialtyCode:
+      type: string
+      enum:
+        - "31.08.36"
+        - "31.08.35"
+        - "31.08.19"
+      description: Medical residency specialty classification code (31.08.36 Epidemiology, 31.08.35 Infectious Diseases, 31.08.19 Pediatrics)
+      example: "31.08.36"
+
+    DocumentCategory:
+      type: string
+      enum:
+        - REGULATIONS
+        - RULES
+        - ORDERS
+        - INSTRUCTIONS
+        - COMMISSION_PROTOCOLS
+        - SYLLABUS_RPD
+        - GIA_PROGRAMS
+        - FOS_ASSESSMENT
+        - RUP_CURRICULUM
+        - DISSERTATION_COUNCIL
+      description: Official normative document classification
+      example: SYLLABUS_RPD
+
+    SearchFilter:
+      type: object
+      properties:
+        specialtyCodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpecialtyCode'
+          description: Filter by medical specialties
+        documentTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentCategory'
+          description: Filter by document categories
+        academicYear:
+          type: string
+          pattern: '^\d{4}/\d{2}$'
+          example: "2026/27"
+          description: Academic year filter
+
+    PaginationParams:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+          description: 1-based page index
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+          description: Number of documents per page
+
+    SearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Discipline title, cipher, or full-text query keyword
+          example: "Эпидемиология инфекционных болезней"
+        filters:
+          $ref: '#/components/schemas/SearchFilter'
+        pagination:
+          $ref: '#/components/schemas/PaginationParams'
+        highlight:
+          type: boolean
+          default: true
+          description: Whether to return emphasized text fragments with matches
+
+    HighlightedFragment:
+      type: object
+      required:
+        - field
+        - snippet
+      properties:
+        field:
+          type: string
+          example: "content"
+        snippet:
+          type: string
+          example: "Рабочая программа дисциплины <em>Эпидемиология</em> инфекционных болезней для ординаторов..."
+
+    DocumentItem:
+      type: object
+      required:
+        - id
+        - title
+        - documentType
+        - specialtyCode
+        - academicYear
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "d7c6643f-b3e1-45a9-bc42-f8c5b0487d52"
+        title:
+          type: string
+          example: "РПД Эпидемиология 2026/27"
+        cipher:
+          type: string
+          example: "Б1.О.01"
+        documentType:
+          $ref: '#/components/schemas/DocumentCategory'
+        specialtyCode:
+          $ref: '#/components/schemas/SpecialtyCode'
+        specialtyName:
+          type: string
+          example: "Эпидемиология"
+        academicYear:
+          type: string
+          example: "2026/27"
+        fileUrl:
+          type: string
+          format: uri
+          example: "/api/documents/files/d7c6643f-b3e1-45a9-bc42-f8c5b0487d52.pdf"
+        fileSizeBytes:
+          type: integer
+          example: 4194304
+        score:
+          type: number
+          format: float
+          example: 0.985
+        highlights:
+          type: array
+          items:
+            $ref: '#/components/schemas/HighlightedFragment'
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-10-15T09:30:00Z"
+
+    FacetCountItem:
+      type: object
+      required:
+        - key
+        - label
+        - count
+      properties:
+        key:
+          type: string
+          example: "31.08.36"
+        label:
+          type: string
+          example: "31.08.36 Эпидемиология"
+        count:
+          type: integer
+          minimum: 0
+          example: 542
+
+    DocumentFacets:
+      type: object
+      required:
+        - documentTypes
+        - specialties
+      properties:
+        documentTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetCountItem'
+        specialties:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetCountItem'
+        academicYears:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetCountItem'
+
+    PaginationMeta:
+      type: object
+      required:
+        - totalItems
+        - totalPages
+        - currentPage
+        - pageSize
+      properties:
+        totalItems:
+          type: integer
+          minimum: 0
+          example: 1697
+        totalPages:
+          type: integer
+          minimum: 0
+          example: 85
+        currentPage:
+          type: integer
+          minimum: 1
+          example: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          example: 20
+
+    SearchResponse:
+      type: object
+      required:
+        - items
+        - pagination
+        - executionTimeMs
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentItem'
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+        facets:
+          $ref: '#/components/schemas/DocumentFacets'
+        executionTimeMs:
+          type: number
+          format: float
+          description: Search duration in milliseconds
+          example: 12.4
+
+    DocumentFacetsResponse:
+      type: object
+      required:
+        - facets
+        - totalDocuments
+      properties:
+        facets:
+          $ref: '#/components/schemas/DocumentFacets'
+        totalDocuments:
+          type: integer
+          example: 1697
+
+    HTTPValidationError:
+      type: object
+      required:
+        - error
+        - message
+        - errors
+      properties:
+        error:
+          type: string
+          example: "Unprocessable Entity"
+        message:
+          type: string
+          example: "Validation failed for search request payload"
+        timestamp:
+          type: string
+          format: date-time
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldDiagnosticError'
+
     ConsultationRequest:
       type: object
       required:
@@ -113,24 +468,11 @@ components:
       type: object
       properties:
         specialtyCode:
-          type: string
-          enum:
-            - "31.08.36" # Эпидемиология
-            - "31.08.35" # Инфекционные болезни
-            - "31.08.19" # Педиатрия
-          example: "31.08.36"
+          $ref: '#/components/schemas/SpecialtyCode'
         documentTypes:
           type: array
           items:
-            type: string
-            enum:
-              - REGULATIONS
-              - RULES
-              - ORDERS
-              - INSTRUCTIONS
-              - COMMISSION_PROTOCOLS
-              - SYLLABUS_RPD
-              - GIA_PROGRAMS
+            $ref: '#/components/schemas/DocumentCategory'
 
     ConsultationResponse:
       type: object
@@ -189,12 +531,7 @@ components:
         - name
       properties:
         code:
-          type: string
-          enum:
-            - "31.08.36"
-            - "31.08.35"
-            - "31.08.19"
-          example: "31.08.36"
+          $ref: '#/components/schemas/SpecialtyCode'
         name:
           type: string
           example: "Эпидемиология"
@@ -423,15 +760,15 @@ components:
         field:
           type: string
           description: JSON pointer or dot-path of invalid field
-          example: "gostFormatting.margins.leftMm"
+          example: "filters.specialtyCodes[0]"
         message:
           type: string
           description: Human-readable diagnostic description of validation failure
-          example: "Left margin must equal 30 mm per GOST R 7.0.97-2016"
+          example: "Specialty code must be one of 31.08.36, 31.08.35, 31.08.19"
         code:
           type: string
           description: Programmatic error code
-          example: "INVALID_GOST_MARGIN"
+          example: "INVALID_SPECIALTY_CODE"
         rejectedValue:
           description: The invalid value submitted by client
 
@@ -464,9 +801,9 @@ components:
       properties:
         code:
           type: string
-          example: "INTERNAL_GENERATION_ERROR"
+          example: "INTERNAL_ERROR"
         message:
           type: string
-          example: "An unexpected error occurred during document assembly"
+          example: "An unexpected error occurred during request processing"
         details:
           type: string
