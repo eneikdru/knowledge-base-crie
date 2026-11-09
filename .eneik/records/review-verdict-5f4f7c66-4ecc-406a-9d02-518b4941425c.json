@@ -1,0 +1,26 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "Ensure bidirectional foreign key indexes on entity_document_links are maintained to preserve lookup latency under 15ms under high concurrency.",
+          "severity": "low"
+        }
+      ]
+    },
+    {
+      "sourceIndex": 1,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "Ensure composite indexes on department and academic year are maintained on curriculum plans to ensure aggregated analytical queries stay under 200ms at scale.",
+          "severity": "low"
+        }
+      ]
+    }
+  ]
+}
