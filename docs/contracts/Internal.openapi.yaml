@@ -6,7 +6,7 @@ info:
     normative knowledge, automated generation of official institute orders
     formatted strictly to GOST R 7.0.97-2016 in .docx format, and fast faceted
     search and document metadata retrieval for desktop and mobile clients.
-  version: 1.2.0
+  version: 1.3.0
 servers:
   - url: /api
     description: Internal API server
@@ -92,6 +92,119 @@ paths:
                 $ref: '#/components/schemas/ValidationErrorResponse'
         '500':
           description: Internal chat generation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/consultant/query:
+    post:
+      tags:
+        - Consultant
+        - RAG
+      summary: Concise RAG consultant query on Rospotrebnadzor and institute normative acts
+      description: >-
+        Expert RAG consultant endpoint providing concise, factual, no-fluff answers
+        grounded in the 1,697 institute normative acts, SanPiN, and Rospotrebnadzor orders.
+        Returns markdown-formatted response, legal citations, and confidence score without exposing local filesystem paths.
+      operationId: queryRagConsultant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultantQueryRequest'
+      responses:
+        '200':
+          description: Concise markdown consultation response with verified legal citations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsultantQueryResponse'
+        '400':
+          description: Bad request due to missing query or invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '422':
+          description: Unprocessable entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: RAG inference or retrieval service failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/normative/document/{id}/download:
+    get:
+      tags:
+        - Documents
+        - Normative
+      summary: Direct download of normative document by ID (DOCX / PDF)
+      description: >-
+        Downloads the official binary file for a cataloged institute document.
+        Accepts logical document ID (e.g. DOC-2026-FGOS-310836) without raw local path parameters.
+      operationId: downloadNormativeDocumentById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Clean identifier of the normative document resource
+          schema:
+            type: string
+            example: "DOC-2026-FGOS-310836"
+        - name: format
+          in: query
+          required: false
+          description: Desired file export format
+          schema:
+            type: string
+            enum: [docx, pdf]
+            default: docx
+      responses:
+        '200':
+          description: Binary file stream of requested normative document (DOCX or PDF)
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: "attachment; filename=\"DOC-2026-FGOS-310836.docx\""
+            Content-Type:
+              schema:
+                type: string
+                example: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          content:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Invalid document ID or requested format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '404':
+          description: Document not found in corpus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal file retrieval error
           content:
             application/json:
               schema:
@@ -215,6 +328,53 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           description: Internal server error retrieving document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/{documentId}/download:
+    get:
+      tags:
+        - Documents
+      summary: Download document file by documentId
+      description: >-
+        Alias download endpoint directly under /documents resource hierarchy.
+      operationId: downloadDocumentById
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          description: Unique identifier of the document resource
+          schema:
+            type: string
+            example: "DOC-2026-FGOS-310836"
+        - name: format
+          in: query
+          required: false
+          description: File format (docx, pdf)
+          schema:
+            type: string
+            enum: [docx, pdf]
+            default: docx
+      responses:
+        '200':
+          description: Document binary stream
+          content:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Document not found
           content:
             application/json:
               schema:
@@ -463,6 +623,84 @@ components:
           description: Search and generation execution time in milliseconds
           example: 185
 
+    ConsultantQueryRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          description: Inquiry for RAG consultant regarding Rospotrebnadzor standards, GOST, or institute regulations
+          example: "Каковы требования к остепененности ППС кафедры и учебной нагрузке по ФГОС?"
+        sessionId:
+          type: string
+          format: uuid
+          description: Optional persistent conversation session identifier
+          example: "d3b07384-d113-494b-9c8e-4a6b12a8e310"
+        strictNormativeOnly:
+          type: boolean
+          default: true
+          description: Strict grounding flag to eliminate fluff and unverified assertions
+        filters:
+          $ref: '#/components/schemas/NormativeFilter'
+
+    ConsultantCitation:
+      type: object
+      required:
+        - documentId
+        - documentTitle
+        - citationReference
+      properties:
+        documentId:
+          type: string
+          description: Canonical logical identifier of cited document
+          example: "DOC-2026-FGOS-310836"
+        documentTitle:
+          type: string
+          description: Human-readable official document title
+          example: "ФГОС ВО 31.08.36 Эпидемиология"
+        citationReference:
+          type: string
+          description: Pinpointed article, section, or clause
+          example: "Раздел IV, п. 4.3.2"
+        snippet:
+          type: string
+          description: Grounding excerpt from normative text
+          example: "Доля научно-педагогических работников, имеющих ученую степень и (или) ученое звание, должна составлять не менее 70%..."
+        downloadUrl:
+          type: string
+          description: Direct download URL for referenced document without local path exposure
+          example: "/api/normative/document/DOC-2026-FGOS-310836/download?format=docx"
+
+    ConsultantQueryResponse:
+      type: object
+      required:
+        - answerMarkdown
+        - citations
+        - confidenceScore
+        - latencyMs
+      properties:
+        answerMarkdown:
+          type: string
+          description: Concise, structured markdown answer without conversational fluff
+          example: "Согласно требованиям ФГОС ВО 31.08.36 (п. 4.3.2):\n\n1. **Остепененность ППС кафедры**: не менее 70% профессорско-преподавательского состава должны иметь ученые степени кандидата или доктора наук.\n2. **Учебная нагрузка**: регулируется локальным порядком планирования педагогической нагрузки (не более 900 часов на ставку)."
+        citations:
+          type: array
+          description: Verified normative act citations backing the answer
+          items:
+            $ref: '#/components/schemas/ConsultantCitation'
+        confidenceScore:
+          type: number
+          format: float
+          description: Retrieval confidence score (0.0 to 1.0)
+          example: 0.98
+        latencyMs:
+          type: integer
+          description: Execution and retrieval latency in milliseconds
+          example: 142
+
     SearchRequest:
       type: object
       required:
@@ -576,6 +814,19 @@ components:
           type: string
           example: "Объем программы ординатуры составляет <mark>120 зачетных единиц</mark> независимо от формы обучения..."
 
+    DocumentDownloadUrls:
+      type: object
+      description: Direct file download endpoints without raw local path parameters
+      properties:
+        docx:
+          type: string
+          description: Direct download URL for DOCX version
+          example: "/api/normative/document/DOC-2026-FGOS-310836/download?format=docx"
+        pdf:
+          type: string
+          description: Direct download URL for PDF version
+          example: "/api/normative/document/DOC-2026-FGOS-310836/download?format=pdf"
+
     SearchResultItem:
       type: object
       required:
@@ -590,7 +841,12 @@ components:
           example: "DOC-2026-FGOS-310836"
         title:
           type: string
+          description: Human-readable official document title
           example: "ФГОС ВО 31.08.36 Эпидемиология (уровень подготовки кадров высшей квалификации)"
+        annotationSnippet:
+          type: string
+          description: Human-readable concise annotation snippet
+          example: "Стандарт устанавливает объем программы 120 з.е. и кадровые требования к ППС кафедр (остепененность не менее 70%)."
         documentType:
           $ref: '#/components/schemas/DocumentTypeEnum'
         specialtyCode:
@@ -613,6 +869,12 @@ components:
         resourceUri:
           type: string
           example: "/api/documents/DOC-2026-FGOS-310836"
+        downloadUrl:
+          type: string
+          description: Primary direct download URL
+          example: "/api/normative/document/DOC-2026-FGOS-310836/download"
+        downloadUrls:
+          $ref: '#/components/schemas/DocumentDownloadUrls'
 
     SearchFacetCount:
       type: object
@@ -659,28 +921,6 @@ components:
           type: integer
           example: 1697
           description: Total number of documents cataloged in normative repository
-
-    SearchResponse:
-      type: object
-      required:
-        - results
-        - pagination
-        - totalMatches
-      properties:
-        results:
-          type: array
-          items:
-            $ref: '#/components/schemas/SearchResultItem'
-        pagination:
-          $ref: '#/components/schemas/PaginationMeta'
-        totalMatches:
-          type: integer
-          example: 45
-        facetDistribution:
-          $ref: '#/components/schemas/SearchFacetDistribution'
-        executionTimeMs:
-          type: integer
-          example: 38
 
     DocumentMetadataResponse:
       type: object
@@ -752,7 +992,9 @@ components:
         downloadUrl:
           type: string
           nullable: true
-          example: "/api/documents/DOC-2026-FGOS-310836/download"
+          example: "/api/normative/document/DOC-2026-FGOS-310836/download"
+        downloadUrls:
+          $ref: '#/components/schemas/DocumentDownloadUrls'
         createdAt:
           type: string
           format: date-time
@@ -920,11 +1162,11 @@ components:
           default: "Федеральная служба по надзору в сфере защиты прав потребителей и благополучия человека"
         okpo:
           type: string
-          pattern: '^\\d{8}$'
+          pattern: '^\d{8}$'
           example: "01897362"
         inn:
           type: string
-          pattern: '^\\d{10}$'
+          pattern: '^\d{10}$'
           example: "7720015689"
         city:
           type: string
