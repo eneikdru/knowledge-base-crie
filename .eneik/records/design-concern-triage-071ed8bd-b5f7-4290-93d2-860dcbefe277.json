@@ -1,0 +1,20 @@
+[
+  {
+    "concern": "Target archetype selector retains generic FIN_TECH value rather than specific educational/medical knowledge base categorization.",
+    "jtbd": "When configuring the platform parameters for CRIE knowledge base, I want the target archetype selector to present domain-accurate medical and educational knowledge base categories, so that the operational context accurately reflects normative medical residency and educational workflows rather than an irrelevant financial archetype.",
+    "acceptanceCriteria": "Given the control parameters form in mockup.html, When the user inspects the #project-archetype-select dropdown, Then it contains options relevant to medical and educational knowledge base management (e.g. CRIE_MEDICAL_KB, CRIE_ACADEMIC_NORMATIVE) and does not default or restrict exclusively to FIN_TECH.",
+    "editInstruction": "In design/approved/20261109213511-mockup/mockup.html, locate the <select id=\"project-archetype-select\"> element inside the Control Parameters section. Replace the single <option value=\"FIN_TECH\" selected>FinTech</option> entry with domain-relevant options: <option value=\"MEDICAL_KB\" selected>Medical Knowledge Base (CRIE)</option>, <option value=\"ACADEMIC_RESIDENCY\">Academic Residency Normatives</option>, and <option value=\"EPIDEMIOLOGY_PORTAL\">Epidemiology & Clinical Programs</option>.",
+    "kanoClass": "must_be",
+    "cynefinDomain": "clear",
+    "leanValue": "essential"
+  },
+  {
+    "concern": "Hero preview points to static asset placeholder requiring live data synchronization in production.",
+    "jtbd": "When viewing the topology preview in production, I want the interface topology to render real-time telemetry and index synchronization state, so that operators can assess current system health instead of looking at an uncoupled static mockup graphic.",
+    "acceptanceCriteria": "Given a static design mockup file (mockup.html), When evaluating design presentation fidelity, Then static image assets are acceptable representation placeholders, but Given a production deployment, live telemetry WebSocket or polling streams must feed the topology visualization component.",
+    "editInstruction": "In design/approved/20261109213511-mockup/mockup.html, locate the section with aria-labelledby=\"media-heading\". Ensure the <img> preview contains informative data attributes for downstream production binding, such as data-live-source=\"/api/telemetry/topology\" and data-fallback-src=\"assets/images/knowledge-base-crie-hero.webp\", leaving the preview functional as a visual placeholder while clearly signalling the live production contract.",
+    "kanoClass": "indifferent",
+    "cynefinDomain": "clear",
+    "leanValue": "waste"
+  }
+]
