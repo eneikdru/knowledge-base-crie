@@ -3,13 +3,86 @@ info:
   title: CRIE Institute AI Assistant & Document Generation API
   description: >-
     Internal API contract defining consultation endpoints with DeepSeek-grounded
-    normative knowledge and automated generation of official institute orders
-    formatted strictly to GOST R 7.0.97-2016 in .docx format.
-  version: 1.0.0
+    normative knowledge, automated generation of official institute orders
+    formatted strictly to GOST R 7.0.97-2016 in .docx format, and fast faceted
+    search and document metadata retrieval for desktop and mobile clients.
+  version: 1.1.0
 servers:
   - url: /api
     description: Internal API server
 paths:
+  /search:
+    post:
+      tags:
+        - Search
+      summary: Fast normative search with facet filters and snippet highlights
+      description: >-
+        Performs full-text and semantic search across normative corpus and generated
+        documents with faceted filters and contextual highlight snippets for responsive UI.
+      operationId: searchDocuments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Search results matching the query terms and facet filters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          description: Validation error due to invalid query terms or facet filters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Search service internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /documents/{documentId}:
+    get:
+      tags:
+        - Documents
+      summary: Retrieve document metadata and resource details
+      description: >-
+        Fetches comprehensive metadata, legal grounding, and structural information
+        for a specific document in the institute repository.
+      operationId: getDocumentMetadata
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          description: Unique identifier of the document resource
+          schema:
+            type: string
+            example: "DOC-2026-FGOS-310836"
+      responses:
+        '200':
+          description: Document metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentMetadataResponse'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error retrieving document
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /assistant/chat:
     post:
       tags:
@@ -87,6 +160,282 @@ paths:
 
 components:
   schemas:
+    SearchRequest:
+      type: object
+      required:
+        - terms
+      properties:
+        terms:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Search terms and keywords entered by user
+          example: "ФГОС эпидемиология зачетные единицы ГИА"
+        facets:
+          $ref: '#/components/schemas/SearchFacetFilters'
+        pagination:
+          $ref: '#/components/schemas/PaginationRequest'
+        sortBy:
+          type: string
+          enum: [RELEVANCE, DATE_DESC, DATE_ASC, TITLE_ASC]
+          default: RELEVANCE
+
+    SearchFacetFilters:
+      type: object
+      properties:
+        documentTypes:
+          type: array
+          items:
+            type: string
+            enum:
+              - REGULATIONS
+              - RULES
+              - ORDERS
+              - INSTRUCTIONS
+              - COMMISSION_PROTOCOLS
+              - SYLLABUS_RPD
+              - GIA_PROGRAMS
+        specialtyCodes:
+          type: array
+          items:
+            type: string
+            enum:
+              - "31.08.36"
+              - "31.08.35"
+              - "31.08.19"
+          example: ["31.08.36"]
+        years:
+          type: array
+          items:
+            type: integer
+          example: [2024, 2025, 2026]
+        status:
+          type: string
+          enum: [ACTIVE, ARCHIVED, DRAFT, SUPERSEDED]
+          default: ACTIVE
+
+    PaginationRequest:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+          example: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+          example: 20
+
+    PaginationMeta:
+      type: object
+      required:
+        - currentPage
+        - pageSize
+        - totalPages
+        - totalRecords
+      properties:
+        currentPage:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        totalPages:
+          type: integer
+          example: 3
+        totalRecords:
+          type: integer
+          example: 45
+
+    HighlightSnippet:
+      type: object
+      required:
+        - field
+        - snippet
+      properties:
+        field:
+          type: string
+          example: "content"
+        snippet:
+          type: string
+          example: "Объем программы ординатуры составляет <mark>120 зачетных единиц</mark> независимо от формы обучения..."
+
+    SearchResultItem:
+      type: object
+      required:
+        - documentId
+        - title
+        - documentType
+        - score
+        - highlights
+      properties:
+        documentId:
+          type: string
+          example: "DOC-2026-FGOS-310836"
+        title:
+          type: string
+          example: "ФГОС ВО 31.08.36 Эпидемиология (уровень подготовки кадров высшей квалификации)"
+        documentType:
+          type: string
+          example: "REGULATIONS"
+        specialtyCode:
+          type: string
+          example: "31.08.36"
+        effectiveDate:
+          type: string
+          format: date
+          example: "2024-09-01"
+        summary:
+          type: string
+          example: "Федеральный государственный образовательный стандарт ординатуры по специальности Эпидемиология."
+        score:
+          type: number
+          format: float
+          example: 0.94
+        highlights:
+          type: array
+          items:
+            $ref: '#/components/schemas/HighlightSnippet'
+        resourceUri:
+          type: string
+          example: "/api/documents/DOC-2026-FGOS-310836"
+
+    SearchFacetCount:
+      type: object
+      required:
+        - value
+        - count
+      properties:
+        value:
+          type: string
+          example: "REGULATIONS"
+        count:
+          type: integer
+          example: 12
+
+    SearchFacetDistribution:
+      type: object
+      properties:
+        documentTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchFacetCount'
+        specialtyCodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchFacetCount'
+        years:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchFacetCount'
+
+    SearchResponse:
+      type: object
+      required:
+        - results
+        - pagination
+        - totalMatches
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResultItem'
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+        totalMatches:
+          type: integer
+          example: 45
+        facetDistribution:
+          $ref: '#/components/schemas/SearchFacetDistribution'
+        executionTimeMs:
+          type: integer
+          example: 38
+
+    DocumentMetadataResponse:
+      type: object
+      required:
+        - documentId
+        - title
+        - documentType
+        - status
+        - effectiveDate
+        - legalGrounding
+      properties:
+        documentId:
+          type: string
+          example: "DOC-2026-FGOS-310836"
+        title:
+          type: string
+          example: "ФГОС ВО 31.08.36 Эпидемиология"
+        documentType:
+          type: string
+          example: "REGULATIONS"
+        specialtyCode:
+          type: string
+          example: "31.08.36"
+        specialtyName:
+          type: string
+          example: "Эпидемиология"
+        status:
+          type: string
+          enum: [ACTIVE, ARCHIVED, DRAFT, SUPERSEDED]
+          example: ACTIVE
+        version:
+          type: string
+          example: "1.0.0"
+        effectiveDate:
+          type: string
+          format: date
+          example: "2024-09-01"
+        expirationDate:
+          type: string
+          format: date
+          nullable: true
+        approvedBy:
+          type: string
+          example: "Министерство науки и высшего образования Российской Федерации"
+        legalGrounding:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegalReference'
+        keywords:
+          type: array
+          items:
+            type: string
+          example: ["ординатура", "эпидемиология", "ГИА", "компетенции"]
+        sections:
+          type: array
+          items:
+            type: object
+            required:
+              - sectionId
+              - title
+            properties:
+              sectionId:
+                type: string
+                example: "sec-iv-4.3"
+              title:
+                type: string
+                example: "Раздел IV. Требования к структуре программы ординатуры"
+              clauseNumber:
+                type: string
+                example: "4.3.2"
+        downloadUrl:
+          type: string
+          nullable: true
+          example: "/api/documents/DOC-2026-FGOS-310836/download"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-09-01T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-01-15T10:30:00Z"
+
     ConsultationRequest:
       type: object
       required:
