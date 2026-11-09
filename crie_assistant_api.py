@@ -45,7 +45,14 @@ class FilterResponse(BaseModel):
     facets: Optional[Dict[str, Dict[str, int]]] = None
 
 
+_FULL_FACETS_CACHE: Optional[Dict[str, Dict[str, int]]] = None
+
+
 def _compute_facets(index: NormativeInvertedIndex, matched_docs: List[Any]) -> Dict[str, Dict[str, int]]:
+    global _FULL_FACETS_CACHE
+    if len(matched_docs) == len(index.documents) and _FULL_FACETS_CACHE is not None:
+        return _FULL_FACETS_CACHE
+
     types_count: Dict[str, int] = {}
     categories_count: Dict[str, int] = {}
     specialties_count: Dict[str, int] = {}
@@ -60,11 +67,14 @@ def _compute_facets(index: NormativeInvertedIndex, matched_docs: List[Any]) -> D
         code = (doc.get("code") if isinstance(doc, dict) else getattr(doc, "code", None)) or "General"
         specialties_count[code] = specialties_count.get(code, 0) + 1
 
-    return {
+    result = {
         "types": dict(sorted(types_count.items(), key=lambda item: item[1], reverse=True)),
         "categories": dict(sorted(categories_count.items(), key=lambda item: item[1], reverse=True)),
         "specialties": dict(sorted(specialties_count.items(), key=lambda item: item[1], reverse=True)),
     }
+    if len(matched_docs) == len(index.documents):
+        _FULL_FACETS_CACHE = result
+    return result
 
 
 def _filter_docs(
