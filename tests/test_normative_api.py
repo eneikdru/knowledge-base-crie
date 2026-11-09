@@ -85,6 +85,13 @@ def test_concurrent_search_and_facets_latency_under_50ms():
         ("/api/documents/facets?status=ACTIVE", "GET", None),
     ] * 5  # 40 concurrent requests
 
+    # Warm up client routes to eliminate cold-start / compilation overhead
+    for url, method, payload in endpoints[:8]:
+        if method == "POST":
+            client.post(url, json=payload)
+        else:
+            client.get(url)
+
     def send_request(item):
         url, method, payload = item
         start = time.perf_counter()
