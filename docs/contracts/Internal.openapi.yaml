@@ -10,7 +10,93 @@ info:
 servers:
   - url: /api
     description: Internal API server
+  - url: /
+    description: Root API server
 paths:
+  /chat:
+    post:
+      tags:
+        - Chat
+      summary: Semantic search and answer generation over normative documents
+      description: >-
+        Performs semantic search across the 1,697 normative corpus documents
+        (residency regulations, orders, faculty workload, attestation) and returns
+        grounded answer text, matched documents with titles and paths, and response latency.
+      operationId: chatSemanticShort
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Grounded answer with matched normative documents and response latency
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          description: Bad request due to malformed JSON or unparseable payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '422':
+          description: Unprocessable Entity when required query text is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Internal chat generation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/chat:
+    post:
+      tags:
+        - Chat
+      summary: Semantic search and answer generation over normative documents (/api/chat)
+      description: >-
+        Canonical /api/chat endpoint performing semantic search and grounded answer generation
+        across 1,697 institute normative documents, returning answer text, matched documents
+        with titles and paths, and response latency.
+      operationId: chatSemanticEndpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Grounded answer with matched normative documents and response latency
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          description: Bad request due to malformed JSON or unparseable payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '422':
+          description: Unprocessable Entity when required query text is missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Internal chat generation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /search:
     post:
       tags:
@@ -223,6 +309,160 @@ paths:
 
 components:
   schemas:
+    ChatMessageRole:
+      type: string
+      enum: [system, user, assistant]
+      description: Role of the message sender in the conversation
+      example: user
+
+    ChatMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          $ref: '#/components/schemas/ChatMessageRole'
+        content:
+          type: string
+          description: Text content of the conversation message
+          example: "Какие документы регламентируют промежуточную аттестацию ординаторов?"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-11-09T08:00:00Z"
+
+    ChatFilters:
+      type: object
+      description: Optional filtering criteria across normative documents
+      properties:
+        documentTypes:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentTypeEnum'
+          example: [REGULATIONS, ORDERS]
+        specialtyCodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpecialtyCodeEnum'
+          example: ["31.08.36"]
+        years:
+          type: array
+          items:
+            type: integer
+          example: [2025, 2026]
+        category:
+          type: string
+          description: Functional category filter (e.g. ordinatura, attestation, workload, orders)
+          example: "ordinatura"
+
+    ChatRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          description: User question or search query string for grounded generation
+          example: "Каков порядок проведения промежуточной аттестации ординаторов по эпидемиологии?"
+        filters:
+          $ref: '#/components/schemas/ChatFilters'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+          description: Conversation message history for multi-turn dialogue context
+        historyContext:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+          description: Contextual history alias for client interoperability
+        history_context:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+          description: Snake_case history context alias for client interoperability
+
+    MatchedDocument:
+      type: object
+      required:
+        - title
+        - path
+      properties:
+        documentId:
+          type: string
+          description: Document unique identifier
+          example: "DOC-2026-ORD-ATTEST-01"
+        title:
+          type: string
+          description: Title of matched normative document
+          example: "Положение о порядке проведения промежуточной аттестации ординаторов"
+        path:
+          type: string
+          description: Canonical repository path or URI to the document file
+          example: "data/normative/regulations/polozhenie_attestatsiya_2026.pdf"
+        score:
+          type: number
+          format: float
+          description: Relevance ranking score
+          example: 0.94
+        snippet:
+          type: string
+          description: Matched contextual text passage or excerpt
+          example: "Промежуточная аттестация ординаторов проводится два раза в год в форме зачетов и экзаменов..."
+
+    ChatResponse:
+      type: object
+      required:
+        - answer
+        - matchedDocuments
+        - latencyMs
+      properties:
+        answer:
+          type: string
+          description: Generated answer text grounded in the normative corpus
+          example: "Промежуточная аттестация ординаторов проводится два раза в год в соответствии с учебным планом кафедры..."
+        answerText:
+          type: string
+          description: Answer text alias
+          example: "Промежуточная аттестация ординаторов проводится два раза в год..."
+        answer_text:
+          type: string
+          description: Snake_case answer text alias
+        matchedDocuments:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchedDocument'
+          description: List of matched normative documents including titles and paths
+        matched_documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchedDocument'
+          description: Snake_case alias for matched documents
+        latencyMs:
+          type: integer
+          description: Total request processing and generation latency in milliseconds
+          example: 185
+        latency:
+          type: number
+          format: float
+          description: Latency in milliseconds or floating point seconds
+          example: 185.2
+        responseLatency:
+          type: number
+          description: Response latency representation
+          example: 185.2
+        responseLatencyMs:
+          type: integer
+          description: Response latency in integer milliseconds
+          example: 185
+        executionTimeMs:
+          type: integer
+          description: Search and generation execution time in milliseconds
+          example: 185
+
     SearchRequest:
       type: object
       required:
