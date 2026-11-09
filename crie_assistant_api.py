@@ -152,6 +152,23 @@ def fast_search(
     )
 
 
+@app.get("/api/documents/facets")
+def get_documents_facets(
+    query: Optional[str] = Query(default=None),
+    status: Optional[str] = Query(default=None),
+):
+    index = get_normative_index()
+    if query and query.strip():
+        res = index.search(query=query.strip(), limit=len(index.documents))
+        docs = res.get("results", [])
+    else:
+        docs = index.documents
+    return {
+        "facets": _compute_facets(index, docs),
+        "total_documents": len(docs),
+    }
+
+
 @app.get("/api/documents/filter", response_model=FilterResponse)
 def get_documents_filter(
     category: Optional[str] = Query(default=None),

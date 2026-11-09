@@ -282,7 +282,7 @@ class NormativeInvertedIndex:
                 token_matches = set(self.index.get(token, []))
                 if not token_matches:
                     for indexed_token, ids in self.index.items():
-                        if token in indexed_token or indexed_token in token:
+                        if len(token) >= 3 and indexed_token.startswith(token):
                             token_matches.update(ids)
                 if matched_doc_ids is None:
                     matched_doc_ids = token_matches
