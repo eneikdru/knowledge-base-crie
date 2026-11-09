@@ -1,0 +1,20 @@
+[
+  {
+    "concern": "(medium) Theme and branding archetype retain generic FinTech references rather than domain-specific CRIE medical normative knowledge base terminology.",
+    "jtbd": "When evaluating and using the knowledge base portal, I want branding, archetype badges, and metadata to consistently reflect the CRIE medical normative knowledge base rather than placeholder FinTech references, so that medical staff and residents experience clear domain credibility and normative grounding.",
+    "acceptanceCriteria": "Given the mockup at design/approved/20261109090510-mockup/mockup.html, When inspecting header branding, hero badges, image alt descriptions, and form controls, Then all instances of 'FinTech' and 'FIN_TECH' are replaced with medical normative terminology (such as 'CRIE Normative Assistant' and 'MED_NORMATIVE') and zero references to FinTech remain.",
+    "editInstruction": "In design/approved/20261109090510-mockup/mockup.html, update the page title to 'Full-product design refresh for knowledge-base-crie - round complete - CRIE Medical Normative'; update the header logo alt text to 'CRIE Brand Logo'; replace the hero archetype badge 'FIN_TECH' with 'CRIE_NORMATIVE'; update the hero topology image alt text to 'CRIE Medical Normative Interface Preview'; and in the archetype select dropdown replace the 'FinTech' option with '<option value=\"CRIE_NORMATIVE\" selected>CRIE Medical Normative</option>'.",
+    "kanoClass": "must_be",
+    "cynefinDomain": "clear",
+    "leanValue": "essential"
+  },
+  {
+    "concern": "(low) Secondary action buttons in the hero section could provide more distinct focus-visible rings and active touch feedback on mobile viewports.",
+    "jtbd": "When interacting with secondary action buttons on touchscreens or navigating with keyboard focus, I want prominent focus rings and active touch down feedback, so that I receive immediate sensory confirmation of interaction state on both desktop and mobile viewports.",
+    "acceptanceCriteria": "Given the hero secondary action button 'Inspect Specification' in design/approved/20261109090510-mockup/mockup.html, When navigating to it via keyboard or tapping on a 375px mobile viewport, Then the element displays an accentuated focus-visible ring (focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950) and active touch depression feedback (active:scale-95 active:bg-slate-700) meeting accessibility perception standards.",
+    "editInstruction": "In design/approved/20261109090510-mockup/mockup.html, locate the secondary hero button '<button type=\"button\" class=\"px-6 py-3 bg-slate-800... Inspect Specification</button>' and add active tactile classes 'active:scale-95 active:bg-slate-700' and sharpen the focus indicator to 'focus-visible:ring-emerald-300 focus-visible:ring-offset-slate-950' to provide distinct touch and keyboard states on mobile and desktop viewports.",
+    "kanoClass": "performance",
+    "cynefinDomain": "clear",
+    "leanValue": "valuable"
+  }
+]
