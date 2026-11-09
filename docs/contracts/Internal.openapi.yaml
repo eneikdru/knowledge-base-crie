@@ -1,176 +1,119 @@
-openapi: 3.1.0
+openapi: 3.0.3
 info:
-  title: CRIE Institute AI Assistant & Document Generation API
-  description: >-
-    Internal API contract defining consultation endpoints with DeepSeek-grounded
-    normative knowledge, automated generation of official institute orders
-    formatted strictly to GOST R 7.0.97-2016 in .docx format, and fast faceted
-    search and document metadata retrieval for desktop and mobile clients.
-  version: 1.3.0
-servers:
-  - url: /api
-    description: Internal API server
-  - url: /
-    description: Root API server
+  title: Internal Normative Registry and RAG Consultant API
+  version: 1.0.0
+  description: >
+    Contract for managing normative document registry of institute acts,
+    providing direct binary file downloads (DOCX/PDF) without exposing raw server paths,
+    and offering concise markdown-formatted RAG consultant answers grounded in official regulations.
 paths:
-  /api/auth/verify:
-    post:
-      tags:
-        - Auth
-      summary: Authenticate via institutional token or service PIN
-      description: >-
-        Verifies institutional credentials (152-FZ security boundary). Accepts an
-        institutional access token or a service PIN code and issues an authenticated
-        session bearer token.
-      operationId: verifyAuth
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AuthVerificationRequest'
-      responses:
-        '200':
-          description: Successful authentication with issued session token and user context
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthVerificationResponse'
-        '400':
-          description: Validation error or missing credentials
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '422':
-          description: Unprocessable entity payload
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '500':
-          description: Internal authentication service failure
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/auth/session:
+  /api/normative/documents:
     get:
+      summary: Search and list normative documents in registry
+      description: Retrieve catalog items with semantic keyword filtering, pagination, and download metadata.
+      operationId: searchNormativeDocuments
       tags:
-        - Auth
-      summary: Validate active perimeter session
-      description: >-
-        Validates the caller's active institutional session token passed in the Authorization
-        header or session cookie. Returns session validity and identity claims.
-      operationId: getSessionStatus
-      security:
-        - PerimeterBearerAuth: []
+        - Normative Registry
+      parameters:
+        - name: query
+          in: query
+          required: false
+          description: Semantic search query or act title filter
+          schema:
+            type: string
+        - name: docType
+          in: query
+          required: false
+          description: Filter by document type (e.g., protocol, order, schedule, curriculum, regulation)
+          schema:
+            type: string
+            enum:
+              - PROTOCOL
+              - ORDER
+              - SCHEDULE
+              - CURRICULUM
+              - STAFFING_REPORT
+              - REGULATION
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
       responses:
         '200':
-          description: Session is active and valid
+          description: Search results containing matched documents and metadata
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SessionStatusResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '500':
-          description: Internal server error
+                $ref: '#/components/schemas/DocumentSearchResponse'
+        '400':
+          description: Invalid query parameters
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /chat:
-    post:
+  /api/normative/document/{id}/download:
+    get:
+      summary: Download normative document file directly
+      description: Stream direct DOCX or PDF file by document ID without exposing raw server file paths.
+      operationId: downloadNormativeDocument
       tags:
-        - Chat
-      summary: Semantic search and answer generation over normative documents
-      description: >-
-        Performs semantic search across the 1,697 normative corpus documents
-        (residency regulations, orders, faculty workload, attestation) and returns
-        grounded answer text, matched documents with titles and paths, and response latency.
-      operationId: chatSemanticShort
-      security:
-        - PerimeterBearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ChatRequest'
+        - Normative Registry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Unique document identifier
+          schema:
+            type: string
+            format: uuid
+        - name: format
+          in: query
+          required: false
+          description: Preferred file format (docx or pdf)
+          schema:
+            type: string
+            enum: [docx, pdf]
+            default: docx
       responses:
         '200':
-          description: Grounded answer with matched normative documents and response latency
-          content:
-            application/json:
+          description: Binary file stream of requested normative document
+          headers:
+            Content-Disposition:
               schema:
-                $ref: '#/components/schemas/ChatResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '400':
-          description: Bad request due to malformed JSON or unparseable payload
-          content:
-            application/json:
+                type: string
+                example: attachment; filename="order_104_ums.docx"
+            Content-Type:
               schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '422':
-          description: Unprocessable Entity when required query text is missing or invalid
+                type: string
+                example: application/vnd.openxmlformats-officedocument.wordprocessingml.document
           content:
-            application/json:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
               schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '500':
-          description: Internal chat generation error
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Document or artifact not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  /api/chat:
-    post:
-      tags:
-        - Chat
-      summary: Semantic search and answer generation over normative documents (/api/chat)
-      description: >-
-        Canonical /api/chat endpoint performing semantic search and grounded answer generation
-        across 1,697 institute normative documents, returning answer text, matched documents
-        with titles and paths, and response latency.
-      operationId: chatSemanticEndpoint
-      security:
-        - PerimeterBearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ChatRequest'
-      responses:
-        '200':
-          description: Grounded answer with matched normative documents and response latency
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChatResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '400':
-          description: Bad request due to malformed JSON or unparseable payload
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '422':
-          description: Unprocessable Entity when required query text is missing or invalid
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
         '500':
-          description: Internal chat generation error
+          description: Internal storage or file generation error
           content:
             application/json:
               schema:
@@ -178,15 +121,11 @@ paths:
 
   /api/consultant/query:
     post:
+      summary: Submit query to RAG expert consultant
+      description: Perform semantic retrieval over regulatory base (Rospotrebnadzor and internal institute acts) and return concise, factual markdown answer.
+      operationId: queryConsultant
       tags:
-        - Consultant
-        - RAG
-      summary: Concise RAG consultant query on Rospotrebnadzor and institute normative acts
-      description: >-
-        Expert RAG consultant endpoint providing concise, factual, no-fluff answers
-        grounded in the 1,697 institute normative acts, SanPiN, and Rospotrebnadzor orders.
-        Returns markdown-formatted response, legal citations, and confidence score without exposing local filesystem paths.
-      operationId: queryRagConsultant
+        - RAG Consultant
       requestBody:
         required: true
         content:
@@ -195,960 +134,103 @@ paths:
               $ref: '#/components/schemas/ConsultantQueryRequest'
       responses:
         '200':
-          description: Concise markdown consultation response with verified legal citations
+          description: Concise markdown-formatted expert answer with citation sources
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConsultantQueryResponse'
         '400':
-          description: Bad request due to missing query or invalid parameters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '422':
-          description: Unprocessable entity
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '500':
-          description: RAG inference or retrieval service failure
+          description: Malformed or empty question payload
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  /api/normative/document/{id}/download:
-    get:
-      tags:
-        - Documents
-        - Normative
-      summary: Direct download of normative document by ID (DOCX / PDF)
-      description: >-
-        Downloads the official binary file for a cataloged institute document.
-        Accepts logical document ID (e.g. DOC-2026-FGOS-310836) without raw local path parameters.
-      operationId: downloadNormativeDocumentById
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Clean identifier of the normative document resource
-          schema:
-            type: string
-            example: "DOC-2026-FGOS-310836"
-        - name: format
-          in: query
-          required: false
-          description: Desired file export format
-          schema:
-            type: string
-            enum: [docx, pdf]
-            default: docx
-      responses:
-        '200':
-          description: Binary file stream of requested normative document (DOCX or PDF)
-          headers:
-            Content-Disposition:
-              schema:
-                type: string
-                example: "attachment; filename=\"DOC-2026-FGOS-310836.docx\""
-            Content-Type:
-              schema:
-                type: string
-                example: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          content:
-            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
-              schema:
-                type: string
-                format: binary
-            application/pdf:
-              schema:
-                type: string
-                format: binary
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-        '400':
-          description: Invalid document ID or requested format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '404':
-          description: Document not found in corpus
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal file retrieval error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /search:
-    post:
-      tags:
-        - Search
-      summary: Fast normative search with facet filters and snippet highlights
-      description: >-
-        Performs full-text and semantic search across normative corpus and generated
-        documents with faceted filters and contextual highlight snippets for responsive UI.
-      operationId: searchDocuments
-      security:
-        - PerimeterBearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SearchRequest'
-      responses:
-        '200':
-          description: Search results matching the query terms and facet filters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SearchResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '400':
-          description: Bad request due to malformed JSON or unparseable payload
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '422':
-          description: Unprocessable Entity with deterministic validation error structures
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '500':
-          description: Search service internal error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /documents/facets:
-    get:
-      tags:
-        - Documents
-        - Search
-      summary: Get document facet counts and aggregations
-      description: >-
-        Returns available document facets with counts for document types, specialties, and years
-        to populate search filter panels in one click.
-      operationId: getDocumentFacets
-      security:
-        - PerimeterBearerAuth: []
-      parameters:
-        - name: query
-          in: query
-          required: false
-          description: Optional search text to restrict facet count calculations
-          schema:
-            type: string
-        - name: status
-          in: query
-          required: false
-          description: Filter facet counts by document status
-          schema:
-            type: string
-            enum: [ACTIVE, ARCHIVED, DRAFT, SUPERSEDED]
-            default: ACTIVE
-      responses:
-        '200':
-          description: Facet distributions calculated across active institute documents
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DocumentFacetsResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '422':
-          description: Validation error for invalid facet query parameters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '500':
-          description: Internal server error calculating facets
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /documents/{documentId}:
-    get:
-      tags:
-        - Documents
-      summary: Retrieve document metadata and resource details
-      description: >-
-        Fetches comprehensive metadata, legal grounding, and structural information
-        for a specific document in the institute repository.
-      operationId: getDocumentMetadata
-      security:
-        - PerimeterBearerAuth: []
-      parameters:
-        - name: documentId
-          in: path
-          required: true
-          description: Unique identifier of the document resource
-          schema:
-            type: string
-            example: "DOC-2026-FGOS-310836"
-      responses:
-        '200':
-          description: Document metadata retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DocumentMetadataResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '404':
-          description: Document not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error retrieving document
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /documents/{documentId}/download:
-    get:
-      tags:
-        - Documents
-      summary: Download document file by documentId
-      description: >-
-        Alias download endpoint directly under /documents resource hierarchy.
-      operationId: downloadDocumentById
-      parameters:
-        - name: documentId
-          in: path
-          required: true
-          description: Unique identifier of the document resource
-          schema:
-            type: string
-            example: "DOC-2026-FGOS-310836"
-        - name: format
-          in: query
-          required: false
-          description: File format (docx, pdf)
-          schema:
-            type: string
-            enum: [docx, pdf]
-            default: docx
-      responses:
-        '200':
-          description: Document binary stream
-          content:
-            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
-              schema:
-                type: string
-                format: binary
-            application/pdf:
-              schema:
-                type: string
-                format: binary
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-        '404':
-          description: Document not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /assistant/chat:
-    post:
-      tags:
-        - Assistant
-      summary: Submit a consultation query to the personal AI assistant
-      description: >-
-        Provides legally grounded, accurate consultation using institute standards,
-        FGOS VO, academic calendar, GIA stages, SanPiN, and VAK requirements.
-      operationId: submitConsultationQuery
-      security:
-        - PerimeterBearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ConsultationRequest'
-      responses:
-        '200':
-          description: Successful consultation response with verified legal references
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ConsultationResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '400':
-          description: Invalid request parameters or missing context
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '422':
-          description: Unprocessable consultation query payload
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '500':
-          description: Assistant processing error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /orders/generate:
-    post:
-      tags:
-        - Order Generation
-      summary: Generate an official institute order draft in MS Word (.docx) format
-      description: >-
-        Generates official orders (enrollment, admission to GIA, scholarship appointment)
-        compliant with GOST R 7.0.97-2016 requirements (Times New Roman 14pt, 30/15 mm margins,
-        Rospotrebnadzor requisites).
-      operationId: generateOrderDocument
-      security:
-        - PerimeterBearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/OrderGenerationRequest'
-      responses:
-        '200':
-          description: Order draft generated successfully (returns binary docx or generation result)
-          content:
-            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
-              schema:
-                type: string
-                format: binary
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OrderGenerationResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '400':
-          description: Validation error due to missing mandatory GOST fields or commission details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '422':
-          description: Unprocessable order generation parameters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '500':
-          description: Document generation engine error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/v1/generator/document:
-    post:
-      tags:
-        - AI Document Generator
-      summary: Generate official institute document using DeepSeek LLM according to GOST R 7.0.97-2016
-      description: >-
-        Generates official educational and administrative institute documents using DeepSeek LLM
-        grounded in normative standards. Supports UMS minutes, director orders, examination schedules,
-        curricula (ordinatura 120 z.e. / 4320 h and aspirantura), faculty staffing and workload certificates,
-        and local normative acts. Returns document metadata, draft content, and download URL for .DOCX binary.
-      operationId: generateOfficialDocument
-      security:
-        - PerimeterBearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/OfficialDocumentGenerationRequest'
-      responses:
-        '200':
-          description: Document generated successfully with GOST R 7.0.97-2016 compliance metadata
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OfficialDocumentGenerationResponse'
-        '400':
-          description: Bad request due to invalid parameters or failed GOST validation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '422':
-          description: Unprocessable entity when document specific payload constraints are violated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '500':
-          description: Internal generator service or DeepSeek engine error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/v1/generator/export/docx:
-    post:
-      tags:
-        - AI Document Generator
-        - Export
-      summary: Direct one-click binary export of generated document to MS Word (.docx)
-      description: >-
-        Converts document parameters or pre-generated document session into a strictly formatted
-        .DOCX binary compliant with GOST R 7.0.97-2016 (Times New Roman 14pt, margins left 30mm, right 15mm,
-        top/bottom 20mm, 1.5 line spacing, Rospotrebnadzor official requisites). Returns direct octet-stream
-        with Content-Disposition attachment header.
-      operationId: exportOfficialDocumentDocx
-      security:
-        - PerimeterBearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DocxExportRequest'
-      responses:
-        '200':
-          description: Direct .DOCX binary export stream
-          headers:
-            Content-Disposition:
-              schema:
-                type: string
-                example: 'attachment; filename="protocol_ums_12_2026.docx"'
-              description: Content-Disposition header specifying download filename
-            Content-Type:
-              schema:
-                type: string
-                example: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-          content:
-            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
-              schema:
-                type: string
-                format: binary
-        '400':
-          description: Invalid export specification or missing document payload
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-        '404':
-          description: Referenced generated document not found or expired
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422':
-          description: Validation error for document export payload
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationErrorResponse'
-        '500':
-          description: DOCX binary assembly failure
+        '503':
+          description: Upstream AI or vector search service unavailable
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
 components:
-  securitySchemes:
-    PerimeterBearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: >-
-        Perimeter authentication bearer token conforming to 152-FZ institutional access controls.
-        Acquired via /api/auth/verify using institutional token or PIN code.
-
-  responses:
-    UnauthorizedError:
-      description: >-
-        Institutional perimeter authentication required or invalid session token.
-        Clients must authenticate against /api/auth/verify before querying protected resources.
-      headers:
-        WWW-Authenticate:
-          schema:
-            type: string
-          description: Challenge mechanism specification (e.g., Bearer realm="CRIE-INSTITUTIONAL-PERIMETER", error="invalid_token")
-          example: 'Bearer realm="CRIE-INSTITUTIONAL-PERIMETER", error="invalid_token", error_description="Authentication required or session expired"'
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/AuthErrorResponse'
-
   schemas:
-    AuthVerificationRequest:
-      type: object
-      description: >-
-        Perimeter credential verification payload. Exactly one of institutionalToken or pinCode
-        must be supplied.
-      properties:
-        institutionalToken:
-          type: string
-          description: Institutional access token issued by supervisory / identity authority
-          example: "inst_tok_9b2e4781cf42a0e1"
-        pinCode:
-          type: string
-          pattern: '^\d{4,8}$'
-          description: Authorized personnel service PIN code (4-8 numeric digits)
-          example: "849201"
-        clientType:
-          type: string
-          enum: [DESKTOP_UI, MOBILE_UI, INTERNAL_SERVICE]
-          default: DESKTOP_UI
-          description: Originating client platform profile
-      anyOf:
-        - required: [institutionalToken]
-        - required: [pinCode]
-
-    AuthVerificationResponse:
-      type: object
-      required:
-        - accessToken
-        - tokenType
-        - expiresIn
-        - user
-      properties:
-        accessToken:
-          type: string
-          description: Issued perimeter session token
-          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.t-ID1_q"
-        tokenType:
-          type: string
-          enum: [Bearer]
-          default: Bearer
-          example: Bearer
-        expiresIn:
-          type: integer
-          description: Session lifetime in seconds
-          example: 28800
-        user:
-          $ref: '#/components/schemas/AuthenticatedUser'
-        perimeterLevel:
-          type: string
-          enum: [STANDARD_FACULTY, ADMINISTRATIVE, AUDIT_INSPECTOR]
-          example: STANDARD_FACULTY
-
-    AuthenticatedUser:
+    DocumentItem:
       type: object
       required:
         - id
-        - displayName
-        - role
+        - title
+        - docNumber
+        - issueDate
+        - docType
+        - annotation
+        - downloadUrl
+        - fileFormat
+        - fileSizeBytes
       properties:
         id:
           type: string
-          example: "usr-crie-0042"
-        displayName:
-          type: string
-          example: "Дмитрий Ефремов"
-        role:
-          type: string
-          enum: [FACULTY, METHODIST, ADMIN, GUEST_AUDITOR]
-          example: FACULTY
-        department:
-          type: string
-          example: "Кафедра эпидемиологии"
-
-    SessionStatusResponse:
-      type: object
-      required:
-        - authenticated
-        - active
-      properties:
-        authenticated:
-          type: boolean
-          example: true
-        active:
-          type: boolean
-          example: true
-        user:
-          $ref: '#/components/schemas/AuthenticatedUser'
-        expiresAt:
-          type: string
-          format: date-time
-          example: "2026-11-10T04:43:24Z"
-        complianceNotice:
-          type: string
-          example: "152-ФЗ perimeter verified"
-
-    AuthErrorResponse:
-      type: object
-      required:
-        - error
-        - message
-        - code
-      properties:
-        error:
-          type: string
-          example: "Unauthorized"
-        message:
-          type: string
-          example: "Full isolation active. Institutional token or service PIN required (152-FZ)."
-        code:
-          type: string
-          enum:
-            - PERIMETER_AUTH_REQUIRED
-            - INVALID_CREDENTIALS
-            - SESSION_EXPIRED
-            - ACCESS_DENIED
-          example: PERIMETER_AUTH_REQUIRED
-        challengeRealm:
-          type: string
-          example: "CRIE-INSTITUTIONAL-PERIMETER"
-        timestamp:
-          type: string
-          format: date-time
-          example: "2026-11-09T20:43:24Z"
-
-    ChatMessageRole:
-      type: string
-      enum: [system, user, assistant]
-      description: Role of the message sender in the conversation
-      example: user
-
-    ChatMessage:
-      type: object
-      required:
-        - role
-        - content
-      properties:
-        role:
-          $ref: '#/components/schemas/ChatMessageRole'
-        content:
-          type: string
-          description: Text content of the conversation message
-          example: "Какие документы регламентируют промежуточную аттестацию ординаторов?"
-        timestamp:
-          type: string
-          format: date-time
-          example: "2026-11-09T08:00:00Z"
-
-    ChatFilters:
-      type: object
-      description: Optional filtering criteria across normative documents
-      properties:
-        documentTypes:
-          type: array
-          items:
-            $ref: '#/components/schemas/DocumentTypeEnum'
-          example: [REGULATIONS, ORDERS]
-        specialtyCodes:
-          type: array
-          items:
-            $ref: '#/components/schemas/SpecialtyCodeEnum'
-          example: ["31.08.36"]
-        years:
-          type: array
-          items:
-            type: integer
-          example: [2025, 2026]
-        category:
-          type: string
-          description: Functional category filter (e.g. ordinatura, attestation, workload, orders)
-          example: "ordinatura"
-
-    ChatRequest:
-      type: object
-      required:
-        - query
-      properties:
-        query:
-          type: string
-          minLength: 1
-          maxLength: 4000
-          description: User question or search query string for grounded generation
-          example: "Каков порядок проведения промежуточной аттестации ординаторов по эпидемиологии?"
-        filters:
-          $ref: '#/components/schemas/ChatFilters'
-        history:
-          type: array
-          items:
-            $ref: '#/components/schemas/ChatMessage'
-          description: Conversation message history for multi-turn dialogue context
-        historyContext:
-          type: array
-          items:
-            $ref: '#/components/schemas/ChatMessage'
-          description: Contextual history alias for client interoperability
-        history_context:
-          type: array
-          items:
-            $ref: '#/components/schemas/ChatMessage'
-          description: Snake_case history context alias for client interoperability
-
-    MatchedDocument:
-      type: object
-      required:
-        - title
-        - path
-      properties:
-        documentId:
-          type: string
-          description: Document unique identifier
-          example: "DOC-2026-ORD-ATTEST-01"
+          format: uuid
+          example: "d7b1b3b1-7890-48e2-9d8a-8be4e7bc5a21"
         title:
           type: string
-          description: Title of matched normative document
-          example: "Положение о порядке проведения промежуточной аттестации ординаторов"
-        path:
+          description: Official human-readable document title
+          example: "Протокол заседания Ученого медицинского совета № 4"
+        docNumber:
           type: string
-          description: Canonical repository path or URI to the document file
-          example: "data/normative/regulations/polozhenie_attestatsiya_2026.pdf"
-        score:
-          type: number
-          format: float
-          description: Relevance ranking score
-          example: 0.94
-        snippet:
+          description: Registration act number
+          example: "ПР-2026/04"
+        issueDate:
           type: string
-          description: Matched contextual text passage or excerpt
-          example: "Промежуточная аттестация ординаторов проводится два раза в год в форме зачетов и экзаменов..."
-
-    ChatResponse:
-      type: object
-      required:
-        - answer
-        - matchedDocuments
-        - latencyMs
-      properties:
-        answer:
+          format: date
+          example: "2026-02-15"
+        docType:
           type: string
-          description: Generated answer text grounded in the normative corpus
-          example: "Промежуточная аттестация ординаторов проводится два раза в год в соответствии с учебным планом кафедры..."
-        answerText:
+          enum:
+            - PROTOCOL
+            - ORDER
+            - SCHEDULE
+            - CURRICULUM
+            - STAFFING_REPORT
+            - REGULATION
+          example: "PROTOCOL"
+        annotation:
           type: string
-          description: Answer text alias
-          example: "Промежуточная аттестация ординаторов проводится два раза в год..."
-        answer_text:
-          type: string
-          description: Snake_case answer text alias
-        matchedDocuments:
-          type: array
-          items:
-            $ref: '#/components/schemas/MatchedDocument'
-          description: List of matched normative documents including titles and paths
-        matched_documents:
-          type: array
-          items:
-            $ref: '#/components/schemas/MatchedDocument'
-          description: Snake_case alias for matched documents
-        latencyMs:
-          type: integer
-          description: Total request processing and generation latency in milliseconds
-          example: 185
-        latency:
-          type: number
-          format: float
-          description: Latency in milliseconds or floating point seconds
-          example: 185.2
-        responseLatency:
-          type: number
-          description: Response latency representation
-          example: 185.2
-        responseLatencyMs:
-          type: integer
-          description: Response latency in integer milliseconds
-          example: 185
-        executionTimeMs:
-          type: integer
-          description: Search and generation execution time in milliseconds
-          example: 185
-
-    ConsultantQueryRequest:
-      type: object
-      required:
-        - query
-      properties:
-        query:
-          type: string
-          minLength: 1
-          maxLength: 4000
-          description: Inquiry for RAG consultant regarding Rospotrebnadzor standards, GOST, or institute regulations
-          example: "Каковы требования к остепененности ППС кафедры и учебной нагрузке по ФГОС?"
-        sessionId:
-          type: string
-          format: uuid
-          description: Optional persistent conversation session identifier
-          example: "d3b07384-d113-494b-9c8e-4a6b12a8e310"
-        strictNormativeOnly:
-          type: boolean
-          default: true
-          description: Strict grounding flag to eliminate fluff and unverified assertions
-        filters:
-          $ref: '#/components/schemas/NormativeFilter'
-
-    ConsultantCitation:
-      type: object
-      required:
-        - documentId
-        - documentTitle
-        - citationReference
-      properties:
-        documentId:
-          type: string
-          description: Canonical logical identifier of cited document
-          example: "DOC-2026-FGOS-310836"
-        documentTitle:
-          type: string
-          description: Human-readable official document title
-          example: "ФГОС ВО 31.08.36 Эпидемиология"
-        citationReference:
-          type: string
-          description: Pinpointed article, section, or clause
-          example: "Раздел IV, п. 4.3.2"
-        snippet:
-          type: string
-          description: Grounding excerpt from normative text
-          example: "Доля научно-педагогических работников, имеющих ученую степень и (или) ученое звание, должна составлять не менее 70%..."
+          description: Human-readable summary or snippet highlighting key resolutions/context
+          example: "Повестка заседания: утверждение экзаменационных сессий ординатуры 25ОЭ, 26ОЭ. Кворум подтвержден Горелов/Романова."
         downloadUrl:
           type: string
-          description: Direct download URL for referenced document without local path exposure
-          example: "/api/normative/document/DOC-2026-FGOS-310836/download?format=docx"
+          description: Clean direct download URL endpoint without local disk path exposure
+          example: "/api/normative/document/d7b1b3b1-7890-48e2-9d8a-8be4e7bc5a21/download?format=docx"
+        fileFormat:
+          type: string
+          enum: [docx, pdf]
+          example: "docx"
+        fileSizeBytes:
+          type: integer
+          format: int64
+          example: 45056
+        gostCompliance:
+          type: string
+          description: Formal standard compliance indicator
+          example: "ГОСТ Р 7.0.97-2016"
 
-    ConsultantQueryResponse:
+    DocumentSearchResponse:
       type: object
       required:
-        - answerMarkdown
-        - citations
-        - confidenceScore
-        - latencyMs
-      properties:
-        answerMarkdown:
-          type: string
-          description: Concise, structured markdown answer without conversational fluff
-          example: "Согласно требованиям ФГОС ВО 31.08.36 (п. 4.3.2):\n\n1. **Остепененность ППС кафедры**: не менее 70% профессорско-преподавательского состава должны иметь ученые степени кандидата или доктора наук.\n2. **Учебная нагрузка**: регулируется локальным порядком планирования педагогической нагрузки (не более 900 часов на ставку)."
-        citations:
-          type: array
-          description: Verified normative act citations backing the answer
-          items:
-            $ref: '#/components/schemas/ConsultantCitation'
-        confidenceScore:
-          type: number
-          format: float
-          description: Retrieval confidence score (0.0 to 1.0)
-          example: 0.98
-        latencyMs:
-          type: integer
-          description: Execution and retrieval latency in milliseconds
-          example: 142
-
-    SearchRequest:
-      type: object
-      required:
-        - terms
-      properties:
-        terms:
-          type: string
-          minLength: 1
-          maxLength: 500
-          description: Search terms and keywords entered by user
-          example: "ФГОС эпидемиология зачетные единицы ГИА"
-        facets:
-          $ref: '#/components/schemas/SearchFacetFilters'
-        pagination:
-          $ref: '#/components/schemas/PaginationRequest'
-        sortBy:
-          type: string
-          enum: [RELEVANCE, DATE_DESC, DATE_ASC, TITLE_ASC]
-          default: RELEVANCE
-
-    SearchFacetFilters:
-      type: object
-      properties:
-        documentTypes:
-          type: array
-          items:
-            $ref: '#/components/schemas/DocumentTypeEnum'
-        specialtyCodes:
-          type: array
-          items:
-            $ref: '#/components/schemas/SpecialtyCodeEnum'
-          example: ["31.08.36"]
-        years:
-          type: array
-          items:
-            type: integer
-          example: [2024, 2025, 2026]
-        status:
-          type: string
-          enum: [ACTIVE, ARCHIVED, DRAFT, SUPERSEDED]
-          default: ACTIVE
-
-    DocumentTypeEnum:
-      type: string
-      enum:
-        - REGULATIONS
-        - RULES
-        - ORDERS
-        - INSTRUCTIONS
-        - COMMISSION_PROTOCOLS
-        - SYLLABUS_RPD
-        - GIA_PROGRAMS
-      description: Normalized categorization of institute normative and curricular documents
-      example: REGULATIONS
-
-    SpecialtyCodeEnum:
-      type: string
-      enum:
-        - "31.08.36"
-        - "31.08.35"
-        - "31.08.19"
-      description: Medical residency specialty codes supported in CRIE knowledge base
-      example: "31.08.36"
-
-    PaginationRequest:
-      type: object
-      properties:
-        page:
-          type: integer
-          minimum: 1
-          default: 1
-          example: 1
-        pageSize:
-          type: integer
-          minimum: 1
-          maximum: 100
-          default: 20
-          example: 20
-
-    PaginationMeta:
-      type: object
-      required:
-        - currentPage
+        - items
+        - total
+        - page
         - pageSize
         - totalPages
-        - totalRecords
       properties:
-        currentPage:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentItem'
+        total:
+          type: integer
+          example: 1697
+        page:
           type: integer
           example: 1
         pageSize:
@@ -1156,1128 +238,71 @@ components:
           example: 20
         totalPages:
           type: integer
-          example: 3
-        totalRecords:
+          example: 85
+
+    ConsultantQueryRequest:
+      type: object
+      required:
+        - question
+      properties:
+        question:
+          type: string
+          description: User inquiry regarding regulatory guidelines or institute internal orders
+          example: "Каковы требования Роспотребнадзора к остепененности ППС кафедр и кворуму УМС?"
+        maxTokens:
           type: integer
-          example: 45
-
-    HighlightSnippet:
-      type: object
-      required:
-        - field
-        - snippet
-      properties:
-        field:
-          type: string
-          example: "content"
-        snippet:
-          type: string
-          example: "Объем программы ординатуры составляет <mark>120 зачетных единиц</mark> независимо от формы обучения..."
-
-    DocumentDownloadUrls:
-      type: object
-      description: Direct file download endpoints without raw local path parameters
-      properties:
-        docx:
-          type: string
-          description: Direct download URL for DOCX version
-          example: "/api/normative/document/DOC-2026-FGOS-310836/download?format=docx"
-        pdf:
-          type: string
-          description: Direct download URL for PDF version
-          example: "/api/normative/document/DOC-2026-FGOS-310836/download?format=pdf"
-
-    SearchResultItem:
-      type: object
-      required:
-        - documentId
-        - title
-        - documentType
-        - score
-        - highlights
-      properties:
-        documentId:
-          type: string
-          example: "DOC-2026-FGOS-310836"
-        title:
-          type: string
-          description: Human-readable official document title
-          example: "ФГОС ВО 31.08.36 Эпидемиология (уровень подготовки кадров высшей квалификации)"
-        annotationSnippet:
-          type: string
-          description: Human-readable concise annotation snippet
-          example: "Стандарт устанавливает объем программы 120 з.е. и кадровые требования к ППС кафедр (остепененность не менее 70%)."
-        documentType:
-          $ref: '#/components/schemas/DocumentTypeEnum'
-        specialtyCode:
-          $ref: '#/components/schemas/SpecialtyCodeEnum'
-        effectiveDate:
-          type: string
-          format: date
-          example: "2024-09-01"
-        summary:
-          type: string
-          example: "Федеральный государственный образовательный стандарт ординатуры по специальности Эпидемиология."
-        score:
+          default: 1024
+          maximum: 4096
+        temperature:
           type: number
           format: float
-          example: 0.94
-        highlights:
-          type: array
-          items:
-            $ref: '#/components/schemas/HighlightSnippet'
-        resourceUri:
-          type: string
-          example: "/api/documents/DOC-2026-FGOS-310836"
-        downloadUrl:
-          type: string
-          description: Primary direct download URL
-          example: "/api/normative/document/DOC-2026-FGOS-310836/download"
-        downloadUrls:
-          $ref: '#/components/schemas/DocumentDownloadUrls'
-
-    SearchFacetCount:
-      type: object
-      required:
-        - value
-        - count
-      properties:
-        value:
-          type: string
-          example: "REGULATIONS"
-        label:
-          type: string
-          description: Human-readable display label in Russian
-          example: "Положения и регламенты"
-        count:
-          type: integer
-          example: 12
-
-    SearchFacetDistribution:
-      type: object
-      properties:
-        documentTypes:
-          type: array
-          items:
-            $ref: '#/components/schemas/SearchFacetCount'
-        specialtyCodes:
-          type: array
-          items:
-            $ref: '#/components/schemas/SearchFacetCount'
-        years:
-          type: array
-          items:
-            $ref: '#/components/schemas/SearchFacetCount'
-
-    DocumentFacetsResponse:
-      type: object
-      required:
-        - facetDistribution
-        - totalDocuments
-      properties:
-        facetDistribution:
-          $ref: '#/components/schemas/SearchFacetDistribution'
-        totalDocuments:
-          type: integer
-          example: 1697
-          description: Total number of documents cataloged in normative repository
-
-    DocumentMetadataResponse:
-      type: object
-      required:
-        - documentId
-        - title
-        - documentType
-        - status
-        - effectiveDate
-        - legalGrounding
-      properties:
-        documentId:
-          type: string
-          example: "DOC-2026-FGOS-310836"
-        title:
-          type: string
-          example: "ФГОС ВО 31.08.36 Эпидемиология"
-        documentType:
-          $ref: '#/components/schemas/DocumentTypeEnum'
-        specialtyCode:
-          $ref: '#/components/schemas/SpecialtyCodeEnum'
-        specialtyName:
-          type: string
-          example: "Эпидемиология"
-        status:
-          type: string
-          enum: [ACTIVE, ARCHIVED, DRAFT, SUPERSEDED]
-          example: ACTIVE
-        version:
-          type: string
-          example: "1.0.0"
-        effectiveDate:
-          type: string
-          format: date
-          example: "2024-09-01"
-        expirationDate:
-          type: string
-          format: date
-          nullable: true
-        approvedBy:
-          type: string
-          example: "Министерство науки и высшего образования Российской Федерации"
-        legalGrounding:
-          type: array
-          items:
-            $ref: '#/components/schemas/LegalReference'
-        keywords:
-          type: array
-          items:
-            type: string
-          example: ["ординатура", "эпидемиология", "ГИА", "компетенции"]
-        sections:
-          type: array
-          items:
-            type: object
-            required:
-              - sectionId
-              - title
-            properties:
-              sectionId:
-                type: string
-                example: "sec-iv-4.3"
-              title:
-                type: string
-                example: "Раздел IV. Требования к структуре программы ординатуры"
-              clauseNumber:
-                type: string
-                example: "4.3.2"
-        downloadUrl:
-          type: string
-          nullable: true
-          example: "/api/normative/document/DOC-2026-FGOS-310836/download"
-        downloadUrls:
-          $ref: '#/components/schemas/DocumentDownloadUrls'
-        createdAt:
-          type: string
-          format: date-time
-          example: "2024-09-01T00:00:00Z"
-        updatedAt:
-          type: string
-          format: date-time
-          example: "2026-01-15T10:30:00Z"
-
-    ConsultationRequest:
-      type: object
-      required:
-        - query
-      properties:
-        sessionId:
-          type: string
-          format: uuid
-          description: Optional persistent session ID for multi-turn dialogue memory
-        query:
-          type: string
-          minLength: 1
-          maxLength: 4000
-          description: User inquiry regarding academic hours, exam admission, commissions, or VAK requirements
-          example: "Каковы публикационные требования ВАК для допуска к защите кандидатской диссертации по эпидемиологии?"
-        targetAudience:
-          type: string
-          enum: [FACULTY, STUDENT, POSTGRADUATE, ADMINISTRATION]
-          default: FACULTY
-        contextFilters:
-          $ref: '#/components/schemas/NormativeFilter'
-
-    NormativeFilter:
-      type: object
-      properties:
-        specialtyCode:
-          $ref: '#/components/schemas/SpecialtyCodeEnum'
-        documentTypes:
-          type: array
-          items:
-            $ref: '#/components/schemas/DocumentTypeEnum'
-
-    ConsultationResponse:
-      type: object
-      required:
-        - answer
-        - legalGrounding
-        - timestamp
-      properties:
-        answer:
-          type: string
-          description: Comprehensive legally grounded response
-        legalGrounding:
-          type: array
-          description: Citations to specific normative acts, FGOS VO standards, SanPiN, or local institute regulations
-          items:
-            $ref: '#/components/schemas/LegalReference'
-        suggestedActions:
-          type: array
-          items:
-            type: string
-          description: Recommended next steps, e.g. order draft generation
-        timestamp:
-          type: string
-          format: date-time
-
-    LegalReference:
-      type: object
-      required:
-        - documentName
-        - articleOrClause
-      properties:
-        documentId:
-          type: string
-        documentName:
-          type: string
-          example: "ФГОС ВО 31.08.36 Эпидемиология"
-        articleOrClause:
-          type: string
-          example: "Раздел IV, п. 4.3.2"
-        excerpt:
-          type: string
-          example: "Объем программы ординатуры составляет 120 зачетных единиц..."
-
-    OrderType:
-      type: string
-      enum:
-        - ADMISSION_TO_GIA
-        - ENROLLMENT
-        - SCHOLARSHIP_APPOINTMENT
-      example: ADMISSION_TO_GIA
-
-    SpecialtyInfo:
-      type: object
-      required:
-        - code
-        - name
-      properties:
-        code:
-          $ref: '#/components/schemas/SpecialtyCodeEnum'
-        name:
-          type: string
-          example: "Эпидемиология"
-
-    StudentReference:
-      type: object
-      required:
-        - studentId
-        - fullName
-        - specialty
-      properties:
-        studentId:
-          type: string
-          example: "STU-2026-0891"
-        fullName:
-          type: string
-          example: "Иванов Алексей Петрович"
-        specialty:
-          $ref: '#/components/schemas/SpecialtyInfo'
-        academicGroup:
-          type: string
-          example: "ОРД-ЭПИ-2026-1"
-        studyYear:
-          type: integer
-          minimum: 1
-          maximum: 6
-          example: 2
-
-    CommissionMember:
-      type: object
-      required:
-        - role
-        - fullName
-        - academicDegree
-        - position
-      properties:
-        role:
-          type: string
-          enum: [CHAIRMAN, MEMBER, SECRETARY]
-          example: CHAIRMAN
-        fullName:
-          type: string
-          example: "Смирнов Виктор Дмитриевич"
-        academicDegree:
-          type: string
-          example: "д-р мед. наук, профессор"
-        position:
-          type: string
-          example: "Заведующий кафедрой эпидемиологии"
-
-    RospotrebnadzorRequisites:
-      type: object
-      required:
-        - organizationName
-        - supervisoryAuthority
-        - okpo
-        - inn
-        - city
-      properties:
-        organizationName:
-          type: string
-          default: "ФБУН ЦНИИ Эпидемиологии Роспотребнадзора"
-          example: "ФБУН ЦНИИ Эпидемиологии Роспотребнадзора"
-        supervisoryAuthority:
-          type: string
-          default: "Федеральная служба по надзору в сфере защиты прав потребителей и благополучия человека"
-        okpo:
-          type: string
-          pattern: '^\d{8}$'
-          example: "01897362"
-        inn:
-          type: string
-          pattern: '^\d{10}$'
-          example: "7720015689"
-        city:
-          type: string
-          default: "Москва"
-          example: "Москва"
-
-    GostFormattingParameters:
-      type: object
-      required:
-        - standard
-        - fontFamily
-        - fontSizePt
-        - margins
-      properties:
-        standard:
-          type: string
-          enum: ["GOST_R_7_0_97_2016"]
-          default: "GOST_R_7_0_97_2016"
-        fontFamily:
-          type: string
-          enum: ["Times New Roman"]
-          default: "Times New Roman"
-        fontSizePt:
-          type: integer
-          enum: [14]
-          default: 14
-        lineSpacing:
-          type: number
-          default: 1.5
-        margins:
-          type: object
-          required:
-            - leftMm
-            - rightMm
-            - topMm
-            - bottomMm
-          properties:
-            leftMm:
-              type: integer
-              enum: [30]
-              default: 30
-            rightMm:
-              type: integer
-              enum: [15]
-              default: 15
-            topMm:
-              type: integer
-              enum: [20]
-              default: 20
-            bottomMm:
-              type: integer
-              enum: [20]
-              default: 20
-
-    OrderGenerationRequest:
-      type: object
-      required:
-        - orderType
-        - registrationDate
-        - students
-        - commissionMembers
-        - gostFormatting
-        - requisites
-      properties:
-        orderType:
-          $ref: '#/components/schemas/OrderType'
-        orderNumber:
-          type: string
-          description: Optional pre-assigned order number. If omitted, generated automatically.
-          example: "2026-ОД/145"
-        registrationDate:
-          type: string
-          format: date
-          example: "2026-11-10"
-        headerTitle:
-          type: string
-          description: Order heading title
-          example: "О допуске ординаторов 2 года обучения к государственной итоговой аттестации"
-        preambleText:
-          type: string
-          description: Justification preamble clause
-          example: "В соответствии с Федеральным законом «Об образовании в РФ», ФГОС ВО и положением о проведении ГИА..."
-        students:
-          type: array
-          minItems: 1
-          items:
-            $ref: '#/components/schemas/StudentReference'
-        commissionMembers:
-          type: array
-          minItems: 3
-          items:
-            $ref: '#/components/schemas/CommissionMember'
-        gostFormatting:
-          $ref: '#/components/schemas/GostFormattingParameters'
-        requisites:
-          $ref: '#/components/schemas/RospotrebnadzorRequisites'
-        signerName:
-          type: string
-          default: "Директор института"
-          example: "Акимкин В.Г."
-        signerTitle:
-          type: string
-          default: "Директор ФБУН ЦНИИ Эпидемиологии Роспотребнадзора, академик РАН"
-
-    OrderGenerationResponse:
-      type: object
-      required:
-        - orderId
-        - orderNumber
-        - generatedAt
-        - downloadUrl
-        - documentStatus
-      properties:
-        orderId:
-          type: string
-          format: uuid
-        orderNumber:
-          type: string
-          example: "2026-ОД/145"
-        documentStatus:
-          type: string
-          enum: [DRAFT, READY, FAILED]
-          example: READY
-        generatedAt:
-          type: string
-          format: date-time
-        downloadUrl:
-          type: string
-          example: "/api/orders/download/78b54a0d-bfd7-43d3-b7e9-04162f32b912.docx"
-        pageCount:
-          type: integer
-          example: 3
-        complianceSummary:
-          type: object
-          properties:
-            standard:
-              type: string
-              example: "ГОСТ Р 7.0.97-2016"
-            fontVerified:
-              type: boolean
-              example: true
-            marginsVerified:
-              type: boolean
-              example: true
-
-    OfficialDocumentCategory:
-      type: string
-      enum:
-        - UMS_MINUTES
-        - DIRECTOR_ORDERS
-        - EXAM_SCHEDULE
-        - CURRICULUM_PLAN
-        - STAFFING_CERTIFICATE
-        - LOCAL_NORMATIVE_ACT
-      description: Category of official institute document generated in accordance with GOST R 7.0.97-2016
-      example: UMS_MINUTES
-
-    UmsMinutesPayload:
-      type: object
-      required:
-        - meetingNumber
-        - meetingDate
-        - chairman
-        - secretary
-        - quorumAttendees
-        - agendaItems
-      properties:
-        meetingNumber:
-          type: string
-          example: "12"
-        meetingDate:
-          type: string
-          format: date
-          example: "2026-02-10"
-        chairman:
-          type: string
-          default: "Горелов А.В."
-          example: "Горелов А.В."
-        secretary:
-          type: string
-          default: "Романова Т.В."
-          example: "Романова Т.В."
-        quorumAttendees:
-          type: array
-          description: List of attending members confirming quorum (e.g. Горелов/Романова and department heads)
-          minItems: 2
-          items:
-            type: string
-          example: ["Горелов А.В.", "Романова Т.В.", "Акимкин В.Г.", "Семенова Е.А."]
-        quorumPresentCount:
-          type: integer
-          example: 18
-        quorumTotalCount:
-          type: integer
-          example: 22
-        agendaItems:
-          type: array
-          minItems: 1
-          items:
-            type: object
-            required:
-              - itemNumber
-              - topic
-              - speaker
-              - resolution
-            properties:
-              itemNumber:
-                type: integer
-                example: 1
-              topic:
-                type: string
-                example: "Об утверждении учебных планов ординатуры на 2026/2027 учебный год"
-              speaker:
-                type: string
-                example: "Романова Т.В."
-              discussionSummary:
-                type: string
-                example: "Заслушан доклад о распределении 120 з.е. по дисциплинам базовой и вариативной частей."
-              resolution:
-                type: string
-                example: "Утвердить учебные планы ординатуры по специальности 31.08.36 Эпидемиология единогласно."
-              votingResult:
-                type: object
-                properties:
-                  inFavor:
-                    type: integer
-                    example: 18
-                  opposed:
-                    type: integer
-                    example: 0
-                  abstained:
-                    type: integer
-                    example: 0
-
-    DirectorOrderCommissionType:
-      type: string
-      enum:
-        - GEK_STATE_EXAM_COMMISSION
-        - CANDIDATE_EXAM_COMMISSION
-        - ADMISSION_COMMISSION
-      example: GEK_STATE_EXAM_COMMISSION
-
-    DirectorOrderPayload:
-      type: object
-      required:
-        - commissionType
-        - orderTitle
-        - academicYear
-        - commissionMembers
-        - enactmentDate
-      properties:
-        commissionType:
-          $ref: '#/components/schemas/DirectorOrderCommissionType'
-        orderTitle:
-          type: string
-          example: "Об утверждении состава Государственной экзаменационной комиссии (ГЭК) на 2026 год"
-        academicYear:
-          type: string
-          example: "2025/2026"
-        enactmentDate:
-          type: string
-          format: date
-          example: "2026-01-20"
-        commissionMembers:
-          type: array
-          minItems: 3
-          items:
-            $ref: '#/components/schemas/CommissionMember'
-        substitutes:
-          type: array
-          items:
-            $ref: '#/components/schemas/CommissionMember'
-        orderDirectives:
-          type: array
-          items:
-            type: string
-          example:
-            - "Утвердить персональный состав Государственной экзаменационной комиссии по специальности 31.08.36."
-            - "Контроль за исполнением настоящего приказа возложить на ученого секретаря института."
-
-    ExamSessionGroupCode:
-      type: string
-      enum:
-        - "25ОЭ"
-        - "26ОЭ"
-        - "25ОИ"
-        - "26ОИ"
-        - "25ОП"
-        - "26ОП"
-        - "ASPIRANTURA_1"
-        - "ASPIRANTURA_2"
-      example: "25ОЭ"
-
-    ExamSessionEvent:
-      type: object
-      required:
-        - discipline
-        - groupCode
-        - examDate
-        - examTime
-        - classroom
-        - examiner
-      properties:
-        discipline:
-          type: string
-          example: "Эпидемиология инфекционных болезней"
-        groupCode:
-          $ref: '#/components/schemas/ExamSessionGroupCode'
-        examDate:
-          type: string
-          format: date
-          example: "2026-01-29"
-        examTime:
-          type: string
-          example: "09:00"
-        consultationDate:
-          type: string
-          format: date
-          example: "2026-01-28"
-        classroom:
-          type: string
-          example: "Аудитория 304, Главный корпус"
-        examiner:
-          type: string
-          example: "проф. Горелов А.В."
-
-    ExamSchedulePayload:
-      type: object
-      required:
-        - sessionStartDate
-        - sessionEndDate
-        - targetGroups
-        - scheduleEvents
-      properties:
-        sessionStartDate:
-          type: string
-          format: date
-          default: "2026-01-25"
-          example: "2026-01-25"
-        sessionEndDate:
-          type: string
-          format: date
-          default: "2026-02-25"
-          example: "2026-02-25"
-        targetGroups:
-          type: array
-          minItems: 1
-          items:
-            $ref: '#/components/schemas/ExamSessionGroupCode'
-          example: ["25ОЭ", "26ОЭ", "25ОИ", "26ОИ", "25ОП", "26ОП", "ASPIRANTURA_1"]
-        scheduleEvents:
-          type: array
-          minItems: 1
-          items:
-            $ref: '#/components/schemas/ExamSessionEvent'
-        approvalAuthority:
-          type: string
-          default: "Утверждаю: Директор института академик РАН Акимкин В.Г."
-
-    CurriculumDisciplineBlock:
-      type: object
-      required:
-        - blockCode
-        - blockTitle
-        - credits
-        - totalHours
-      properties:
-        blockCode:
-          type: string
-          example: "Блок 1. Дисциплины (модули)"
-        blockTitle:
-          type: string
-          example: "Базовая и вариативная части профессиональных дисциплин"
-        credits:
-          type: number
-          example: 42
-        totalHours:
-          type: integer
-          example: 1512
-
-    CurriculumPlanPayload:
-      type: object
-      required:
-        - level
-        - specialtyCode
-        - specialtyTitle
-        - totalCredits
-        - totalHours
-        - studyDurationYears
-        - disciplineBlocks
-      properties:
-        level:
-          type: string
-          enum: [ORDINATURA, ASPIRANTURA]
-          default: ORDINATURA
-          example: ORDINATURA
-        specialtyCode:
-          $ref: '#/components/schemas/SpecialtyCodeEnum'
-        specialtyTitle:
-          type: string
-          example: "31.08.36 Эпидемиология"
-        totalCredits:
-          type: integer
-          enum: [120, 180, 240]
-          default: 120
-          description: Total credits (120 z.e. for residency)
-          example: 120
-        totalHours:
-          type: integer
-          enum: [4320, 6480, 8640]
-          default: 4320
-          description: Total academic hours (4320 h for residency)
-          example: 4320
-        studyDurationYears:
-          type: integer
-          default: 2
-          example: 2
-        disciplineBlocks:
-          type: array
-          minItems: 3
-          items:
-            $ref: '#/components/schemas/CurriculumDisciplineBlock'
-
-    FacultyMemberWorkload:
-      type: object
-      required:
-        - fullName
-        - position
-        - academicDegree
-        - employmentRate
-        - totalPlannedHours
-      properties:
-        fullName:
-          type: string
-          example: "Горелов Александр Васильевич"
-        position:
-          type: string
-          example: "Заведующий кафедрой, профессор"
-        academicDegree:
-          type: string
-          enum: [DOCTOR_OF_SCIENCES, CANDIDATE_OF_SCIENCES, NONE]
-          example: DOCTOR_OF_SCIENCES
-        academicTitle:
-          type: string
-          example: "профессор, академик РАН"
-        employmentRate:
-          type: number
-          minimum: 0.1
-          maximum: 1.5
-          example: 1.0
-        totalPlannedHours:
-          type: integer
-          maximum: 900
-          description: Planned academic load (not exceeding 900 hours per rate)
-          example: 850
-        lectureHours:
-          type: integer
-          example: 120
-        practicalHours:
-          type: integer
-          example: 280
-        scientificSupervisionHours:
-          type: integer
-          example: 450
-
-    StaffingCertificatePayload:
-      type: object
-      required:
-        - departmentName
-        - academicYear
-        - totalStaffCount
-        - degreedStaffCount
-        - degreedPercentage
-        - isDegreePercentageCompliant
-        - facultyMembers
-      properties:
-        departmentName:
-          type: string
-          default: "Кафедра эпидемиологии"
-          example: "Кафедра эпидемиологии"
-        academicYear:
-          type: string
-          example: "2025/2026"
-        totalStaffCount:
-          type: integer
-          example: 10
-        degreedStaffCount:
-          type: integer
-          description: Number of faculty with Candidate or Doctor of Science degrees
-          example: 8
-        degreedPercentage:
-          type: number
+          default: 0.1
           minimum: 0.0
-          maximum: 100.0
-          description: Faculty qualification degree ratio (must be >= 70% per FGOS)
-          example: 80.0
-        isDegreePercentageCompliant:
+          maximum: 1.0
+        includeCitations:
           type: boolean
-          description: Compliance indicator affirming остепененность >= 70%
           default: true
-          example: true
-        facultyMembers:
-          type: array
-          minItems: 1
-          items:
-            $ref: '#/components/schemas/FacultyMemberWorkload'
-        departmentHead:
-          type: string
-          example: "проф. Горелов А.В."
 
-    LocalActType:
-      type: string
-      enum:
-        - POLOZHENIE_PROMEZHUTOCHNAYA_ATTESTATSIYA
-        - POLOZHENIE_GIA_ORDINATURA
-        - POLOZHENIE_TEKUSHCHY_KONTROL
-        - PORYADOK_INDIVIDUALNY_PLAN
-        - PORYADOK_PEDAGOGICHESKAYA_NAGRUZKA
-        - POLOZHENIE_PRAKTIKA_ORDINATOROV
-        - PORYADOK_PEREVOD_OTCHISLENIE
-        - POLOZHENIE_APELLYATSIONNAYA_KOMISSIYA
-        - POLOZHENIE_KAFEDRA_EPIDEMIOLOGII
-      description: Normalized identifier for the 9 institute local normative regulations
-      example: POLOZHENIE_PROMEZHUTOCHNAYA_ATTESTATSIYA
-
-    LocalNormativeActPayload:
-      type: object
-      required:
-        - actType
-        - title
-        - approvedByBody
-        - protocolNumber
-        - protocolDate
-        - articles
-      properties:
-        actType:
-          $ref: '#/components/schemas/LocalActType'
-        title:
-          type: string
-          example: "Положение о порядке проведения текущего контроля успеваемости и промежуточной аттестации обучающихся по программам ординатуры"
-        approvedByBody:
-          type: string
-          default: "Ученый совет ФБУН ЦНИИ Эпидемиологии Роспотребнадзора"
-          example: "Ученый совет ФБУН ЦНИИ Эпидемиологии Роспотребнадзора"
-        protocolNumber:
-          type: string
-          example: "7"
-        protocolDate:
-          type: string
-          format: date
-          example: "2026-01-20"
-        directorApprovalDate:
-          type: string
-          format: date
-          example: "2026-01-22"
-        articles:
-          type: array
-          minItems: 1
-          items:
-            type: object
-            required:
-              - articleNumber
-              - title
-              - content
-            properties:
-              articleNumber:
-                type: string
-                example: "1"
-              title:
-                type: string
-                example: "Общие положения"
-              content:
-                type: string
-                example: "Настоящее Положение определяет порядок, формы и периодичность текущего контроля и промежуточной аттестации..."
-
-    OfficialDocumentGenerationRequest:
-      type: object
-      required:
-        - category
-        - title
-        - gostFormatting
-        - requisites
-      properties:
-        category:
-          $ref: '#/components/schemas/OfficialDocumentCategory'
-        title:
-          type: string
-          description: Official document heading or Russian document name
-          example: "Протокол заседания учебно-методического совета (УМС) № 12"
-        gostFormatting:
-          $ref: '#/components/schemas/GostFormattingParameters'
-        requisites:
-          $ref: '#/components/schemas/RospotrebnadzorRequisites'
-        signerName:
-          type: string
-          example: "Акимкин В.Г."
-        signerTitle:
-          type: string
-          example: "Директор института, академик РАН"
-        deepseekOptions:
-          type: object
-          description: Configuration options for DeepSeek LLM generation worker
-          properties:
-            model:
-              type: string
-              default: "deepseek-chat"
-              example: "deepseek-chat"
-            temperature:
-              type: number
-              default: 0.2
-              example: 0.2
-            ragGrounded:
-              type: boolean
-              default: true
-              description: Ensure output is strictly grounded in the 1,697 institute normative acts
-        umsMinutesPayload:
-          $ref: '#/components/schemas/UmsMinutesPayload'
-        directorOrderPayload:
-          $ref: '#/components/schemas/DirectorOrderPayload'
-        examSchedulePayload:
-          $ref: '#/components/schemas/ExamSchedulePayload'
-        curriculumPlanPayload:
-          $ref: '#/components/schemas/CurriculumPlanPayload'
-        staffingCertificatePayload:
-          $ref: '#/components/schemas/StaffingCertificatePayload'
-        localNormativeActPayload:
-          $ref: '#/components/schemas/LocalNormativeActPayload'
-
-    OfficialDocumentGenerationResponse:
+    CitationSource:
       type: object
       required:
         - documentId
-        - category
         - title
-        - status
-        - generatedAt
-        - downloadDocxUrl
-        - complianceSummary
+        - downloadUrl
+        - matchedExcerpt
       properties:
         documentId:
           type: string
           format: uuid
-          example: "6e0c7a52-c8de-44cf-a39c-7201389ef852"
-        category:
-          $ref: '#/components/schemas/OfficialDocumentCategory'
+          example: "d7b1b3b1-7890-48e2-9d8a-8be4e7bc5a21"
         title:
           type: string
-          example: "Протокол заседания учебно-методического совета (УМС) № 12"
-        status:
+          example: "Справка о кадровом обеспечении и учебной нагрузке ППС кафедр"
+        downloadUrl:
           type: string
-          enum: [READY, DRAFT, FAILED]
-          example: READY
-        generatedAt:
+          example: "/api/normative/document/d7b1b3b1-7890-48e2-9d8a-8be4e7bc5a21/download?format=docx"
+        matchedExcerpt:
           type: string
-          format: date-time
-          example: "2026-11-09T21:05:00Z"
-        downloadDocxUrl:
-          type: string
-          description: One-click download URL for generated GOST .DOCX file
-          example: "/api/v1/generator/export/docx?documentId=6e0c7a52-c8de-44cf-a39c-7201389ef852"
-        contentPreviewMarkdown:
-          type: string
-          description: Markdown preview of generated document text for UI display
-        deepseekLatencyMs:
-          type: integer
-          description: Execution latency of DeepSeek generation pipeline
-          example: 840
-        complianceSummary:
-          type: object
-          required:
-            - standard
-            - fontVerified
-            - marginsVerified
-          properties:
-            standard:
-              type: string
-              example: "ГОСТ Р 7.0.97-2016"
-            fontVerified:
-              type: boolean
-              example: true
-            marginsVerified:
-              type: boolean
-              example: true
-            requisitesVerified:
-              type: boolean
-              example: true
-            degreeRatioVerified:
-              type: boolean
-              description: Validated that faculty qualification degree >= 70% if staffing certificate
-              example: true
+          example: "Доля научно-педагогических работников с учеными степенями составляет не менее 70%."
 
-    DocxExportRequest:
-      type: object
-      properties:
-        documentId:
-          type: string
-          format: uuid
-          description: Identifier of previously generated document session to export
-          example: "6e0c7a52-c8de-44cf-a39c-7201389ef852"
-        inlineDocument:
-          $ref: '#/components/schemas/OfficialDocumentGenerationRequest'
-        fileName:
-          type: string
-          description: Custom output filename for Content-Disposition
-          example: "protocol_ums_12_2026.docx"
-      anyOf:
-        - required: [documentId]
-        - required: [inlineDocument]
-
-    FieldDiagnosticError:
+    ConsultantQueryResponse:
       type: object
       required:
-        - field
-        - message
-        - code
+        - answerMarkdown
+        - sources
+        - latencyMs
       properties:
-        field:
+        answerMarkdown:
           type: string
-          description: JSON pointer or dot-path of invalid field
-          example: "gostFormatting.margins.leftMm"
-        message:
-          type: string
-          description: Human-readable diagnostic description of validation failure
-          example: "Left margin must equal 30 mm per GOST R 7.0.97-2016"
-        code:
-          type: string
-          description: Programmatic error code
-          example: "INVALID_GOST_MARGIN"
-        rejectedValue:
-          description: The invalid value submitted by client
-
-    ValidationErrorResponse:
-      type: object
-      required:
-        - error
-        - message
-        - errors
-      properties:
-        error:
-          type: string
-          example: "Unprocessable Entity"
-        message:
-          type: string
-          example: "Validation failed for search query parameters"
-        timestamp:
-          type: string
-          format: date-time
-        errors:
+          description: Concise factual answer strictly formatted in Markdown without conversational filler
+          example: "### Требования к кадровому обеспечению и кворуму УМС\n\n1. **Остепененность ППС кафедр**: Доля преподавателей с учеными степенями должна составлять **>= 70%** согласно локальному регламенту и нормативам.\n2. **Кворум УМС**: Заседание признается правомочным при наличии обязательного кворума членов совета (председатель Горелов, секретарь Романова).\n3. **Оформление**: Документы оформляются в строгом соответствии с **ГОСТ Р 7.0.97-2016**."
+        sources:
           type: array
           items:
-            $ref: '#/components/schemas/FieldDiagnosticError'
+            $ref: '#/components/schemas/CitationSource'
+        latencyMs:
+          type: integer
+          example: 340
 
     ErrorResponse:
       type: object
@@ -2287,9 +312,10 @@ components:
       properties:
         code:
           type: string
-          example: "INTERNAL_GENERATION_ERROR"
+          example: "DOCUMENT_NOT_FOUND"
         message:
           type: string
-          example: "An unexpected error occurred during document assembly"
+          example: "The requested document does not exist in the catalog."
         details:
           type: string
+          example: "No record matching ID d7b1b3b1-7890-48e2-9d8a-8be4e7bc5a21"
