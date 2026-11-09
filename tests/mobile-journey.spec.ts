@@ -1,49 +1,46 @@
-import { test, expect, devices } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
-test.use({
-  ...devices['Pixel 5'],
-  viewport: { width: 393, height: 851 },
-  isMobile: true,
-  hasTouch: true,
-});
+test.describe('Internal UI - Responsive Mobile Journey and Normative Search', () => {
+  test.use({
+    viewport: { width: 375, height: 667 }, // iPhone SE / Mobile standard
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1'
+  });
 
-test.describe('Mobile Viewport Educational Program Search & Details Journey', () => {
-  test('searches for educational program and displays details with zero console errors', async ({ page }) => {
+  test('completes search for Инфекционные болезни, filters by 31.08.35, and inspects normative document details', async ({
+    page
+  }) => {
     const consoleErrors: string[] = [];
-
-    // Monitor console messages for any errors
     page.on('console', (msg) => {
-      if (msg.type() === 'error') {
-        consoleErrors.push(`[${msg.type()}] ${msg.text()}`);
-      }
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
     });
+    page.on('pageerror', (err) => consoleErrors.push(err.message));
 
-    // Monitor uncaught exceptions
-    page.on('pageerror', (err) => {
-      consoleErrors.push(`[pageerror] ${err.message}`);
-    });
-
-    // Mock API search responses to ensure predictable E2E execution
-    await page.route('**/api/search', async (route) => {
+    // Mock API search and facets
+    await page.route('**/api/search*', async (route) => {
       const payload = {
-        query: '31.08.36',
+        query: 'Инфекционные болезни',
         total_hits: 1,
-        elapsed_ms: 2.15,
+        elapsed_ms: 12.5,
         results: [
           {
-            id: 1,
-            file_name: 'РПД 31.08.36 Эпидемиология 2026.pdf',
-            relative_path: 'normative/310836/rpd.pdf',
-            extension: 'pdf',
-            size_bytes: 524288,
-            category: 'Рабочие программы дисциплин',
-            discipline: 'Эпидемиология',
-            code: '31.08.36',
-            specialty: '31.08.36 Эпидемиология',
-            relevance_score: 95.0,
-            snippet: '...Рабочая программа дисциплины 31.08.36 Эпидемиология...'
+            id: 101,
+            file_name: 'РПД 31.08.35 Инфекционные болезни 2026.pdf',
+            relative_path: '05 ООП РПД/РПД 31.08.35 Инфекционные болезни 2026.pdf',
+            extension: '.pdf',
+            size_bytes: 450200,
+            category: '05 ООП РПД',
+            discipline: 'Инфекционные болезни',
+            code: '31.08.35',
+            specialty: '31.08.35 Инфекционные болезни',
+            relevance_score: 98.5,
+            snippet: '...Рабочая программа дисциплины 31.08.35 Инфекционные болезни...'
           }
-        ]
+        ],
+        facets: {
+          specialties: ['31.08.35 Инфекционные болезни', '31.08.36 Эпидемиология', '31.08.19 Педиатрия'],
+          categories: ['05 ООП РПД', 'Положения', 'Регламенты']
+        }
       };
       await route.fulfill({
         status: 200,
@@ -52,23 +49,45 @@ test.describe('Mobile Viewport Educational Program Search & Details Journey', ()
       });
     });
 
+    await page.route('**/api/documents/facets*', async (route) => {
+      const facetsPayload = {
+        facetDistribution: {
+          specialtyCodes: [
+            { value: '31.08.35', label: '31.08.35 Инфекционные болезни', count: 420 },
+            { value: '31.08.36', label: '31.08.36 Эпидемиология', count: 580 },
+            { value: '31.08.19', label: '31.08.19 Педиатрия', count: 310 }
+          ],
+          documentTypes: [
+            { value: 'SYLLABUS_RPD', label: 'РПД', count: 680 },
+            { value: 'REGULATIONS', label: 'Положения', count: 120 }
+          ]
+        },
+        totalDocuments: 1697
+      };
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(facetsPayload)
+      });
+    });
+
     await page.route('**/api/documents/*', async (route) => {
       const docDetails = {
-        documentId: 'DOC-310836',
-        title: 'ФГОС ВО 31.08.36 Эпидемиология',
-        documentType: 'REGULATIONS',
+        documentId: 'DOC-310835',
+        title: 'РПД 31.08.35 Инфекционные болезни',
+        documentType: 'SYLLABUS_RPD',
         status: 'ACTIVE',
-        specialtyCode: '31.08.36',
-        specialtyName: 'Эпидемиология',
-        effectiveDate: '2024-09-01',
+        specialtyCode: '31.08.35',
+        specialtyName: 'Инфекционные болезни',
+        effectiveDate: '2026-09-01',
         legalGrounding: [
           {
-            documentName: 'ФГОС ВО 31.08.36 Эпидемиология',
-            articleOrClause: 'Раздел IV, п. 4.3.2',
-            excerpt: 'Объем программы ординатуры составляет 120 зачетных единиц...'
+            documentName: 'ФГОС ВО 31.08.35 Инфекционные болезни',
+            articleOrClause: 'Раздел IV',
+            excerpt: 'Программа ординатуры по специальности Инфекционные болезни'
           }
         ],
-        summary: 'Образовательная программа высшего образования ординатуры по специальности 31.08.36 Эпидемиология.'
+        summary: 'Рабочая программа дисциплины ординатуры по специальности 31.08.35 Инфекционные болезни.'
       };
       await route.fulfill({
         status: 200,
@@ -84,19 +103,28 @@ test.describe('Mobile Viewport Educational Program Search & Details Journey', ()
     const currentViewport = page.viewportSize();
     expect(currentViewport?.width).toBeLessThanOrEqual(500);
 
-    // 3. Locate search input and perform educational program query
+    // 3. Search for 'Инфекционные болезни' and filter by '31.08.35'
     const searchInput = page.locator(
       'input[type="search"], input[placeholder*="поиск" i], input[aria-label*="поиск" i], textarea[aria-label*="Поле ввода" i]'
     ).first();
 
     if (await searchInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await searchInput.fill('31.08.36 Эпидемиология');
+      await searchInput.fill('Инфекционные болезни');
       await searchInput.press('Enter');
 
-      // Look for result item or details container
-      const resultItem = page.locator('.search-result-item, .document-item, .bubble-content').first();
-      if (await resultItem.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await expect(resultItem).toBeVisible();
+      // Filter selection if facet filter select/button is present
+      const filterSelector = page.locator('select[aria-label*="специальность" i], select#order-spec, [data-facet="31.08.35"]').first();
+      if (await filterSelector.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await filterSelector.selectOption({ label: '31.08.35 Инфекционные болезни' }).catch(async () => {
+          await filterSelector.selectOption('31.08.35');
+        });
+      }
+
+      // Locate document item and verify details render
+      const docItem = page.locator('.search-result-item, .document-item, .bubble-content, .message-bubble').first();
+      if (await docItem.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await docItem.click();
+        await expect(docItem).toBeVisible();
       }
     } else {
       // Fallback verification for main mobile container
