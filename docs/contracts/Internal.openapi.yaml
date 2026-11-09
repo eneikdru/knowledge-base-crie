@@ -1,0 +1,351 @@
+openapi: 3.1.0
+info:
+  title: Regulatory and Methodological Knowledge Base API
+  description: Internal API contract for fast full-text search and document faceting across institute regulatory documents.
+  version: 1.0.0
+servers:
+  - url: /api
+    description: Internal API server
+paths:
+  /search:
+    get:
+      summary: Fast full-text document search
+      description: Execute high-speed search across 1,697 institute documents with filters for document types and specialties, returning highlighted fragments and pagination metadata.
+      operationId: searchDocuments
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Search query matching discipline names, document codes, or keywords.
+          schema:
+            type: string
+            maxLength: 500
+        - name: document_types
+          in: query
+          required: false
+          description: Filter by one or more document categories.
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/DocumentType'
+          style: form
+          explode: true
+        - name: specialties
+          in: query
+          required: false
+          description: Filter by medical residency specialty codes.
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/SpecialtyCode'
+          style: form
+          explode: true
+        - name: academic_year
+          in: query
+          required: false
+          description: Academic year filter.
+          schema:
+            type: string
+            example: "2026/27"
+        - name: page
+          in: query
+          required: false
+          description: Page number (1-based).
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          required: false
+          description: Number of items per page.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Search results with highlighted snippets, pagination, and applied facet summaries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '422':
+          description: Validation error for invalid parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /documents/facets:
+    get:
+      summary: Retrieve document facet counts
+      description: Retrieve aggregated facet counts for document types and specialties to power 1-click filter navigation.
+      operationId: getDocumentFacets
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Optional search term context for facet counting.
+          schema:
+            type: string
+            maxLength: 500
+        - name: document_types
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/DocumentType'
+          style: form
+          explode: true
+        - name: specialties
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/SpecialtyCode'
+          style: form
+          explode: true
+      responses:
+        '200':
+          description: Facet aggregated counts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacetsResponse'
+        '422':
+          description: Validation error for invalid filter parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    SpecialtyCode:
+      type: string
+      description: Specialty classification code.
+      enum:
+        - "31.08.36"
+        - "31.08.35"
+        - "31.08.19"
+      example: "31.08.36"
+    DocumentType:
+      type: string
+      description: Types of normative and methodological institute documents.
+      enum:
+        - "ПОЛОЖЕНИЕ"
+        - "РЕГЛАМЕНТ"
+        - "ПОРЯДОК"
+        - "ПРАВИЛА"
+        - "ИНСТРУКЦИЯ"
+        - "ПРОТОКОЛ_ПК"
+        - "ПРОТОКОЛ_ГЭК"
+        - "ПРОТОКОЛ_УМС"
+        - "ПРОТОКОЛ_АТТЕСТАЦИИ"
+        - "РПД"
+        - "ФОС"
+        - "РУП"
+        - "ПРОГРАММА_ГИА"
+        - "РЕГЛАМЕНТ_ДИССОВЕТА"
+      example: "РПД"
+    DocumentItem:
+      type: object
+      required:
+        - id
+        - title
+        - document_type
+        - specialty_code
+        - specialty_name
+        - academic_year
+        - file_url
+        - highlights
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "d3b07384-d113-460c-b26a-912b70f03842"
+        code:
+          type: string
+          nullable: true
+          description: Internal document reference code or discipline cipher.
+          example: "Б1.О.01"
+        title:
+          type: string
+          description: Name of the discipline or regulatory document title.
+          example: "Рабочая программа дисциплины 'Эпидемиология'"
+        document_type:
+          $ref: '#/components/schemas/DocumentType'
+        specialty_code:
+          $ref: '#/components/schemas/SpecialtyCode'
+        specialty_name:
+          type: string
+          example: "Эпидемиология"
+        academic_year:
+          type: string
+          example: "2026/27"
+        file_url:
+          type: string
+          format: uri
+          example: "https://storage.institute.internal/docs/rpd-epidemiology-2026.pdf"
+        file_size_bytes:
+          type: integer
+          example: 4194304
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-10-15T09:30:00Z"
+        highlights:
+          type: array
+          description: Snippets matching search terms with matching keywords formatted in <em> tags.
+          items:
+            type: string
+          example:
+            - "...современные методы молекулярной <em>эпидемиологии</em> при анализе вспышек..."
+    FacetBucket:
+      type: object
+      required:
+        - key
+        - label
+        - count
+      properties:
+        key:
+          type: string
+          example: "31.08.36"
+        label:
+          type: string
+          example: "31.08.36 Эпидемиология"
+        count:
+          type: integer
+          minimum: 0
+          example: 412
+    FacetsResponse:
+      type: object
+      required:
+        - total_documents
+        - document_types
+        - specialties
+      properties:
+        total_documents:
+          type: integer
+          minimum: 0
+          example: 1697
+        document_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetBucket'
+        specialties:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetBucket'
+    PaginationMeta:
+      type: object
+      required:
+        - page
+        - page_size
+        - total_items
+        - total_pages
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          example: 1
+        page_size:
+          type: integer
+          minimum: 1
+          example: 20
+        total_items:
+          type: integer
+          minimum: 0
+          example: 142
+        total_pages:
+          type: integer
+          minimum: 0
+          example: 8
+    SearchResponse:
+      type: object
+      required:
+        - items
+        - pagination
+        - took_ms
+        - facets
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentItem'
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+        took_ms:
+          type: number
+          format: float
+          description: Search execution time in milliseconds.
+          example: 12.4
+        facets:
+          $ref: '#/components/schemas/FacetsResponse'
+    ValidationErrorDetail:
+      type: object
+      required:
+        - field
+        - message
+        - code
+      properties:
+        field:
+          type: string
+          example: "specialties[0]"
+        message:
+          type: string
+          example: "Value must be one of: 31.08.36, 31.08.35, 31.08.19"
+        code:
+          type: string
+          example: "invalid_enum_value"
+    ValidationErrorResponse:
+      type: object
+      required:
+        - status
+        - error
+        - message
+        - details
+      properties:
+        status:
+          type: integer
+          example: 422
+        error:
+          type: string
+          example: "Unprocessable Entity"
+        message:
+          type: string
+          example: "Validation failed for query parameters"
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationErrorDetail'
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - error
+        - message
+      properties:
+        status:
+          type: integer
+          example: 500
+        error:
+          type: string
+          example: "Internal Server Error"
+        message:
+          type: string
+          example: "An unexpected error occurred"
