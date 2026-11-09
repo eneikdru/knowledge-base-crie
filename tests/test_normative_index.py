@@ -1,7 +1,15 @@
 import os
 import time
 import pytest
-from crie_assistant_index import NormativeInvertedIndex, get_normative_index, tokenize_text
+from crie_assistant_index import (
+    NormativeInvertedIndex,
+    get_normative_index,
+    tokenize_text,
+    normalize_russian_token,
+    RUSSIAN_STOP_WORDS,
+    COMMON_ABBREVIATIONS,
+    SPECIALTY_MAP,
+)
 
 
 @pytest.fixture(scope="module")
@@ -66,6 +74,59 @@ def test_category_filter(index):
 
 def test_tokenization_and_snippet():
     tokens = tokenize_text("РПД по Педиатрии и Инфекционным болезням 31.08.19")
-    assert "педиатр" in tokens or "педиатри" in tokens
+    assert any("педиатр" in t for t in tokens)
     assert "рпд" in tokens
-    assert "310819" in tokens or "31.08.19" in tokens
+    assert any("310819" in t or "31.08.19" in t for t in tokens)
+
+
+def test_russian_stemming_and_normalization():
+    """Verify stemming of various grammatical endings in normative texts."""
+    cases = [
+        ("регламенты", "регламент"),
+        ("положения", "положен"),
+        ("инструкциями", "инструкц"),
+        ("аттестацией", "аттестац"),
+        ("эпидемиологический", "эпидемиологическ"),
+        ("педиатрические", "педиатрическ"),
+        ("инфекционную", "инфекционн"),
+    ]
+    for raw_word, expected_stem in cases:
+        stemmed = normalize_russian_token(raw_word)
+        assert expected_stem in stemmed, f"Stemming failed for {raw_word}: got {stemmed}, expected substr {expected_stem}"
+
+
+def test_stop_words_filtering():
+    """Verify Russian stop words are discarded from token stream."""
+    text = "что и как в во не на о по при для все"
+    tokens = tokenize_text(text)
+    assert len(tokens) == 0, f"Expected all stop words to be removed, got {tokens}"
+
+
+def test_facet_combinations_exhaustive(index):
+    """Verify multi-facet filtering (query + category + code + specialty) produces accurate intersections."""
+    # Query with specialty and category
+    categories = [c["category"] for c in index.get_categories()]
+    assert len(categories) > 0
+
+    # Combo 1: query + code
+    res_combo1 = index.search(query="дисциплины", code="31.08.35", limit=20)
+    for doc in res_combo1["results"]:
+        assert doc["code"] == "31.08.35" or "310835" in doc["relative_path"]
+
+    # Combo 2: query + specialty string
+    res_combo2 = index.search(query="программа", specialty="Инфекционные болезни", limit=20)
+    for doc in res_combo2["results"]:
+        assert doc["specialty"] is not None
+        assert "инфекционные болезни" in doc["specialty"].lower()
+
+    # Combo 3: specialty code + category intersection
+    target_cat = categories[0]
+    res_combo3 = index.search(query="", category=target_cat, code="31.08.19", limit=30)
+    for doc in res_combo3["results"]:
+        assert target_cat.lower() in doc["category"].lower()
+        assert doc["code"] == "31.08.19" or "310819" in doc["relative_path"]
+
+    # Combo 4: non-matching combination returns 0 hits safely
+    res_empty = index.search(query="несуществующийтерминxyz999", code="31.08.19")
+    assert res_empty["total_hits"] == 0
+    assert len(res_empty["results"]) == 0

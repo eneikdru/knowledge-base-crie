@@ -1,3 +1,5 @@
+import concurrent.futures
+import time
 from fastapi.testclient import TestClient
 from crie_assistant_api import app
 
@@ -42,7 +44,6 @@ def test_api_search_fast_facets():
 
 
 def test_api_documents_filter_get_and_post():
-    # Empty search with facet filters via GET
     resp_get = client.get("/api/documents/filter?specialty=31.08.19&category=05 ООП РПД")
     assert resp_get.status_code == 200
     data_get = resp_get.json()
@@ -50,7 +51,6 @@ def test_api_documents_filter_get_and_post():
     assert len(data_get["results"]) > 0
     assert "facets" in data_get
 
-    # Empty search with facet filters via POST
     resp_post = client.post("/api/documents/filter", json={"specialty": "31.08.19", "type": "РПД"})
     assert resp_post.status_code == 200
     data_post = resp_post.json()
@@ -66,3 +66,39 @@ def test_api_categories_and_specialties():
     resp_spec = client.get("/api/v1/normative/specialties")
     assert resp_spec.status_code == 200
     assert len(resp_spec.json()["specialties"]) > 0
+
+
+def test_concurrent_search_and_facets_latency_under_50ms():
+    """
+    Given integration tests against /api/search and /api/documents/facets,
+    When stress-tested with concurrent filter requests,
+    Then all responses return 200 OK within 50ms without data race conditions.
+    """
+    endpoints = [
+        ("/api/search?q=Инфекционные+болезни&specialty=31.08.35", "GET", None),
+        ("/api/search?q=Эпидемиология&specialty=31.08.36", "GET", None),
+        ("/api/documents/facets", "GET", None),
+        ("/api/documents/facets?query=Педиатрия", "GET", None),
+        ("/api/documents/filter", "POST", {"specialty": "31.08.35", "category": "05 ООП РПД"}),
+        ("/api/v1/normative/search?query=ГИА&code=31.08.35", "GET", None),
+        ("/api/search?q=ФОС", "GET", None),
+        ("/api/documents/facets?status=ACTIVE", "GET", None),
+    ] * 5  # 40 concurrent requests
+
+    def send_request(item):
+        url, method, payload = item
+        start = time.perf_counter()
+        if method == "POST":
+            resp = client.post(url, json=payload)
+        else:
+            resp = client.get(url)
+        duration_ms = (time.perf_counter() - start) * 1000.0
+        return resp.status_code, duration_ms, url
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        futures = [executor.submit(send_request, item) for item in endpoints]
+        results = [f.result() for f in concurrent.futures.as_completed(futures)]
+
+    for status_code, duration_ms, url in results:
+        assert status_code == 200, f"Request to {url} returned {status_code}"
+        assert duration_ms < 50.0, f"Request to {url} took {duration_ms:.2f}ms, exceeded 50ms requirement"
