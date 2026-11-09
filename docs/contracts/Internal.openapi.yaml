@@ -1,0 +1,293 @@
+openapi: 3.0.3
+info:
+  title: Internal Search and Resource Retrieval API
+  version: 1.0.0
+  description: >-
+    Shared contract for internal search, facet filtering, and document metadata
+    retrieval across frontend and backend services.
+paths:
+  /api/v1/internal/search:
+    post:
+      summary: Execute faceted search over internal resources
+      operationId: searchResources
+      tags:
+        - Search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Search results matching terms and facet criteria
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          description: Invalid search payload or facet filter schema
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal search engine error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/internal/resources/{resourceId}:
+    get:
+      summary: Retrieve resource metadata and details by ID
+      operationId: getResourceMetadata
+      tags:
+        - Resources
+      parameters:
+        - name: resourceId
+          in: path
+          required: true
+          description: Unique identifier of the resource/document
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resource metadata successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentMetadata'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    SearchRequest:
+      type: object
+      required:
+        - terms
+      properties:
+        terms:
+          type: string
+          description: Search keywords or query string
+          minLength: 1
+          maxLength: 500
+        facets:
+          type: object
+          description: Facet filters by category, status, or metadata fields
+          properties:
+            categories:
+              type: array
+              items:
+                type: string
+            statuses:
+              type: array
+              items:
+                type: string
+            dateRange:
+              $ref: '#/components/schemas/DateRangeFilter'
+            tags:
+              type: array
+              items:
+                type: string
+        page:
+          type: integer
+          description: Zero-indexed or 1-indexed page number (default 1)
+          default: 1
+          minimum: 1
+        pageSize:
+          type: integer
+          description: Number of items per page
+          default: 20
+          minimum: 1
+          maximum: 100
+        sortBy:
+          type: string
+          description: Field to sort by
+          default: relevance
+          enum:
+            - relevance
+            - createdAt
+            - updatedAt
+            - title
+        sortOrder:
+          type: string
+          description: Sort direction
+          default: desc
+          enum:
+            - asc
+            - desc
+    DateRangeFilter:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date-time
+          description: Start timestamp in ISO 8601 format
+        to:
+          type: string
+          format: date-time
+          description: End timestamp in ISO 8601 format
+    SearchResponse:
+      type: object
+      required:
+        - items
+        - totalCount
+        - page
+        - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResultItem'
+        totalCount:
+          type: integer
+          description: Total matching records across all pages
+          minimum: 0
+        page:
+          type: integer
+          description: Current page number
+          minimum: 1
+        pageSize:
+          type: integer
+          description: Number of items per page
+          minimum: 1
+        facetCounts:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              type: integer
+          description: Summary count of matching items aggregated per facet value
+    SearchResultItem:
+      type: object
+      required:
+        - id
+        - title
+        - snippet
+        - highlights
+        - score
+      properties:
+        id:
+          type: string
+          description: Resource identifier
+        title:
+          type: string
+          description: Document or resource title
+        snippet:
+          type: string
+          description: Primary summary or contextual preview
+        highlights:
+          type: array
+          description: Highlight snippets with matched search terms
+          items:
+            $ref: '#/components/schemas/HighlightSnippet'
+        category:
+          type: string
+          description: Resource taxonomy or category
+        status:
+          type: string
+          description: Lifecycle or document publication status
+        score:
+          type: number
+          format: float
+          description: Relevance ranking score
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    HighlightSnippet:
+      type: object
+      required:
+        - field
+        - snippet
+      properties:
+        field:
+          type: string
+          description: Field name where match occurred (e.g. title, body, abstract)
+        snippet:
+          type: string
+          description: Snippet text containing matched query terms
+    DocumentMetadata:
+      type: object
+      required:
+        - id
+        - title
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: Unique document identifier
+        title:
+          type: string
+          description: Canonical title
+        description:
+          type: string
+          description: Detailed description or abstract
+        category:
+          type: string
+          description: Category classification
+        status:
+          type: string
+          description: Lifecycle state
+        version:
+          type: string
+          description: Document version identifier
+        tags:
+          type: array
+          items:
+            type: string
+        author:
+          type: string
+          description: Author or owner identifier
+        mimeType:
+          type: string
+          description: Media type if an attached artifact exists
+        fileSizeBytes:
+          type: integer
+          format: int64
+          description: File size in bytes
+        customProperties:
+          type: object
+          additionalProperties:
+            type: string
+          description: Key-value metadata attributes
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error description
+        details:
+          type: array
+          items:
+            type: string
+          description: Optional list of validation or context details
+        timestamp:
+          type: string
+          format: date-time
