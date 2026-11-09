@@ -1,0 +1,21 @@
+# Security: Zero-Knowledge Vault and Keys (152-FZ)
+.vault/
+*.key
+*.secret
+raw_unprocessed/
+
+# Python & Node
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.venv/
+venv/
+node_modules/
+dist/
+build/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
