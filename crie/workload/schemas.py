@@ -1,5 +1,6 @@
 from enum import Enum
-from pydantic import BaseModel, Field, field_validator
+from typing import Any
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class WorkloadStatus(str, Enum):
@@ -39,6 +40,13 @@ class TeachingWorkloadInput(BaseModel):
         description="Annual departmental standard workload norm in hours (750.0 - 900.0)",
     )
 
+    @model_validator(mode="before")
+    @classmethod
+    def check_non_empty(cls, data: Any) -> Any:
+        if isinstance(data, dict) and not data:
+            raise ValueError("Workload payload cannot be empty")
+        return data
+
     @field_validator("departmental_norm")
     @classmethod
     def validate_departmental_norm(cls, v: float) -> float:
@@ -54,7 +62,8 @@ class WorkloadCalculationResult(BaseModel):
     departmental_norm: float = Field(..., description="Departmental norm used for calculation")
     fte_rate: float = Field(..., description="Calculated FTE fraction (e.g., 1.0 = full stake)")
     status: WorkloadStatus = Field(..., description="Workload balance status (UNDERLOAD, NORMAL, OVERLOAD)")
-    is_overload: bool = Field(default=False, description="True if total_hours > departmental_norm")
+    is_overload: bool = Field(default=False, description="True if total_hours > 900.0 statutory ceiling")
+    excess_hours: float = Field(default=0.0, description="Hours exceeding 900.0 statutory ceiling")
     status_message: str = Field(..., description="Human-readable explanatory summary")
 
 
@@ -92,7 +101,8 @@ def calculate_workload(input_data: TeachingWorkloadInput) -> WorkloadCalculation
             f"({input_data.departmental_norm:.1f} ч). Доля ставки: {fte_rate:.2f}."
         )
 
-    is_overload = total_hours > input_data.departmental_norm
+    is_overload = total_hours > 900.0
+    excess_hours = max(0.0, round(total_hours - 900.0, 2))
 
     return WorkloadCalculationResult(
         total_hours=total_hours,
@@ -100,5 +110,6 @@ def calculate_workload(input_data: TeachingWorkloadInput) -> WorkloadCalculation
         fte_rate=fte_rate,
         status=status,
         is_overload=is_overload,
+        excess_hours=excess_hours,
         status_message=status_message,
     )
