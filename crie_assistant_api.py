@@ -80,25 +80,21 @@ def _filter_docs(
     effective_code = code or specialty
     effective_category = category or doc_type
 
-    if q and q.strip():
-        raw_res = index.search(query=q.strip(), category=effective_category, code=effective_code, limit=len(index.documents))
-        matched = raw_res.get("results", [])
-        elapsed_ms = raw_res.get("elapsed_ms", 0.0)
-    else:
-        matched = []
-        for doc in index.documents:
-            doc_cat = getattr(doc, "category", "") or ""
-            doc_code = getattr(doc, "code", "") or ""
-            doc_rel = getattr(doc, "relative_path", "") or ""
-            if effective_category and effective_category.lower() not in doc_cat.lower():
-                continue
-            if effective_code and effective_code.replace(".", "") not in (doc_code + " " + doc_rel).replace(".", ""):
-                continue
-            matched.append(doc)
-        elapsed_ms = 0.5
+    raw_res = index.search(
+        query=(q or "").strip(),
+        category=effective_category,
+        code=effective_code,
+        specialty=specialty,
+        limit=len(index.documents),
+    )
+    matched = raw_res.get("results", [])
+    elapsed_ms = raw_res.get("elapsed_ms", 0.0)
 
     if doc_type and doc_type != effective_category:
-        matched = [d for d in matched if doc_type.lower() in (getattr(d, "category", "") or "").lower()]
+        matched = [
+            d for d in matched
+            if doc_type.lower() in (d.get("doc_type", "") if isinstance(d, dict) else getattr(d, "category", "") or "").lower()
+        ]
 
     facets = _compute_facets(index, matched)
     paginated_results = [d.to_dict() if hasattr(d, "to_dict") else d for d in matched[offset : offset + limit]]
