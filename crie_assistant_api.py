@@ -1,26 +1,14 @@
-"""CRIE Assistant API Service.
-
-Provides endpoints for:
-- Knowledge base corpus retrieval and search
-- AI Assistant question answering / guidance
-- Academic workload calculation
-- Official order (.docx) generation conforming to GOST R 7.0.97-2016
-"""
-
-import json
 import os
-from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, Response, Query
+from typing import Any, Dict, Optional
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-
-from services.docx_order_generator import build_order_docx, ORDER_TEMPLATES, ROSPOTREBNADZOR_HEADER_LINES
+from crie_assistant_index import get_normative_index
 
 app = FastAPI(
     title="CRIE Assistant API",
-    description="FBUN Central Research Institute of Epidemiology Educational Center Assistant & Knowledge Base",
-    version="1.0.0",
+    description="FastAPI knowledge base and sovereign assistant platform for Central Research Institute of Epidemiology (FBUN CNII Epidemiology)",
+    version="1.0.0"
 )
 
 app.add_middleware(
@@ -32,81 +20,84 @@ app.add_middleware(
 )
 
 
-class StudentItem(BaseModel):
-    identifier: str = Field(..., description="Anonymous identifier like ORD-2026-001 or ASP-2026-001")
-    details: Optional[str] = Field(None, description="Score, specialization, or category details")
-
-
-class OrderGenerationRequest(BaseModel):
-    order_type: str = Field("enrollment", description="Type of order: enrollment, gia_admission, scholarship")
-    order_number: Optional[str] = Field("124-ОД", description="Official order number")
-    order_date: Optional[str] = Field("01 сентября 2026 г.", description="Order registration date")
-    city: Optional[str] = Field("г. Москва", description="City / location")
-    title_override: Optional[str] = Field(None, description="Custom subject/title line")
-    specialty_code: Optional[str] = Field("31.08.36", description="Specialty code")
-    specialty_name: Optional[str] = Field("Эпидемиология", description="Specialty name")
-    protocol_num: Optional[str] = Field("1", description="Meeting protocol number")
-    protocol_date: Optional[str] = Field("30 августа 2026 г.", description="Meeting protocol date")
-    start_date: Optional[str] = Field("01 сентября 2026", description="Effective commencement date")
-    students: Optional[List[StudentItem]] = Field(None, description="List of candidate identifiers (152-FZ compliant)")
-    custom_items: Optional[List[str]] = Field(None, description="Optional replacement for order directive clauses")
-    signatory_title: Optional[str] = Field("Директор института", description="Title of signing official")
-    signatory_name: Optional[str] = Field("В.Г. Акимкин", description="Full/abbreviated name of signing official")
+@app.on_event("startup")
+def startup_event():
+    get_normative_index()
 
 
 @app.get("/health")
-def health_check():
-    return {"status": "healthy", "service": "crie-assistant-api"}
-
-
-@app.get("/api/orders/types")
-def list_order_types():
-    """Returns supported order categories and default metadata."""
-    types = []
-    for key, val in ORDER_TEMPLATES.items():
-        types.append({
-            "id": key,
-            "title": val["title"],
-            "action_word": val.get("action_word", "ПРИКАЗЫВАЮ:"),
-        })
-    return {"order_types": types}
-
-
-@app.post("/api/orders/generate")
-def generate_order(request: OrderGenerationRequest):
-    """Generates a .docx official order conforming to GOST R 7.0.97-2016."""
-    valid_types = set(ORDER_TEMPLATES.keys())
-    if request.order_type not in valid_types:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid order_type '{request.order_type}'. Supported types: {sorted(list(valid_types))}",
-        )
-
-    students_dicts = [s.model_dump() for s in request.students] if request.students else None
-
-    try:
-        doc_stream = build_order_docx(
-            order_type=request.order_type,
-            order_number=request.order_number or "124-ОД",
-            order_date=request.order_date or "01 сентября 2026 г.",
-            city=request.city or "г. Москва",
-            title_override=request.title_override,
-            specialty_code=request.specialty_code or "31.08.36",
-            specialty_name=request.specialty_name or "Эпидемиология",
-            protocol_num=request.protocol_num or "1",
-            protocol_date=request.protocol_date or "30 августа 2026 г.",
-            start_date=request.start_date or "01 сентября 2026",
-            students=students_dicts,
-            custom_items=request.custom_items,
-            signatory_title=request.signatory_title or "Директор института",
-            signatory_name=request.signatory_name or "В.Г. Акимкин",
-        )
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Order generation failed: {str(exc)}")
-
-    filename = f"order_{request.order_type}_{request.order_number.replace('/', '_').replace(' ', '_')}.docx"
-    headers = {
-        "Content-Disposition": f'attachment; filename="{filename}"',
-        "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+def health_check() -> Dict[str, Any]:
+    index = get_normative_index()
+    return {
+        "status": "healthy",
+        "indexed_documents": index.total_docs,
+        "categories_count": len(index.category_index)
     }
-    return StreamingResponse(doc_stream, media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document", headers=headers)
+
+
+@app.get("/api/v1/normative/search")
+def search_normative(
+    query: str = Query("", description="Search query (discipline, code, abbreviation, keyword)"),
+    category: Optional[str] = Query(None, description="Filter by normative category"),
+    code: Optional[str] = Query(None, description="Filter by specialty code (e.g. 31.08.19)"),
+    specialty: Optional[str] = Query(None, description="Filter by specialty name"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum results to return")
+) -> Dict[str, Any]:
+    index = get_normative_index()
+    result = index.search(
+        query=query,
+        category=category,
+        code=code,
+        specialty=specialty,
+        limit=limit
+    )
+    return result
+
+
+@app.get("/api/v1/normative/categories")
+def get_normative_categories() -> Dict[str, Any]:
+    index = get_normative_index()
+    return {
+        "categories": index.get_categories()
+    }
+
+
+@app.get("/api/v1/normative/specialties")
+def get_normative_specialties() -> Dict[str, Any]:
+    index = get_normative_index()
+    return {
+        "specialties": index.get_specialties()
+    }
+
+
+class WorkloadCalculationRequest(BaseModel):
+    lectures_hours: float = Field(0.0, ge=0.0)
+    seminars_hours: float = Field(0.0, ge=0.0)
+    practice_hours: float = Field(0.0, ge=0.0)
+    aspirant_guidance_hours: float = Field(0.0, ge=0.0)
+    gek_hours: float = Field(0.0, ge=0.0)
+    norm_rate_per_year: float = Field(800.0, ge=500.0, le=1200.0)
+
+
+@app.post("/api/v1/workload/calculate")
+def calculate_workload(req: WorkloadCalculationRequest) -> Dict[str, Any]:
+    total_hours = (
+        req.lectures_hours
+        + req.seminars_hours
+        + req.practice_hours
+        + req.aspirant_guidance_hours
+        + req.gek_hours
+    )
+    stake_fraction = round(total_hours / req.norm_rate_per_year, 2)
+    status = "normal"
+    if stake_fraction > 1.2:
+        status = "overload"
+    elif stake_fraction < 0.25:
+        status = "underload"
+
+    return {
+        "total_hours": total_hours,
+        "norm_rate_per_year": req.norm_rate_per_year,
+        "stake_fraction": stake_fraction,
+        "status": status
+    }
