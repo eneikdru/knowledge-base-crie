@@ -176,49 +176,6 @@
 </script>
 
 <div class="cnie-container">
-  <!-- Header Navigation -->
-  <header class="cnie-header" role="banner">
-    <div class="cnie-title-area">
-      <h1 class="cnie-title">ИИ-Помощник & База приказов</h1>
-      <p class="cnie-subtitle">ФБУН ЦНИИ Эпидемиологии Роспотребнадзора • ГОСТ Р 7.0.97-2016</p>
-    </div>
-    <nav class="cnie-tabs" aria-label="Разделы системы" role="tablist">
-      <button
-        id="tab-btn-assistant"
-        role="tab"
-        aria-selected={activeTab === 'assistant'}
-        aria-controls="tabpanel-assistant"
-        class="tab-btn {activeTab === 'assistant' ? 'active' : ''}"
-        on:click={() => (activeTab = 'assistant')}
-        type="button"
-      >
-        💬 Ассистент
-      </button>
-      <button
-        id="tab-btn-orders"
-        role="tab"
-        aria-selected={activeTab === 'orders'}
-        aria-controls="tabpanel-orders"
-        class="tab-btn {activeTab === 'orders' ? 'active' : ''}"
-        on:click={() => (activeTab = 'orders')}
-        type="button"
-      >
-        📄 Приказы (.docx)
-      </button>
-      <button
-        id="tab-btn-workload"
-        role="tab"
-        aria-selected={activeTab === 'workload'}
-        aria-controls="tabpanel-workload"
-        class="tab-btn {activeTab === 'workload' ? 'active' : ''}"
-        on:click={() => (activeTab = 'workload')}
-        type="button"
-      >
-        ⚖️ Нагрузка
-      </button>
-    </nav>
-  </header>
-
   <!-- Assistant Chat View -->
   {#if activeTab === 'assistant'}
     <section
@@ -598,71 +555,12 @@
     flex-direction: column;
     height: 100%;
     max-width: 1000px;
+    width: 100%;
     margin: 0 auto;
     padding: 1rem;
+    box-sizing: border-box;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     color: #0f172a;
-  }
-
-  .cnie-header {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    border-bottom: 1px solid #cbd5e1;
-    padding-bottom: 1rem;
-    margin-bottom: 1rem;
-  }
-
-  @media (min-width: 640px) {
-    .cnie-header {
-      flex-direction: row;
-      justify-content: space-between;
-      align-items: center;
-    }
-  }
-
-  .cnie-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin: 0;
-    color: #0f172a;
-  }
-
-  .cnie-subtitle {
-    font-size: 0.875rem;
-    color: #334155;
-    margin: 0.25rem 0 0 0;
-  }
-
-  .cnie-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .tab-btn {
-    padding: 0.5rem 1rem;
-    border: 1px solid #64748b;
-    background: #f8fafc;
-    color: #1e293b;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .tab-btn:hover,
-  .tab-btn:focus-visible {
-    background: #e2e8f0;
-    outline: 2px solid #0369a1;
-    outline-offset: 2px;
-  }
-
-  .tab-btn.active {
-    background: #0369a1;
-    color: #ffffff;
-    border-color: #0369a1;
   }
 
   /* Chat View */
