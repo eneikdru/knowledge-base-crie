@@ -566,6 +566,118 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/generator/document:
+    post:
+      tags:
+        - AI Document Generator
+      summary: Generate official institute document using DeepSeek LLM according to GOST R 7.0.97-2016
+      description: >-
+        Generates official educational and administrative institute documents using DeepSeek LLM
+        grounded in normative standards. Supports UMS minutes, director orders, examination schedules,
+        curricula (ordinatura 120 z.e. / 4320 h and aspirantura), faculty staffing and workload certificates,
+        and local normative acts. Returns document metadata, draft content, and download URL for .DOCX binary.
+      operationId: generateOfficialDocument
+      security:
+        - PerimeterBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfficialDocumentGenerationRequest'
+      responses:
+        '200':
+          description: Document generated successfully with GOST R 7.0.97-2016 compliance metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfficialDocumentGenerationResponse'
+        '400':
+          description: Bad request due to invalid parameters or failed GOST validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          description: Unprocessable entity when document specific payload constraints are violated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Internal generator service or DeepSeek engine error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/generator/export/docx:
+    post:
+      tags:
+        - AI Document Generator
+        - Export
+      summary: Direct one-click binary export of generated document to MS Word (.docx)
+      description: >-
+        Converts document parameters or pre-generated document session into a strictly formatted
+        .DOCX binary compliant with GOST R 7.0.97-2016 (Times New Roman 14pt, margins left 30mm, right 15mm,
+        top/bottom 20mm, 1.5 line spacing, Rospotrebnadzor official requisites). Returns direct octet-stream
+        with Content-Disposition attachment header.
+      operationId: exportOfficialDocumentDocx
+      security:
+        - PerimeterBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocxExportRequest'
+      responses:
+        '200':
+          description: Direct .DOCX binary export stream
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: 'attachment; filename="protocol_ums_12_2026.docx"'
+              description: Content-Disposition header specifying download filename
+            Content-Type:
+              schema:
+                type: string
+                example: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          content:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Invalid export specification or missing document payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Referenced generated document not found or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error for document export payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: DOCX binary assembly failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   securitySchemes:
     PerimeterBearerAuth:
@@ -1559,6 +1671,570 @@ components:
             marginsVerified:
               type: boolean
               example: true
+
+    OfficialDocumentCategory:
+      type: string
+      enum:
+        - UMS_MINUTES
+        - DIRECTOR_ORDERS
+        - EXAM_SCHEDULE
+        - CURRICULUM_PLAN
+        - STAFFING_CERTIFICATE
+        - LOCAL_NORMATIVE_ACT
+      description: Category of official institute document generated in accordance with GOST R 7.0.97-2016
+      example: UMS_MINUTES
+
+    UmsMinutesPayload:
+      type: object
+      required:
+        - meetingNumber
+        - meetingDate
+        - chairman
+        - secretary
+        - quorumAttendees
+        - agendaItems
+      properties:
+        meetingNumber:
+          type: string
+          example: "12"
+        meetingDate:
+          type: string
+          format: date
+          example: "2026-02-10"
+        chairman:
+          type: string
+          default: "Горелов А.В."
+          example: "Горелов А.В."
+        secretary:
+          type: string
+          default: "Романова Т.В."
+          example: "Романова Т.В."
+        quorumAttendees:
+          type: array
+          description: List of attending members confirming quorum (e.g. Горелов/Романова and department heads)
+          minItems: 2
+          items:
+            type: string
+          example: ["Горелов А.В.", "Романова Т.В.", "Акимкин В.Г.", "Семенова Е.А."]
+        quorumPresentCount:
+          type: integer
+          example: 18
+        quorumTotalCount:
+          type: integer
+          example: 22
+        agendaItems:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required:
+              - itemNumber
+              - topic
+              - speaker
+              - resolution
+            properties:
+              itemNumber:
+                type: integer
+                example: 1
+              topic:
+                type: string
+                example: "Об утверждении учебных планов ординатуры на 2026/2027 учебный год"
+              speaker:
+                type: string
+                example: "Романова Т.В."
+              discussionSummary:
+                type: string
+                example: "Заслушан доклад о распределении 120 з.е. по дисциплинам базовой и вариативной частей."
+              resolution:
+                type: string
+                example: "Утвердить учебные планы ординатуры по специальности 31.08.36 Эпидемиология единогласно."
+              votingResult:
+                type: object
+                properties:
+                  inFavor:
+                    type: integer
+                    example: 18
+                  opposed:
+                    type: integer
+                    example: 0
+                  abstained:
+                    type: integer
+                    example: 0
+
+    DirectorOrderCommissionType:
+      type: string
+      enum:
+        - GEK_STATE_EXAM_COMMISSION
+        - CANDIDATE_EXAM_COMMISSION
+        - ADMISSION_COMMISSION
+      example: GEK_STATE_EXAM_COMMISSION
+
+    DirectorOrderPayload:
+      type: object
+      required:
+        - commissionType
+        - orderTitle
+        - academicYear
+        - commissionMembers
+        - enactmentDate
+      properties:
+        commissionType:
+          $ref: '#/components/schemas/DirectorOrderCommissionType'
+        orderTitle:
+          type: string
+          example: "Об утверждении состава Государственной экзаменационной комиссии (ГЭК) на 2026 год"
+        academicYear:
+          type: string
+          example: "2025/2026"
+        enactmentDate:
+          type: string
+          format: date
+          example: "2026-01-20"
+        commissionMembers:
+          type: array
+          minItems: 3
+          items:
+            $ref: '#/components/schemas/CommissionMember'
+        substitutes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommissionMember'
+        orderDirectives:
+          type: array
+          items:
+            type: string
+          example:
+            - "Утвердить персональный состав Государственной экзаменационной комиссии по специальности 31.08.36."
+            - "Контроль за исполнением настоящего приказа возложить на ученого секретаря института."
+
+    ExamSessionGroupCode:
+      type: string
+      enum:
+        - "25ОЭ"
+        - "26ОЭ"
+        - "25ОИ"
+        - "26ОИ"
+        - "25ОП"
+        - "26ОП"
+        - "ASPIRANTURA_1"
+        - "ASPIRANTURA_2"
+      example: "25ОЭ"
+
+    ExamSessionEvent:
+      type: object
+      required:
+        - discipline
+        - groupCode
+        - examDate
+        - examTime
+        - classroom
+        - examiner
+      properties:
+        discipline:
+          type: string
+          example: "Эпидемиология инфекционных болезней"
+        groupCode:
+          $ref: '#/components/schemas/ExamSessionGroupCode'
+        examDate:
+          type: string
+          format: date
+          example: "2026-01-29"
+        examTime:
+          type: string
+          example: "09:00"
+        consultationDate:
+          type: string
+          format: date
+          example: "2026-01-28"
+        classroom:
+          type: string
+          example: "Аудитория 304, Главный корпус"
+        examiner:
+          type: string
+          example: "проф. Горелов А.В."
+
+    ExamSchedulePayload:
+      type: object
+      required:
+        - sessionStartDate
+        - sessionEndDate
+        - targetGroups
+        - scheduleEvents
+      properties:
+        sessionStartDate:
+          type: string
+          format: date
+          default: "2026-01-25"
+          example: "2026-01-25"
+        sessionEndDate:
+          type: string
+          format: date
+          default: "2026-02-25"
+          example: "2026-02-25"
+        targetGroups:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ExamSessionGroupCode'
+          example: ["25ОЭ", "26ОЭ", "25ОИ", "26ОИ", "25ОП", "26ОП", "ASPIRANTURA_1"]
+        scheduleEvents:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ExamSessionEvent'
+        approvalAuthority:
+          type: string
+          default: "Утверждаю: Директор института академик РАН Акимкин В.Г."
+
+    CurriculumDisciplineBlock:
+      type: object
+      required:
+        - blockCode
+        - blockTitle
+        - credits
+        - totalHours
+      properties:
+        blockCode:
+          type: string
+          example: "Блок 1. Дисциплины (модули)"
+        blockTitle:
+          type: string
+          example: "Базовая и вариативная части профессиональных дисциплин"
+        credits:
+          type: number
+          example: 42
+        totalHours:
+          type: integer
+          example: 1512
+
+    CurriculumPlanPayload:
+      type: object
+      required:
+        - level
+        - specialtyCode
+        - specialtyTitle
+        - totalCredits
+        - totalHours
+        - studyDurationYears
+        - disciplineBlocks
+      properties:
+        level:
+          type: string
+          enum: [ORDINATURA, ASPIRANTURA]
+          default: ORDINATURA
+          example: ORDINATURA
+        specialtyCode:
+          $ref: '#/components/schemas/SpecialtyCodeEnum'
+        specialtyTitle:
+          type: string
+          example: "31.08.36 Эпидемиология"
+        totalCredits:
+          type: integer
+          enum: [120, 180, 240]
+          default: 120
+          description: Total credits (120 z.e. for residency)
+          example: 120
+        totalHours:
+          type: integer
+          enum: [4320, 6480, 8640]
+          default: 4320
+          description: Total academic hours (4320 h for residency)
+          example: 4320
+        studyDurationYears:
+          type: integer
+          default: 2
+          example: 2
+        disciplineBlocks:
+          type: array
+          minItems: 3
+          items:
+            $ref: '#/components/schemas/CurriculumDisciplineBlock'
+
+    FacultyMemberWorkload:
+      type: object
+      required:
+        - fullName
+        - position
+        - academicDegree
+        - employmentRate
+        - totalPlannedHours
+      properties:
+        fullName:
+          type: string
+          example: "Горелов Александр Васильевич"
+        position:
+          type: string
+          example: "Заведующий кафедрой, профессор"
+        academicDegree:
+          type: string
+          enum: [DOCTOR_OF_SCIENCES, CANDIDATE_OF_SCIENCES, NONE]
+          example: DOCTOR_OF_SCIENCES
+        academicTitle:
+          type: string
+          example: "профессор, академик РАН"
+        employmentRate:
+          type: number
+          minimum: 0.1
+          maximum: 1.5
+          example: 1.0
+        totalPlannedHours:
+          type: integer
+          maximum: 900
+          description: Planned academic load (not exceeding 900 hours per rate)
+          example: 850
+        lectureHours:
+          type: integer
+          example: 120
+        practicalHours:
+          type: integer
+          example: 280
+        scientificSupervisionHours:
+          type: integer
+          example: 450
+
+    StaffingCertificatePayload:
+      type: object
+      required:
+        - departmentName
+        - academicYear
+        - totalStaffCount
+        - degreedStaffCount
+        - degreedPercentage
+        - isDegreePercentageCompliant
+        - facultyMembers
+      properties:
+        departmentName:
+          type: string
+          default: "Кафедра эпидемиологии"
+          example: "Кафедра эпидемиологии"
+        academicYear:
+          type: string
+          example: "2025/2026"
+        totalStaffCount:
+          type: integer
+          example: 10
+        degreedStaffCount:
+          type: integer
+          description: Number of faculty with Candidate or Doctor of Science degrees
+          example: 8
+        degreedPercentage:
+          type: number
+          minimum: 0.0
+          maximum: 100.0
+          description: Faculty qualification degree ratio (must be >= 70% per FGOS)
+          example: 80.0
+        isDegreePercentageCompliant:
+          type: boolean
+          description: Compliance indicator affirming остепененность >= 70%
+          default: true
+          example: true
+        facultyMembers:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/FacultyMemberWorkload'
+        departmentHead:
+          type: string
+          example: "проф. Горелов А.В."
+
+    LocalActType:
+      type: string
+      enum:
+        - POLOZHENIE_PROMEZHUTOCHNAYA_ATTESTATSIYA
+        - POLOZHENIE_GIA_ORDINATURA
+        - POLOZHENIE_TEKUSHCHY_KONTROL
+        - PORYADOK_INDIVIDUALNY_PLAN
+        - PORYADOK_PEDAGOGICHESKAYA_NAGRUZKA
+        - POLOZHENIE_PRAKTIKA_ORDINATOROV
+        - PORYADOK_PEREVOD_OTCHISLENIE
+        - POLOZHENIE_APELLYATSIONNAYA_KOMISSIYA
+        - POLOZHENIE_KAFEDRA_EPIDEMIOLOGII
+      description: Normalized identifier for the 9 institute local normative regulations
+      example: POLOZHENIE_PROMEZHUTOCHNAYA_ATTESTATSIYA
+
+    LocalNormativeActPayload:
+      type: object
+      required:
+        - actType
+        - title
+        - approvedByBody
+        - protocolNumber
+        - protocolDate
+        - articles
+      properties:
+        actType:
+          $ref: '#/components/schemas/LocalActType'
+        title:
+          type: string
+          example: "Положение о порядке проведения текущего контроля успеваемости и промежуточной аттестации обучающихся по программам ординатуры"
+        approvedByBody:
+          type: string
+          default: "Ученый совет ФБУН ЦНИИ Эпидемиологии Роспотребнадзора"
+          example: "Ученый совет ФБУН ЦНИИ Эпидемиологии Роспотребнадзора"
+        protocolNumber:
+          type: string
+          example: "7"
+        protocolDate:
+          type: string
+          format: date
+          example: "2026-01-20"
+        directorApprovalDate:
+          type: string
+          format: date
+          example: "2026-01-22"
+        articles:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required:
+              - articleNumber
+              - title
+              - content
+            properties:
+              articleNumber:
+                type: string
+                example: "1"
+              title:
+                type: string
+                example: "Общие положения"
+              content:
+                type: string
+                example: "Настоящее Положение определяет порядок, формы и периодичность текущего контроля и промежуточной аттестации..."
+
+    OfficialDocumentGenerationRequest:
+      type: object
+      required:
+        - category
+        - title
+        - gostFormatting
+        - requisites
+      properties:
+        category:
+          $ref: '#/components/schemas/OfficialDocumentCategory'
+        title:
+          type: string
+          description: Official document heading or Russian document name
+          example: "Протокол заседания учебно-методического совета (УМС) № 12"
+        gostFormatting:
+          $ref: '#/components/schemas/GostFormattingParameters'
+        requisites:
+          $ref: '#/components/schemas/RospotrebnadzorRequisites'
+        signerName:
+          type: string
+          example: "Акимкин В.Г."
+        signerTitle:
+          type: string
+          example: "Директор института, академик РАН"
+        deepseekOptions:
+          type: object
+          description: Configuration options for DeepSeek LLM generation worker
+          properties:
+            model:
+              type: string
+              default: "deepseek-chat"
+              example: "deepseek-chat"
+            temperature:
+              type: number
+              default: 0.2
+              example: 0.2
+            ragGrounded:
+              type: boolean
+              default: true
+              description: Ensure output is strictly grounded in the 1,697 institute normative acts
+        umsMinutesPayload:
+          $ref: '#/components/schemas/UmsMinutesPayload'
+        directorOrderPayload:
+          $ref: '#/components/schemas/DirectorOrderPayload'
+        examSchedulePayload:
+          $ref: '#/components/schemas/ExamSchedulePayload'
+        curriculumPlanPayload:
+          $ref: '#/components/schemas/CurriculumPlanPayload'
+        staffingCertificatePayload:
+          $ref: '#/components/schemas/StaffingCertificatePayload'
+        localNormativeActPayload:
+          $ref: '#/components/schemas/LocalNormativeActPayload'
+
+    OfficialDocumentGenerationResponse:
+      type: object
+      required:
+        - documentId
+        - category
+        - title
+        - status
+        - generatedAt
+        - downloadDocxUrl
+        - complianceSummary
+      properties:
+        documentId:
+          type: string
+          format: uuid
+          example: "6e0c7a52-c8de-44cf-a39c-7201389ef852"
+        category:
+          $ref: '#/components/schemas/OfficialDocumentCategory'
+        title:
+          type: string
+          example: "Протокол заседания учебно-методического совета (УМС) № 12"
+        status:
+          type: string
+          enum: [READY, DRAFT, FAILED]
+          example: READY
+        generatedAt:
+          type: string
+          format: date-time
+          example: "2026-11-09T21:05:00Z"
+        downloadDocxUrl:
+          type: string
+          description: One-click download URL for generated GOST .DOCX file
+          example: "/api/v1/generator/export/docx?documentId=6e0c7a52-c8de-44cf-a39c-7201389ef852"
+        contentPreviewMarkdown:
+          type: string
+          description: Markdown preview of generated document text for UI display
+        deepseekLatencyMs:
+          type: integer
+          description: Execution latency of DeepSeek generation pipeline
+          example: 840
+        complianceSummary:
+          type: object
+          required:
+            - standard
+            - fontVerified
+            - marginsVerified
+          properties:
+            standard:
+              type: string
+              example: "ГОСТ Р 7.0.97-2016"
+            fontVerified:
+              type: boolean
+              example: true
+            marginsVerified:
+              type: boolean
+              example: true
+            requisitesVerified:
+              type: boolean
+              example: true
+            degreeRatioVerified:
+              type: boolean
+              description: Validated that faculty qualification degree >= 70% if staffing certificate
+              example: true
+
+    DocxExportRequest:
+      type: object
+      properties:
+        documentId:
+          type: string
+          format: uuid
+          description: Identifier of previously generated document session to export
+          example: "6e0c7a52-c8de-44cf-a39c-7201389ef852"
+        inlineDocument:
+          $ref: '#/components/schemas/OfficialDocumentGenerationRequest'
+        fileName:
+          type: string
+          description: Custom output filename for Content-Disposition
+          example: "protocol_ums_12_2026.docx"
+      anyOf:
+        - required: [documentId]
+        - required: [inlineDocument]
 
     FieldDiagnosticError:
       type: object
