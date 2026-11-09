@@ -464,9 +464,9 @@ components:
         specialtyCode:
           type: string
           enum:
-            - "31.08.36" # Эпидемиология
-            - "31.08.35" # Инфекционные болезни
-            - "31.08.19" # Педиатрия
+            - "31.08.36"
+            - "31.08.35"
+            - "31.08.19"
           example: "31.08.36"
         documentTypes:
           type: array
