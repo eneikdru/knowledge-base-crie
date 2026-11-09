@@ -1,0 +1,405 @@
+openapi: 3.0.3
+info:
+  title: Internal Search and Resource Retrieval API
+  version: 1.0.0
+  description: Shared internal API contract for fast document search, facet filtering, highlight snippets, and resource metadata retrieval.
+servers:
+  - url: /api/v1
+    description: Primary v1 internal API endpoint
+paths:
+  /search:
+    post:
+      summary: Execute structured document search
+      description: Performs full-text search with term matching, facet filtering, and pagination, returning matched document records and highlight snippets.
+      operationId: searchDocuments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Successful search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          description: Invalid search query or filter parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal search engine error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /resources/{resourceId}:
+    get:
+      summary: Retrieve resource details
+      description: Retrieves complete details and content reference for a specific resource.
+      operationId: getResourceById
+      parameters:
+        - name: resourceId
+          in: path
+          required: true
+          description: Unique identifier of the resource
+          schema:
+            type: string
+            example: "doc-94a1f2b3"
+      responses:
+        '200':
+          description: Resource record retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceDetailResponse'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /resources/{resourceId}/metadata:
+    get:
+      summary: Retrieve document metadata
+      description: Retrieves structured metadata, categorization, and attributes for a specific resource without loading full content.
+      operationId: getResourceMetadata
+      parameters:
+        - name: resourceId
+          in: path
+          required: true
+          description: Unique identifier of the resource
+          schema:
+            type: string
+            example: "doc-94a1f2b3"
+      responses:
+        '200':
+          description: Resource metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentMetadata'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    SearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: Raw query text or search keywords
+          example: "normative standards 2026"
+        terms:
+          type: array
+          description: Tokenized search terms for targeted matching
+          items:
+            type: string
+          default: []
+          example: ["normative", "standards"]
+        facets:
+          $ref: '#/components/schemas/FacetFilters'
+        pagination:
+          $ref: '#/components/schemas/PaginationRequest'
+        sort:
+          $ref: '#/components/schemas/SortCriteria'
+
+    FacetFilters:
+      type: object
+      description: Key-value filter parameters to constrain search space
+      properties:
+        category:
+          type: string
+          example: "normative"
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["certified", "v2"]
+        mime_type:
+          type: string
+          example: "application/pdf"
+        author:
+          type: string
+          example: "Eneik Engine"
+        created_after:
+          type: string
+          format: date-time
+          example: "2026-01-01T00:00:00Z"
+        created_before:
+          type: string
+          format: date-time
+          example: "2026-12-31T23:59:59Z"
+
+    PaginationRequest:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+          example: 1
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+          example: 20
+
+    SortCriteria:
+      type: object
+      properties:
+        field:
+          type: string
+          enum: [relevance, created_at, title, file_size]
+          default: relevance
+          example: "relevance"
+        order:
+          type: string
+          enum: [asc, desc]
+          default: desc
+          example: "desc"
+
+    SearchResponse:
+      type: object
+      required:
+        - total
+        - page
+        - page_size
+        - items
+      properties:
+        total:
+          type: integer
+          description: Total number of matching items
+          example: 42
+        page:
+          type: integer
+          description: Current page index
+          example: 1
+        page_size:
+          type: integer
+          description: Requested page size
+          example: 20
+        items:
+          type: array
+          description: Ordered list of document match records
+          items:
+            $ref: '#/components/schemas/DocumentRecord'
+        facets:
+          $ref: '#/components/schemas/FacetDistribution'
+
+    DocumentRecord:
+      type: object
+      required:
+        - id
+        - title
+        - score
+        - metadata
+      properties:
+        id:
+          type: string
+          description: Unique document identifier
+          example: "doc-94a1f2b3"
+        title:
+          type: string
+          description: Document or material title
+          example: "Normative Compliance Architecture v2"
+        score:
+          type: number
+          format: float
+          description: Match relevance score
+          example: 0.982
+        content_snippet:
+          type: string
+          description: Text excerpt summarizing document content
+          example: "...specification of the normative compliance verification requirements for 2026..."
+        highlights:
+          type: array
+          description: Field-specific highlight snippets showing match occurrences
+          items:
+            $ref: '#/components/schemas/HighlightSnippet'
+        metadata:
+          $ref: '#/components/schemas/DocumentMetadata'
+
+    HighlightSnippet:
+      type: object
+      required:
+        - field
+        - snippets
+      properties:
+        field:
+          type: string
+          description: Field name where match occurred
+          example: "body"
+        snippets:
+          type: array
+          items:
+            type: string
+          description: Fragment text with match markers
+          example:
+            - "guidelines for <mark>normative</mark> compliance"
+
+    DocumentMetadata:
+      type: object
+      required:
+        - id
+        - resource_id
+        - title
+        - mime_type
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          example: "meta-550e8400"
+        resource_id:
+          type: string
+          example: "doc-94a1f2b3"
+        title:
+          type: string
+          example: "Normative Compliance Architecture v2"
+        file_name:
+          type: string
+          example: "normative_architecture.pdf"
+        file_size_bytes:
+          type: integer
+          format: int64
+          example: 1048576
+        mime_type:
+          type: string
+          example: "application/pdf"
+        checksum_sha256:
+          type: string
+          example: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        category:
+          type: string
+          example: "normative"
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["compliance", "audit", "v2"]
+        author:
+          type: string
+          example: "Admin"
+        version:
+          type: string
+          example: "2.1.0"
+        custom_attributes:
+          type: object
+          additionalProperties: true
+          example:
+            department: "Architecture"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-03-15T12:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-03-16T14:30:00Z"
+
+    ResourceDetailResponse:
+      type: object
+      required:
+        - id
+        - title
+        - uri
+        - metadata
+      properties:
+        id:
+          type: string
+          example: "doc-94a1f2b3"
+        title:
+          type: string
+          example: "Normative Compliance Architecture v2"
+        description:
+          type: string
+          example: "Detailed specification of core architectural invariants and catalog items."
+        uri:
+          type: string
+          format: uri
+          example: "/data/normative/corpus_catalog.json"
+        metadata:
+          $ref: '#/components/schemas/DocumentMetadata'
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-03-15T12:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-03-16T14:30:00Z"
+
+    FacetDistribution:
+      type: object
+      description: Dynamic facet counts matching the current search
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetBucket'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetBucket'
+        mime_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetBucket'
+
+    FacetBucket:
+      type: object
+      required:
+        - key
+        - count
+      properties:
+        key:
+          type: string
+          example: "normative"
+        count:
+          type: integer
+          example: 15
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: "INVALID_SEARCH_PARAMETERS"
+        message:
+          type: string
+          example: "The provided facet filters are invalid or contain unrecognized keys."
+        details:
+          type: array
+          items:
+            type: string
+          example: ["Field 'created_after' must be a valid ISO-8601 date-time string."]
