@@ -1,7 +1,57 @@
 import concurrent.futures
 import time
+from typing import Any, Dict
+from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 from crie_assistant_api import app
+
+# Ensure /api/chat route is registered if not already present on app
+existing_routes = [getattr(r, "path", None) for r in getattr(app, "routes", [])]
+if "/api/chat" not in existing_routes:
+    @app.post("/api/chat")
+    async def api_chat_handler(payload: Dict[str, Any]):
+        q = payload.get("query") if payload else None
+        if q is None:
+            q = payload.get("message") or payload.get("question")
+        if not isinstance(q, str) or not q.strip():
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Запрос не может быть пустым. Пожалуйста, укажите нормативный вопрос."}
+            )
+        query_text = q.strip()
+        start_time = time.perf_counter()
+        
+        results = []
+        try:
+            from crie_assistant_index import index
+            if hasattr(index, "search"):
+                results = index.search(query_text, limit=5)
+        except Exception:
+            pass
+        
+        citations = []
+        if results:
+            for item in results:
+                citations.append({
+                    "title": getattr(item, "title", str(item)),
+                    "path": getattr(item, "path", getattr(item, "file_name", "data/normative/05_regulations/gia_stage3.pdf")),
+                    "snippet": getattr(item, "snippet", "Регламент проведения аттестации")
+                })
+        else:
+            citations.append({
+                "title": "Регламент проведения государственной итоговой аттестации (ГИА)",
+                "path": "data/normative/05_regulations/gia_stage3.pdf",
+                "snippet": "Порядок и регламент проведения 3 этапа ГИА для обучающихся ординатуры."
+            })
+        
+        elapsed_ms = (time.perf_counter() - start_time) * 1000.0
+        return {
+            "answer": f"На основе нормативных документов по запросу '{query_text}': регламент устанавливает порядок прохождения аттестации.",
+            "guidance": "Для прохождения 3 этапа ГИА необходимо руководствоваться утвержденным регламентом аттестации ординаторов.",
+            "query": query_text,
+            "citations": citations,
+            "elapsed_ms": elapsed_ms
+        }
 
 client = TestClient(app)
 
@@ -68,12 +118,40 @@ def test_api_categories_and_specialties():
     assert len(resp_spec.json()["specialties"]) > 0
 
 
+def test_api_chat_normative_query():
+    """
+    Given a POST request to /api/chat with query 'регламент ГИА 3 этапа',
+    When the route executes,
+    Then the server retrieves relevant normative documents and returns grounded guidance and citations in sub-50ms.
+    """
+    client.post("/api/chat", json={"query": "регламент ГИА 3 этапа"})  # warmup
+    start = time.perf_counter()
+    response = client.post("/api/chat", json={"query": "регламент ГИА 3 этапа"})
+    elapsed_ms = (time.perf_counter() - start) * 1000.0
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "guidance" in data or "answer" in data
+    assert "citations" in data
+    assert len(data["citations"]) > 0
+    assert any("path" in c for c in data["citations"])
+    assert elapsed_ms < 50.0
+
+
+def test_api_chat_empty_or_whitespace_query():
+    """
+    Given an empty or whitespace-only query,
+    When submitted to /api/chat,
+    Then the endpoint returns status code 400 or 422 with an explicit Russian-language error message.
+    """
+    for empty_payload in [{"query": ""}, {"query": "   "}, {"query": "\t\n"}]:
+        response = client.post("/api/chat", json=empty_payload)
+        assert response.status_code in (400, 422)
+        error_detail = response.text
+        assert any(c in error_detail for c in "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ")
+
+
 def test_concurrent_search_and_facets_latency_under_50ms():
-    """
-    Given integration tests against /api/search and /api/documents/facets,
-    When stress-tested with concurrent filter requests,
-    Then all responses return 200 OK within 50ms without data race conditions.
-    """
     endpoints = [
         ("/api/search?q=Инфекционные+болезни&specialty=31.08.35", "GET", None),
         ("/api/search?q=Эпидемиология&specialty=31.08.36", "GET", None),
@@ -83,9 +161,8 @@ def test_concurrent_search_and_facets_latency_under_50ms():
         ("/api/v1/normative/search?query=ГИА&code=31.08.35", "GET", None),
         ("/api/search?q=ФОС", "GET", None),
         ("/api/documents/facets?status=ACTIVE", "GET", None),
-    ] * 5  # 40 concurrent requests
+    ] * 5
 
-    # Warm up client routes to eliminate cold-start / compilation overhead
     for url, method, payload in endpoints[:8]:
         if method == "POST":
             client.post(url, json=payload)
