@@ -13,6 +13,77 @@ servers:
   - url: /
     description: Root API server
 paths:
+  /api/auth/verify:
+    post:
+      tags:
+        - Auth
+      summary: Authenticate via institutional token or service PIN
+      description: >-
+        Verifies institutional credentials (152-FZ security boundary). Accepts an
+        institutional access token or a service PIN code and issues an authenticated
+        session bearer token.
+      operationId: verifyAuth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthVerificationRequest'
+      responses:
+        '200':
+          description: Successful authentication with issued session token and user context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthVerificationResponse'
+        '400':
+          description: Validation error or missing credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          description: Unprocessable entity payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Internal authentication service failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/session:
+    get:
+      tags:
+        - Auth
+      summary: Validate active perimeter session
+      description: >-
+        Validates the caller's active institutional session token passed in the Authorization
+        header or session cookie. Returns session validity and identity claims.
+      operationId: getSessionStatus
+      security:
+        - PerimeterBearerAuth: []
+      responses:
+        '200':
+          description: Session is active and valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionStatusResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /chat:
     post:
       tags:
@@ -23,6 +94,8 @@ paths:
         (residency regulations, orders, faculty workload, attestation) and returns
         grounded answer text, matched documents with titles and paths, and response latency.
       operationId: chatSemanticShort
+      security:
+        - PerimeterBearerAuth: []
       requestBody:
         required: true
         content:
@@ -36,6 +109,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '400':
           description: Bad request due to malformed JSON or unparseable payload
           content:
@@ -65,6 +140,8 @@ paths:
         across 1,697 institute normative documents, returning answer text, matched documents
         with titles and paths, and response latency.
       operationId: chatSemanticEndpoint
+      security:
+        - PerimeterBearerAuth: []
       requestBody:
         required: true
         content:
@@ -78,6 +155,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '400':
           description: Bad request due to malformed JSON or unparseable payload
           content:
@@ -106,6 +185,8 @@ paths:
         Performs full-text and semantic search across normative corpus and generated
         documents with faceted filters and contextual highlight snippets for responsive UI.
       operationId: searchDocuments
+      security:
+        - PerimeterBearerAuth: []
       requestBody:
         required: true
         content:
@@ -119,6 +200,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SearchResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '400':
           description: Bad request due to malformed JSON or unparseable payload
           content:
@@ -148,6 +231,8 @@ paths:
         Returns available document facets with counts for document types, specialties, and years
         to populate search filter panels in one click.
       operationId: getDocumentFacets
+      security:
+        - PerimeterBearerAuth: []
       parameters:
         - name: query
           in: query
@@ -170,6 +255,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentFacetsResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '422':
           description: Validation error for invalid facet query parameters
           content:
@@ -192,6 +279,8 @@ paths:
         Fetches comprehensive metadata, legal grounding, and structural information
         for a specific document in the institute repository.
       operationId: getDocumentMetadata
+      security:
+        - PerimeterBearerAuth: []
       parameters:
         - name: documentId
           in: path
@@ -207,6 +296,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DocumentMetadataResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '404':
           description: Document not found
           content:
@@ -229,6 +320,8 @@ paths:
         Provides legally grounded, accurate consultation using institute standards,
         FGOS VO, academic calendar, GIA stages, SanPiN, and VAK requirements.
       operationId: submitConsultationQuery
+      security:
+        - PerimeterBearerAuth: []
       requestBody:
         required: true
         content:
@@ -242,6 +335,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConsultationResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '400':
           description: Invalid request parameters or missing context
           content:
@@ -271,6 +366,8 @@ paths:
         compliant with GOST R 7.0.97-2016 requirements (Times New Roman 14pt, 30/15 mm margins,
         Rospotrebnadzor requisites).
       operationId: generateOrderDocument
+      security:
+        - PerimeterBearerAuth: []
       requestBody:
         required: true
         content:
@@ -288,6 +385,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OrderGenerationResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
         '400':
           description: Validation error due to missing mandatory GOST fields or commission details
           content:
@@ -308,7 +407,156 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
 components:
+  securitySchemes:
+    PerimeterBearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >-
+        Perimeter authentication bearer token conforming to 152-FZ institutional access controls.
+        Acquired via /api/auth/verify using institutional token or PIN code.
+
+  responses:
+    UnauthorizedError:
+      description: >-
+        Institutional perimeter authentication required or invalid session token.
+        Clients must authenticate against /api/auth/verify before querying protected resources.
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
+          description: Challenge mechanism specification (e.g., Bearer realm="CRIE-INSTITUTIONAL-PERIMETER", error="invalid_token")
+          example: 'Bearer realm="CRIE-INSTITUTIONAL-PERIMETER", error="invalid_token", error_description="Authentication required or session expired"'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AuthErrorResponse'
+
   schemas:
+    AuthVerificationRequest:
+      type: object
+      description: >-
+        Perimeter credential verification payload. Exactly one of institutionalToken or pinCode
+        must be supplied.
+      properties:
+        institutionalToken:
+          type: string
+          description: Institutional access token issued by supervisory / identity authority
+          example: "inst_tok_9b2e4781cf42a0e1"
+        pinCode:
+          type: string
+          pattern: '^\d{4,8}$'
+          description: Authorized personnel service PIN code (4-8 numeric digits)
+          example: "849201"
+        clientType:
+          type: string
+          enum: [DESKTOP_UI, MOBILE_UI, INTERNAL_SERVICE]
+          default: DESKTOP_UI
+          description: Originating client platform profile
+      anyOf:
+        - required: [institutionalToken]
+        - required: [pinCode]
+
+    AuthVerificationResponse:
+      type: object
+      required:
+        - accessToken
+        - tokenType
+        - expiresIn
+        - user
+      properties:
+        accessToken:
+          type: string
+          description: Issued perimeter session token
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.t-ID1_q"
+        tokenType:
+          type: string
+          enum: [Bearer]
+          default: Bearer
+          example: Bearer
+        expiresIn:
+          type: integer
+          description: Session lifetime in seconds
+          example: 28800
+        user:
+          $ref: '#/components/schemas/AuthenticatedUser'
+        perimeterLevel:
+          type: string
+          enum: [STANDARD_FACULTY, ADMINISTRATIVE, AUDIT_INSPECTOR]
+          example: STANDARD_FACULTY
+
+    AuthenticatedUser:
+      type: object
+      required:
+        - id
+        - displayName
+        - role
+      properties:
+        id:
+          type: string
+          example: "usr-crie-0042"
+        displayName:
+          type: string
+          example: "Дмитрий Ефремов"
+        role:
+          type: string
+          enum: [FACULTY, METHODIST, ADMIN, GUEST_AUDITOR]
+          example: FACULTY
+        department:
+          type: string
+          example: "Кафедра эпидемиологии"
+
+    SessionStatusResponse:
+      type: object
+      required:
+        - authenticated
+        - active
+      properties:
+        authenticated:
+          type: boolean
+          example: true
+        active:
+          type: boolean
+          example: true
+        user:
+          $ref: '#/components/schemas/AuthenticatedUser'
+        expiresAt:
+          type: string
+          format: date-time
+          example: "2026-11-10T04:43:24Z"
+        complianceNotice:
+          type: string
+          example: "152-ФЗ perimeter verified"
+
+    AuthErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+        - code
+      properties:
+        error:
+          type: string
+          example: "Unauthorized"
+        message:
+          type: string
+          example: "Full isolation active. Institutional token or service PIN required (152-FZ)."
+        code:
+          type: string
+          enum:
+            - PERIMETER_AUTH_REQUIRED
+            - INVALID_CREDENTIALS
+            - SESSION_EXPIRED
+            - ACCESS_DENIED
+          example: PERIMETER_AUTH_REQUIRED
+        challengeRealm:
+          type: string
+          example: "CRIE-INSTITUTIONAL-PERIMETER"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-11-09T20:43:24Z"
+
     ChatMessageRole:
       type: string
       enum: [system, user, assistant]
