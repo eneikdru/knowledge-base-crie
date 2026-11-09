@@ -1,419 +1,302 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
-  title: CRIE Institute AI Assistant & Document Generation API
-  description: >-
-    Internal API contract defining consultation endpoints with DeepSeek-grounded
-    normative knowledge and automated generation of official institute orders
-    formatted strictly to GOST R 7.0.97-2016 in .docx format.
+  title: Regulatory and Methodological Knowledge Base API
+  description: Internal API contract for fast full-text search and document faceting across institute regulatory documents.
   version: 1.0.0
 servers:
   - url: /api
     description: Internal API server
 paths:
-  /assistant/chat:
-    post:
-      tags:
-        - Assistant
-      summary: Submit a consultation query to the personal AI assistant
-      description: >-
-        Provides legally grounded, accurate consultation using institute standards,
-        FGOS VO, academic calendar, GIA stages, SanPiN, and VAK requirements.
-      operationId: submitConsultationQuery
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ConsultationRequest'
+  /search:
+    get:
+      summary: Fast full-text document search
+      description: Execute high-speed search across 1,697 institute documents with filters for document types and specialties, returning highlighted fragments and pagination metadata.
+      operationId: searchDocuments
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Search query matching discipline names, document codes, or keywords.
+          schema:
+            type: string
+            maxLength: 500
+        - name: document_types
+          in: query
+          required: false
+          description: Filter by one or more document categories.
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/DocumentType'
+          style: form
+          explode: true
+        - name: specialties
+          in: query
+          required: false
+          description: Filter by medical residency specialty codes.
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/SpecialtyCode'
+          style: form
+          explode: true
+        - name: academic_year
+          in: query
+          required: false
+          description: Academic year filter.
+          schema:
+            type: string
+            example: "2026/27"
+        - name: page
+          in: query
+          required: false
+          description: Page number (1-based).
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          required: false
+          description: Number of items per page.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
       responses:
         '200':
-          description: Successful consultation response with verified legal references
+          description: Search results with highlighted snippets, pagination, and applied facet summaries.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConsultationResponse'
-        '400':
-          description: Invalid request parameters or missing context
+                $ref: '#/components/schemas/SearchResponse'
+        '422':
+          description: Validation error for invalid parameters.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorResponse'
         '500':
-          description: Assistant processing error
+          description: Internal server error.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  /orders/generate:
-    post:
-      tags:
-        - Order Generation
-      summary: Generate an official institute order draft in MS Word (.docx) format
-      description: >-
-        Generates official orders (enrollment, admission to GIA, scholarship appointment)
-        compliant with GOST R 7.0.97-2016 requirements (Times New Roman 14pt, 30/15 mm margins,
-        Rospotrebnadzor requisites).
-      operationId: generateOrderDocument
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/OrderGenerationRequest'
+  /documents/facets:
+    get:
+      summary: Retrieve document facet counts
+      description: Retrieve aggregated facet counts for document types and specialties to power 1-click filter navigation.
+      operationId: getDocumentFacets
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Optional search term context for facet counting.
+          schema:
+            type: string
+            maxLength: 500
+        - name: document_types
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/DocumentType'
+          style: form
+          explode: true
+        - name: specialties
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/SpecialtyCode'
+          style: form
+          explode: true
       responses:
         '200':
-          description: Order draft generated successfully (returns binary docx or generation result)
+          description: Facet aggregated counts.
           content:
-            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
-              schema:
-                type: string
-                format: binary
             application/json:
               schema:
-                $ref: '#/components/schemas/OrderGenerationResponse'
-        '400':
-          description: Validation error due to missing mandatory GOST fields or commission details
+                $ref: '#/components/schemas/FacetsResponse'
+        '422':
+          description: Validation error for invalid filter parameters.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ValidationErrorResponse'
         '500':
-          description: Document generation engine error
+          description: Internal server error.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
 components:
   schemas:
-    ConsultationRequest:
+    SpecialtyCode:
+      type: string
+      description: Specialty classification code.
+      enum:
+        - "31.08.36"
+        - "31.08.35"
+        - "31.08.19"
+      example: "31.08.36"
+    DocumentType:
+      type: string
+      description: Types of normative and methodological institute documents.
+      enum:
+        - "ПОЛОЖЕНИЕ"
+        - "РЕГЛАМЕНТ"
+        - "ПОРЯДОК"
+        - "ПРАВИЛА"
+        - "ИНСТРУКЦИЯ"
+        - "ПРОТОКОЛ_ПК"
+        - "ПРОТОКОЛ_ГЭК"
+        - "ПРОТОКОЛ_УМС"
+        - "ПРОТОКОЛ_АТТЕСТАЦИИ"
+        - "РПД"
+        - "ФОС"
+        - "РУП"
+        - "ПРОГРАММА_ГИА"
+        - "РЕГЛАМЕНТ_ДИССОВЕТА"
+      example: "РПД"
+    DocumentItem:
       type: object
       required:
-        - query
+        - id
+        - title
+        - document_type
+        - specialty_code
+        - specialty_name
+        - academic_year
+        - file_url
+        - highlights
       properties:
-        sessionId:
+        id:
           type: string
           format: uuid
-          description: Optional persistent session ID for multi-turn dialogue memory
-        query:
-          type: string
-          minLength: 1
-          maxLength: 4000
-          description: User inquiry regarding academic hours, exam admission, commissions, or VAK requirements
-          example: "Каковы публикационные требования ВАК для допуска к защите кандидатской диссертации по эпидемиологии?"
-        targetAudience:
-          type: string
-          enum: [FACULTY, STUDENT, POSTGRADUATE, ADMINISTRATION]
-          default: FACULTY
-        contextFilters:
-          $ref: '#/components/schemas/NormativeFilter'
-
-    NormativeFilter:
-      type: object
-      properties:
-        specialtyCode:
-          type: string
-          enum:
-            - "31.08.36" # Эпидемиология
-            - "31.08.35" # Инфекционные болезни
-            - "31.08.19" # Педиатрия
-          example: "31.08.36"
-        documentTypes:
-          type: array
-          items:
-            type: string
-            enum:
-              - REGULATIONS
-              - RULES
-              - ORDERS
-              - INSTRUCTIONS
-              - COMMISSION_PROTOCOLS
-              - SYLLABUS_RPD
-              - GIA_PROGRAMS
-
-    ConsultationResponse:
-      type: object
-      required:
-        - answer
-        - legalGrounding
-        - timestamp
-      properties:
-        answer:
-          type: string
-          description: Comprehensive legally grounded response
-        legalGrounding:
-          type: array
-          description: Citations to specific normative acts, FGOS VO standards, SanPiN, or local institute regulations
-          items:
-            $ref: '#/components/schemas/LegalReference'
-        suggestedActions:
-          type: array
-          items:
-            type: string
-          description: Recommended next steps, e.g. order draft generation
-        timestamp:
-          type: string
-          format: date-time
-
-    LegalReference:
-      type: object
-      required:
-        - documentName
-        - articleOrClause
-      properties:
-        documentId:
-          type: string
-        documentName:
-          type: string
-          example: "ФГОС ВО 31.08.36 Эпидемиология"
-        articleOrClause:
-          type: string
-          example: "Раздел IV, п. 4.3.2"
-        excerpt:
-          type: string
-          example: "Объем программы ординатуры составляет 120 зачетных единиц..."
-
-    OrderType:
-      type: string
-      enum:
-        - ADMISSION_TO_GIA
-        - ENROLLMENT
-        - SCHOLARSHIP_APPOINTMENT
-      example: ADMISSION_TO_GIA
-
-    SpecialtyInfo:
-      type: object
-      required:
-        - code
-        - name
-      properties:
+          example: "d3b07384-d113-460c-b26a-912b70f03842"
         code:
           type: string
-          enum:
-            - "31.08.36"
-            - "31.08.35"
-            - "31.08.19"
-          example: "31.08.36"
-        name:
+          nullable: true
+          description: Internal document reference code or discipline cipher.
+          example: "Б1.О.01"
+        title:
+          type: string
+          description: Name of the discipline or regulatory document title.
+          example: "Рабочая программа дисциплины 'Эпидемиология'"
+        document_type:
+          $ref: '#/components/schemas/DocumentType'
+        specialty_code:
+          $ref: '#/components/schemas/SpecialtyCode'
+        specialty_name:
           type: string
           example: "Эпидемиология"
-
-    StudentReference:
-      type: object
-      required:
-        - studentId
-        - fullName
-        - specialty
-      properties:
-        studentId:
+        academic_year:
           type: string
-          example: "STU-2026-0891"
-        fullName:
+          example: "2026/27"
+        file_url:
           type: string
-          example: "Иванов Алексей Петрович"
-        specialty:
-          $ref: '#/components/schemas/SpecialtyInfo'
-        academicGroup:
-          type: string
-          example: "ОРД-ЭПИ-2026-1"
-        studyYear:
+          format: uri
+          example: "https://storage.institute.internal/docs/rpd-epidemiology-2026.pdf"
+        file_size_bytes:
           type: integer
-          minimum: 1
-          maximum: 6
-          example: 2
-
-    CommissionMember:
-      type: object
-      required:
-        - role
-        - fullName
-        - academicDegree
-        - position
-      properties:
-        role:
-          type: string
-          enum: [CHAIRMAN, MEMBER, SECRETARY]
-          example: CHAIRMAN
-        fullName:
-          type: string
-          example: "Смирнов Виктор Дмитриевич"
-        academicDegree:
-          type: string
-          example: "д-р мед. наук, профессор"
-        position:
-          type: string
-          example: "Заведующий кафедрой эпидемиологии"
-
-    RospotrebnadzorRequisites:
-      type: object
-      required:
-        - organizationName
-        - supervisoryAuthority
-        - okpo
-        - inn
-        - city
-      properties:
-        organizationName:
-          type: string
-          default: "ФБУН ЦНИИ Эпидемиологии Роспотребнадзора"
-          example: "ФБУН ЦНИИ Эпидемиологии Роспотребнадзора"
-        supervisoryAuthority:
-          type: string
-          default: "Федеральная служба по надзору в сфере защиты прав потребителей и благополучия человека"
-        okpo:
-          type: string
-          pattern: '^\\d{8}$'
-          example: "01897362"
-        inn:
-          type: string
-          pattern: '^\\d{10}$'
-          example: "7720015689"
-        city:
-          type: string
-          default: "Москва"
-          example: "Москва"
-
-    GostFormattingParameters:
-      type: object
-      required:
-        - standard
-        - fontFamily
-        - fontSizePt
-        - margins
-      properties:
-        standard:
-          type: string
-          enum: ["GOST_R_7_0_97_2016"]
-          default: "GOST_R_7_0_97_2016"
-        fontFamily:
-          type: string
-          enum: ["Times New Roman"]
-          default: "Times New Roman"
-        fontSizePt:
-          type: integer
-          enum: [14]
-          default: 14
-        lineSpacing:
-          type: number
-          default: 1.5
-        margins:
-          type: object
-          required:
-            - leftMm
-            - rightMm
-            - topMm
-            - bottomMm
-          properties:
-            leftMm:
-              type: integer
-              enum: [30]
-              default: 30
-            rightMm:
-              type: integer
-              enum: [15]
-              default: 15
-            topMm:
-              type: integer
-              enum: [20]
-              default: 20
-            bottomMm:
-              type: integer
-              enum: [20]
-              default: 20
-
-    OrderGenerationRequest:
-      type: object
-      required:
-        - orderType
-        - registrationDate
-        - students
-        - commissionMembers
-        - gostFormatting
-        - requisites
-      properties:
-        orderType:
-          $ref: '#/components/schemas/OrderType'
-        orderNumber:
-          type: string
-          description: Optional pre-assigned order number. If omitted, generated automatically.
-          example: "2026-ОД/145"
-        registrationDate:
-          type: string
-          format: date
-          example: "2026-11-10"
-        headerTitle:
-          type: string
-          description: Order heading title
-          example: "О допуске ординаторов 2 года обучения к государственной итоговой аттестации"
-        preambleText:
-          type: string
-          description: Justification preamble clause
-          example: "В соответствии с Федеральным законом «Об образовании в РФ», ФГОС ВО и положением о проведении ГИА..."
-        students:
-          type: array
-          minItems: 1
-          items:
-            $ref: '#/components/schemas/StudentReference'
-        commissionMembers:
-          type: array
-          minItems: 3
-          items:
-            $ref: '#/components/schemas/CommissionMember'
-        gostFormatting:
-          $ref: '#/components/schemas/GostFormattingParameters'
-        requisites:
-          $ref: '#/components/schemas/RospotrebnadzorRequisites'
-        signerName:
-          type: string
-          default: "Директор института"
-          example: "Акимкин В.Г."
-        signerTitle:
-          type: string
-          default: "Директор ФБУН ЦНИИ Эпидемиологии Роспотребнадзора, академик РАН"
-
-    OrderGenerationResponse:
-      type: object
-      required:
-        - orderId
-        - orderNumber
-        - generatedAt
-        - downloadUrl
-        - documentStatus
-      properties:
-        orderId:
-          type: string
-          format: uuid
-        orderNumber:
-          type: string
-          example: "2026-ОД/145"
-        documentStatus:
-          type: string
-          enum: [DRAFT, READY, FAILED]
-          example: READY
-        generatedAt:
+          example: 4194304
+        updated_at:
           type: string
           format: date-time
-        downloadUrl:
+          example: "2026-10-15T09:30:00Z"
+        highlights:
+          type: array
+          description: Snippets matching search terms with matching keywords formatted in <em> tags.
+          items:
+            type: string
+          example:
+            - "...современные методы молекулярной <em>эпидемиологии</em> при анализе вспышек..."
+    FacetBucket:
+      type: object
+      required:
+        - key
+        - label
+        - count
+      properties:
+        key:
           type: string
-          example: "/api/orders/download/78b54a0d-bfd7-43d3-b7e9-04162f32b912.docx"
-        pageCount:
+          example: "31.08.36"
+        label:
+          type: string
+          example: "31.08.36 Эпидемиология"
+        count:
           type: integer
-          example: 3
-        complianceSummary:
-          type: object
-          properties:
-            standard:
-              type: string
-              example: "ГОСТ Р 7.0.97-2016"
-            fontVerified:
-              type: boolean
-              example: true
-            marginsVerified:
-              type: boolean
-              example: true
-
-    FieldDiagnosticError:
+          minimum: 0
+          example: 412
+    FacetsResponse:
+      type: object
+      required:
+        - total_documents
+        - document_types
+        - specialties
+      properties:
+        total_documents:
+          type: integer
+          minimum: 0
+          example: 1697
+        document_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetBucket'
+        specialties:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetBucket'
+    PaginationMeta:
+      type: object
+      required:
+        - page
+        - page_size
+        - total_items
+        - total_pages
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          example: 1
+        page_size:
+          type: integer
+          minimum: 1
+          example: 20
+        total_items:
+          type: integer
+          minimum: 0
+          example: 142
+        total_pages:
+          type: integer
+          minimum: 0
+          example: 8
+    SearchResponse:
+      type: object
+      required:
+        - items
+        - pagination
+        - took_ms
+        - facets
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentItem'
+        pagination:
+          $ref: '#/components/schemas/PaginationMeta'
+        took_ms:
+          type: number
+          format: float
+          description: Search execution time in milliseconds.
+          example: 12.4
+        facets:
+          $ref: '#/components/schemas/FacetsResponse'
+    ValidationErrorDetail:
       type: object
       required:
         - field
@@ -422,51 +305,47 @@ components:
       properties:
         field:
           type: string
-          description: JSON pointer or dot-path of invalid field
-          example: "gostFormatting.margins.leftMm"
+          example: "specialties[0]"
         message:
           type: string
-          description: Human-readable diagnostic description of validation failure
-          example: "Left margin must equal 30 mm per GOST R 7.0.97-2016"
+          example: "Value must be one of: 31.08.36, 31.08.35, 31.08.19"
         code:
           type: string
-          description: Programmatic error code
-          example: "INVALID_GOST_MARGIN"
-        rejectedValue:
-          description: The invalid value submitted by client
-
+          example: "invalid_enum_value"
     ValidationErrorResponse:
       type: object
       required:
+        - status
         - error
         - message
-        - errors
+        - details
       properties:
+        status:
+          type: integer
+          example: 422
         error:
           type: string
-          example: "Bad Request"
+          example: "Unprocessable Entity"
         message:
           type: string
-          example: "Validation failed for order generation parameters"
-        timestamp:
-          type: string
-          format: date-time
-        errors:
+          example: "Validation failed for query parameters"
+        details:
           type: array
           items:
-            $ref: '#/components/schemas/FieldDiagnosticError'
-
+            $ref: '#/components/schemas/ValidationErrorDetail'
     ErrorResponse:
       type: object
       required:
-        - code
+        - status
+        - error
         - message
       properties:
-        code:
+        status:
+          type: integer
+          example: 500
+        error:
           type: string
-          example: "INTERNAL_GENERATION_ERROR"
+          example: "Internal Server Error"
         message:
           type: string
-          example: "An unexpected error occurred during document assembly"
-        details:
-          type: string
+          example: "An unexpected error occurred"
