@@ -1,0 +1,36 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "e59b167a-75af-4f81-b7cc-01c00c7b02fd",
+      "title": "Standalone Responsive Knowledge Base & Fast Search Tool",
+      "jtbd": "When an educational resident, researcher, or faculty member accesses the CRIE knowledge base on desktop or mobile, I want a fast, thoughtful, self-contained search and document exploration interface without third-party integration friction, so that I can immediately find and inspect clinical, academic, and normative resources in seconds.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "100% catalog record authenticity against search endpoint",
+      "tocConstraintRef": "catalog-data-integrity",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Remove hardcoded domain mock records from frontend/src/components/Internal.svelte and bind catalog and search views directly to the server search endpoint (/api/v1/normative/search).",
+        "R2: Implement four explicit data view states (loading, error, empty, and present) with zero synthetic records rendered when the backend returns empty results or is stopped."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Connect Internal Svelte Catalog to API and Implement Quad-State Data Views",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing the catalog view in Internal.svelte for this epic, I want to replace hardcoded mock records with live search API responses and support loading, error, empty, and present states, so that the UI never displays nonexistent documents.",
+          "acceptanceCriteria": "Given the normative catalog in Internal.svelte when initialized or queried, When the backend /api/v1/normative/search endpoint is requested, Then domain records are loaded strictly from the API response instead of hardcoded synthetic items.\nGiven the search endpoint returns zero matching documents or an empty array, When the view renders, Then an explicit empty state is displayed with zero documents listed and no false material counts.\nGiven the backend service is offline or returns an HTTP error, When a catalog search or fetch fails, Then an explicit error state is displayed without falling back to mock records.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "frontend-mock-decoupling",
+          "sixSigmaMetric": "0% phantom document display rate",
+          "hasUi": true,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        }
+      ]
+    }
+  ]
+}
