@@ -1,0 +1,15 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "Ensure snapshot encryption keys and backup target storage paths are configured strictly via secure environment variables rather than fallback defaults in production.",
+          "severity": "low"
+        }
+      ]
+    }
+  ]
+}
