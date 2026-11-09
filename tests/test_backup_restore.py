@@ -1,7 +1,9 @@
 """
 Unit and integration tests for SQLite automated backup and disaster restoration.
+Verifies cryptographic authentication, checksum verification, tamper rejection, and clean restoration.
 """
 
+import json
 import os
 import sqlite3
 import tempfile
@@ -17,7 +19,7 @@ class TestBackupRestore(unittest.TestCase):
         self.restored_db_path = os.path.join(self.test_dir.name, "restored_kb.sqlite3")
         self.passphrase = "SecureSecretPassphrase2026!"
 
-        # Initialize source test database
+        # Initialize source test database with schema and test rows
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute("CREATE TABLE documents (id INTEGER PRIMARY KEY, title TEXT, content TEXT);")
@@ -38,7 +40,15 @@ class TestBackupRestore(unittest.TestCase):
         res = backup_database(self.db_path, self.snapshot_path, self.passphrase)
         self.assertEqual(res["status"], "SUCCESS")
         self.assertTrue(os.path.exists(self.snapshot_path))
-        self.assertTrue(len(res["checksum_sha256"]) == 64)
+        self.assertEqual(len(res["checksum_sha256"]), 64)
+
+        with open(self.snapshot_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        self.assertEqual(data.get("magic"), "CRIE_ENCRYPTED_SNAPSHOT_V1")
+        self.assertIn("tag", data)
+        self.assertIn("ciphertext", data)
+        self.assertIn("salt", data)
+        self.assertIn("nonce", data)
 
     def test_restore_recovers_exact_data_and_passes_integrity(self):
         backup_database(self.db_path, self.snapshot_path, self.passphrase)
@@ -84,19 +94,60 @@ class TestBackupRestore(unittest.TestCase):
 
     def test_restore_rejects_wrong_passphrase(self):
         backup_database(self.db_path, self.snapshot_path, self.passphrase)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as ctx:
             restore_database(self.snapshot_path, self.restored_db_path, "WrongPassphrase")
+        self.assertIn("authentication failed", str(ctx.exception).lower())
 
     def test_restore_rejects_tampered_payload(self):
         backup_database(self.db_path, self.snapshot_path, self.passphrase)
-        with open(self.snapshot_path, "r+") as f:
-            data = f.read()
-            tampered = data.replace("\"payload_size\":", "\"payload_size\": 99999,")
+        with open(self.snapshot_path, "r+", encoding="utf-8") as f:
+            data = json.load(f)
+            data["payload_size"] = 99999
             f.seek(0)
-            f.write(tampered)
+            json.dump(data, f)
             f.truncate()
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as ctx:
             restore_database(self.snapshot_path, self.restored_db_path, self.passphrase)
+        self.assertIn("authentication failed", str(ctx.exception).lower())
+
+    def test_restore_rejects_tampered_ciphertext(self):
+        backup_database(self.db_path, self.snapshot_path, self.passphrase)
+        with open(self.snapshot_path, "r+", encoding="utf-8") as f:
+            data = json.load(f)
+            # Tamper ciphertext by altering a base64 character
+            ct = list(data["ciphertext"])
+            ct[10] = "A" if ct[10] != "A" else "B"
+            data["ciphertext"] = "".join(ct)
+            f.seek(0)
+            json.dump(data, f)
+            f.truncate()
+        with self.assertRaises(ValueError) as ctx:
+            restore_database(self.snapshot_path, self.restored_db_path, self.passphrase)
+        self.assertIn("authentication failed", str(ctx.exception).lower())
+
+    def test_restore_rejects_tampered_tag(self):
+        backup_database(self.db_path, self.snapshot_path, self.passphrase)
+        with open(self.snapshot_path, "r+", encoding="utf-8") as f:
+            data = json.load(f)
+            data["tag"] = "0" * 64
+            f.seek(0)
+            json.dump(data, f)
+            f.truncate()
+        with self.assertRaises(ValueError) as ctx:
+            restore_database(self.snapshot_path, self.restored_db_path, self.passphrase)
+        self.assertIn("authentication failed", str(ctx.exception).lower())
+
+    def test_restore_rejects_invalid_magic_header(self):
+        backup_database(self.db_path, self.snapshot_path, self.passphrase)
+        with open(self.snapshot_path, "r+", encoding="utf-8") as f:
+            data = json.load(f)
+            data["magic"] = "INVALID_HEADER_MAGIC"
+            f.seek(0)
+            json.dump(data, f)
+            f.truncate()
+        with self.assertRaises(ValueError) as ctx:
+            restore_database(self.snapshot_path, self.restored_db_path, self.passphrase)
+        self.assertIn("unsupported snapshot format", str(ctx.exception).lower())
 
 
 if __name__ == "__main__":
