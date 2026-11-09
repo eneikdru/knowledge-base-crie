@@ -1,0 +1,68 @@
+{
+  "epics": [
+    {
+      "existingEpicId": null,
+      "title": "Containerized Multi-Service Runtime Deployment & Health Probing",
+      "jtbd": "When an operator or automated testing pipeline clones the repository, I want a root docker-compose configuration defining the full application runtime stack and health endpoint exposure, so that the knowledge base and assistant can be reliably launched and observed in real environments.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "Zero deployment startup failures (100% successful container launch rate)",
+      "tocConstraintRef": "Absence of root docker-compose execution manifest blocking runtime orchestration",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Root docker-compose.yml specification orchestrating FastAPI application service and dependencies",
+        "R2: Container health check configuration exposing and verifying /api/v1/health endpoint readiness"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Add root docker-compose specification with automated health checks",
+          "roleTag": "BARCAN-TAG-05",
+          "jtbd": "When deploying the service stack for this epic, I want a declarative docker-compose.yml at the repository root binding the API service and health checks, so that the running product can be launched and verified in real environments.",
+          "acceptanceCriteria": "Given a fresh clone of the repository without previous runtime configuration\nWhen docker compose up -d is invoked at the repository root\nThen the crie-assistant service container starts and exposes port 8097\nGiven the running crie-assistant container\nWhen the Docker health check queries http://localhost:8097/api/v1/health\nThen the container status transitions to healthy with HTTP 200",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Missing container composition descriptor at repository root",
+          "sixSigmaMetric": "Container build and initialization pass rate = 100%",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        }
+      ]
+    },
+    {
+      "existingEpicId": null,
+      "title": "Runtime Observation & Launch Failure Remediation",
+      "jtbd": "When an automated verification harness executes post-clone runtime inspection, I want root docker-compose assets present and immediately discoverable, so that the runtime observation gate passes without launcher file-not-found errors.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "Zero runtime launcher observation errors on post-clone verification",
+      "tocConstraintRef": "Runtime launcher failure due to missing docker-compose.yml file at repository root",
+      "sourceIndex": 1,
+      "requirements": [
+        "R1: Ensure docker-compose.yml is committed directly at repository root to eliminate launcher observation defects",
+        "R2: Verify containerized runtime startup and /api/v1/health response pass automated launcher health probes"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Commit root docker-compose file and verify runtime observation probe",
+          "roleTag": "BARCAN-TAG-05",
+          "jtbd": "When resolving the recorded launcher defect for this epic, I want the root docker-compose file verified against automated inspection probes, so that runtime observation confirms a healthy service state.",
+          "acceptanceCriteria": "Given the automated launcher inspecting the repository root after clone\nWhen checking for the existence of docker-compose.yml\nThen the file is detected at repo root and observation proceeds without error\nGiven the launched service under test\nWhen querying the /api/v1/health endpoint\nThen response status returns 200 with service healthy payload",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Automated launcher failure from missing root docker-compose.yml",
+          "sixSigmaMetric": "Defect recurrence rate = 0% on post-clone launch probe",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        }
+      ]
+    }
+  ]
+}
