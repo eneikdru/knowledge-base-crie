@@ -1,0 +1,386 @@
+openapi: 3.1.0
+info:
+  title: CRIE Normative Knowledge Base Search & Facets API
+  version: 1.0.0
+  description: |
+    Shared internal API contract for instant search and one-click faceted navigation
+    across normative and methodological documents (RPD, FOS, RUP, GIA, dissertations,
+    regulations, orders, instructions, and commission protocols).
+servers:
+  - url: /api
+    description: Base internal API endpoint
+paths:
+  /api/search:
+    post:
+      summary: Search normative documents
+      description: Execute millisecond full-text and filtered search across document corpus with highlighted snippets and facet counts.
+      operationId: searchDocuments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Successful search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '422':
+          description: Unprocessable Entity due to validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+    get:
+      summary: Quick search normative documents via query parameters
+      description: Lightweight GET alternative for search with pagination and filters.
+      operationId: searchDocumentsGet
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Search keywords, discipline titles, or cipher
+        - name: specialty
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/SpecialtyCode'
+          style: form
+          explode: true
+        - name: document_type
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/DocumentType'
+          style: form
+          explode: true
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Successful search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+  /api/documents/facets:
+    get:
+      summary: Get document facet aggregations
+      description: Retrieve counts of available documents grouped by specialty, document type, and academic period.
+      operationId: getDocumentFacets
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Optional filter query to scope facet calculation
+      responses:
+        '200':
+          description: Aggregated facet counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacetCountsResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+    post:
+      summary: Query document facets with complex filter context
+      description: Returns facet distributions dynamically calculated against an active search request state.
+      operationId: queryDocumentFacets
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacetQueryRequest'
+      responses:
+        '200':
+          description: Aggregated facet counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacetCountsResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+components:
+  schemas:
+    SpecialtyCode:
+      type: string
+      description: Medical residency / postgraduate specialty ciphers
+      enum:
+        - '31.08.36'
+        - '31.08.35'
+        - '31.08.19'
+      example: '31.08.36'
+
+    DocumentType:
+      type: string
+      description: Categories of institutional and regulatory documents
+      enum:
+        - 'Положения'
+        - 'Регламенты'
+        - 'Порядки'
+        - 'Правила'
+        - 'Инструкции'
+        - 'Протоколы ПК'
+        - 'ГЭК'
+        - 'УМС'
+        - 'аттестаций'
+        - 'РПД'
+        - 'ФОС'
+        - 'РУП'
+        - 'программы ГИА'
+        - 'регламенты диссовета'
+      example: 'Положения'
+
+    SearchRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        q:
+          type: string
+          description: Search term, discipline title, or keyword
+          default: ''
+        specialties:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpecialtyCode'
+          description: Filter by medical specialties
+          default: []
+        document_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentType'
+          description: Filter by document categories
+          default: []
+        academic_year:
+          type: string
+          description: Academic year filter
+          example: '2026/27'
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+
+    SearchHit:
+      type: object
+      required:
+        - id
+        - title
+        - document_type
+        - specialty
+        - score
+        - highlights
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          description: Document identifier
+        title:
+          type: string
+          description: Document title
+        document_type:
+          $ref: '#/components/schemas/DocumentType'
+        specialty:
+          type: string
+          description: Specialty cipher or designation
+        cipher:
+          type: string
+          description: Discipline or program cipher
+        academic_year:
+          type: string
+          example: '2026/27'
+        score:
+          type: number
+          format: float
+          description: Relevance ranking score
+        highlights:
+          type: array
+          description: Highlighted matching text fragments containing matched search terms
+          items:
+            type: string
+        file_url:
+          type: string
+          description: Download or direct view URL for the document
+        updated_at:
+          type: string
+          format: date-time
+
+    PaginationMetadata:
+      type: object
+      required:
+        - total
+        - page
+        - page_size
+        - total_pages
+      additionalProperties: false
+      properties:
+        total:
+          type: integer
+          minimum: 0
+          description: Total matching items
+        page:
+          type: integer
+          minimum: 1
+          description: Current page number
+        page_size:
+          type: integer
+          minimum: 1
+          description: Items per page
+        total_pages:
+          type: integer
+          minimum: 0
+          description: Total available pages
+
+    FacetBucket:
+      type: object
+      required:
+        - key
+        - label
+        - count
+      additionalProperties: false
+      properties:
+        key:
+          type: string
+          description: Internal key / value of facet
+        label:
+          type: string
+          description: Display label for UI filter
+        count:
+          type: integer
+          minimum: 0
+          description: Number of documents in bucket
+
+    FacetCountsResponse:
+      type: object
+      required:
+        - specialties
+        - document_types
+      additionalProperties: false
+      properties:
+        specialties:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetBucket'
+        document_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetBucket'
+        academic_years:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetBucket'
+
+    SearchResponse:
+      type: object
+      required:
+        - hits
+        - pagination
+        - facets
+        - search_time_ms
+      additionalProperties: false
+      properties:
+        hits:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchHit'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+        facets:
+          $ref: '#/components/schemas/FacetCountsResponse'
+        search_time_ms:
+          type: number
+          format: float
+          description: Latency in milliseconds
+
+    FacetQueryRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        q:
+          type: string
+          description: Query string context
+        specialties:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpecialtyCode'
+        document_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentType'
+
+    ValidationErrorDetail:
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      additionalProperties: false
+      properties:
+        loc:
+          type: array
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+          description: Error location path in request payload
+        msg:
+          type: string
+          description: Clear validation error message
+        type:
+          type: string
+          description: Error type identifier
+
+    ValidationErrorResponse:
+      type: object
+      required:
+        - detail
+      additionalProperties: false
+      properties:
+        detail:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationErrorDetail'
+          description: Deterministic list of schema validation errors
