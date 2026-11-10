@@ -1,0 +1,20 @@
+[
+  {
+    "concern": "(low) Consider ensuring active/focus states on custom select dropdown and secondary button provide consistent 44px touch target clearance on mobile viewports.",
+    "jtbd": "When interacting with form controls and buttons on mobile viewports, I want touch targets and their active/focus interactive states to maintain at least 44px clearance, so that I can accurately tap and select controls without mis-taps or spatial interference.",
+    "acceptanceCriteria": "Given a mobile viewport (width <= 375px), When the user inspects the custom select dropdown (#project-archetype-select) and secondary button ('Inspect Specification'), Then their computed touch target dimensions and clearance areas measure at least 44px by 44px in both idle and active/focus states.",
+    "editInstruction": "In `design/approved/20261110024515-mockup/mockup.html`, update the secondary button (`<button type=\"button\" class=\"px-6 py-3 bg-slate-800 ...\">Inspect Specification</button>`) and the select element (`#project-archetype-select`) by adding `min-h-[44px]` and ensuring mobile touch target padding/spacing satisfies a minimum 44px hit clearance area.",
+    "kanoClass": "must_be",
+    "cynefinDomain": "clear",
+    "leanValue": "essential"
+  },
+  {
+    "concern": "(low) Telemetry cards could benefit from explicit aria-describedby links to explain the metric units for screen reader accessibility.",
+    "jtbd": "When navigating operational telemetry metrics using a screen reader, I want each metric value to be linked to an explicit unit description via aria-describedby, so that I understand what unit or threshold the number represents without cognitive ambiguity.",
+    "acceptanceCriteria": "Given a screen reader user focusing on the operational telemetry metric cards, When the card or value receives focus, Then an aria-describedby attribute references the explanatory label or unit definition element, announcing the metric context and units clearly.",
+    "editInstruction": "In `design/approved/20261110024515-mockup/mockup.html`, within `<section aria-labelledby=\"telemetry-heading\" data-domain-module=\"telemetry-kpi\">`, add unique `id` attributes to the descriptive labels of each telemetry card (e.g. `id=\"metric-full-product-desc\"`, `id=\"metric-design-desc\"`, `id=\"metric-refresh-desc\"`) and link them to their corresponding metric value elements using `aria-describedby`.",
+    "kanoClass": "performance",
+    "cynefinDomain": "clear",
+    "leanValue": "valuable"
+  }
+]
