@@ -1,0 +1,15 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "Ensure automated weekly synchronization validates superseded regulatory statuses against all mapped CRIE specialties.",
+          "severity": "low"
+        }
+      ]
+    }
+  ]
+}
