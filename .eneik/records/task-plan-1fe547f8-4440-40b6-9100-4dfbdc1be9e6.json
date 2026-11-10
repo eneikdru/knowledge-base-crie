@@ -1,0 +1,34 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "e59b167a-75af-4f81-b7cc-01c00c7b02fd",
+      "title": "Standalone Responsive Knowledge Base & Fast Search Tool",
+      "jtbd": "When an educational resident, researcher, or faculty member accesses the CRIE knowledge base on desktop or mobile, I want a fast, thoughtful, self-contained search and document exploration interface without third-party integration friction, so that I can immediately find and inspect clinical, academic, and normative resources in seconds.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "Visual regression diff ratio <= 0.01% against approved mockup",
+      "tocConstraintRef": "frontend-design-alignment-bottleneck",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Implement pixel-perfect UI updates matching the approved mockup design/approved/20261110024515-mockup/mockup.html across desktop and mobile viewports"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Implement pixel-perfect design refresh matching approved mockup 20261110024515",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing the approved design refresh for this epic, I want to update existing frontend components to match design/approved/20261110024515-mockup/mockup.html with full responsiveness and WCAG contrast compliance, so that the knowledge base interface matches the design shop's approved visual specification.",
+          "acceptanceCriteria": "Given the approved mockup at design/approved/20261110024515-mockup/mockup.html, When the frontend components in frontend/src/App.svelte and src/main/resources/static/index.html are rendered on desktop and mobile viewports, Then all layout structures, color tokens, typography scales, and operational telemetry cards match the approved reference pixel-perfect with zero layout breakage.\nGiven user navigation across interactive elements and forms, When testing keyboard focus indicators and color contrast ratios, Then WCAG 2.1 AAA contrast >= 7.0:1 is preserved and visible focus rings highlight active inputs and buttons.\nGiven automated UI visual regression and unit tests, When executing the test suite, Then all assertions pass with zero regressions against existing search and browsing functionality.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "frontend-template-render-fidelity",
+          "sixSigmaMetric": "CSS visual discrepancy <= 0.05%",
+          "hasUi": true,
+          "requirementRefs": [
+            "R1"
+          ]
+        }
+      ]
+    }
+  ]
+}
