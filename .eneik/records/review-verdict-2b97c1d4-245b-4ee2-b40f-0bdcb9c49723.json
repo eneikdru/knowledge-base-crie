@@ -1,0 +1,1 @@
+{"verdicts": [{"sourceIndex": 0, "verdict": "approve", "criticalReason": "", "concerns": [{"text": "Ensure continuous background re-indexing deterministically quarantines excluded specialty scopes such as microbiology across all facet projections.", "severity": "low"}]}]}
