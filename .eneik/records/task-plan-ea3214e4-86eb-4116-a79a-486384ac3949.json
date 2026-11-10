@@ -1,0 +1,36 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "e59b167a-75af-4f81-b7cc-01c00c7b02fd",
+      "title": "Standalone Responsive Knowledge Base & Fast Search Tool",
+      "jtbd": "When an educational resident, researcher, or faculty member accesses the CRIE knowledge base on desktop or mobile, I want a fast, thoughtful, self-contained search and document exploration interface without third-party integration friction, so that I can immediately find and inspect clinical, academic, and normative resources in seconds.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "Defect removal rate for non-domain UI archetypes = 100%",
+      "tocConstraintRef": "CRIE domain entity fidelity in knowledge base presentation layer",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Purge synthetic FinTech archetype placeholders ('operator@domain.com', 'Target Archetype: FinTech', '16 Slots', '99.94%') from design mockups and frontend views, realigning them to FBUN CRIE normative entities (31.08.36 Epidemiologiya, 31.08.35 Infektsionnye bolezni, 31.08.19 Pediatriya, 1697 documents catalog, and teaching workload 750-900 hrs).",
+        "R2: Reconnect or replace orphaned UI controls ('Apply Full-product State' form) to interact directly with the active CRIE knowledge base backend API endpoints (/api/search, /api/documents/facets, /api/workload/calculate) ensuring no disconnected mock controls remain."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Realign knowledge base mockup and interface to FBUN CRIE normative registry domain entities",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing domain object register remediation for this epic, I want to replace synthetic FinTech mock markup with authentic CRIE catalog metadata and bind controls to existing search and workload endpoints, so that the knowledge base presentation strictly conforms to institutional regulatory requirements.",
+          "acceptanceCriteria": "Given the approved mockup at design/approved/20261110024515-mockup/mockup.html and frontend templates,\nWhen inspecting the rendered layout and controls,\nThen all synthetic FinTech labels and mock metrics ('16 Slots', '99.94%') are replaced with authentic CRIE indicators (specialty codes 31.08.36, 31.08.35, 31.08.19, 1697 catalog documents, 750-900 hrs workload norm);\nGiven the form controls previously labelled 'Apply Full-product State',\nWhen a user interacts with the search filters and query fields,\nThen inputs bind to existing /api/search and /api/documents/facets endpoints without orphaned mock form submissions.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Domain mismatch in approved UI mockups and client-facing views",
+          "sixSigmaMetric": "Zero synthetic archetype references across presentation assets",
+          "hasUi": true,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        }
+      ]
+    }
+  ]
+}
