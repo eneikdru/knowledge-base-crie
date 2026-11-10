@@ -402,6 +402,7 @@
 
   :global(html) {
     box-sizing: border-box;
+    -webkit-text-size-adjust: 100%;
   }
 
   :global(*), :global(*::before), :global(*::after) {
@@ -417,6 +418,7 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    width: 100%;
   }
 
   .app-viewport {
@@ -442,6 +444,7 @@
     position: sticky;
     top: 0;
     z-index: 40;
+    width: 100%;
   }
 
   .top-bar-inner {
@@ -452,17 +455,20 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
+    width: 100%;
   }
 
   .branding {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .branding-tag-row {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.5rem;
   }
 
@@ -479,7 +485,7 @@
     font-weight: 700;
     color: #ffffff;
     background: #0f766e;
-    padding: 0.1rem 0.4rem;
+    padding: 0.15rem 0.45rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
   }
@@ -490,6 +496,7 @@
     margin: 0;
     color: var(--text-primary);
     letter-spacing: -0.01em;
+    overflow-wrap: break-word;
   }
 
   /* Desktop Navigation */
@@ -516,6 +523,7 @@
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
+    min-height: 44px;
     transition: all 0.2s;
   }
 
@@ -546,13 +554,14 @@
     max-width: 1040px;
     width: 100%;
     margin: 0 auto;
-    padding: 1.5rem 1rem;
+    padding: 1.25rem 1rem;
     box-sizing: border-box;
     overflow-x: hidden;
   }
 
   .catalog-header {
     margin-bottom: 1.75rem;
+    width: 100%;
   }
 
   /* Hero & Telemetry Section */
@@ -561,13 +570,20 @@
     flex-direction: column;
     gap: 1.25rem;
     margin-bottom: 1.5rem;
+    width: 100%;
   }
 
   .hero-text h2 {
     margin: 0 0 0.35rem;
-    font-size: 1.625rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--text-primary);
+  }
+
+  @media (min-width: 640px) {
+    .hero-text h2 {
+      font-size: 1.75rem;
+    }
   }
 
   .subtitle {
@@ -579,7 +595,7 @@
 
   .telemetry-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 0.75rem;
     width: 100%;
   }
@@ -592,6 +608,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .telemetry-label {
@@ -607,6 +624,7 @@
     font-weight: 800;
     color: var(--text-primary);
     line-height: 1.2;
+    word-break: break-word;
   }
 
   .telemetry-value.active-status {
@@ -648,6 +666,7 @@
     padding: 0 0.85rem;
     transition: border-color 0.2s;
     min-width: 0;
+    min-height: 44px;
   }
 
   .search-input-wrapper:focus-within {
@@ -664,7 +683,7 @@
 
   .search-input-wrapper input[type='search'] {
     width: 100%;
-    padding: 0.75rem 0;
+    padding: 0.65rem 0;
     border: none;
     outline: none;
     font-size: 0.95rem;
@@ -682,7 +701,7 @@
     color: #050b14;
     border: none;
     border-radius: 0.375rem;
-    padding: 0.75rem 1.35rem;
+    padding: 0.65rem 1.35rem;
     font-size: 0.9375rem;
     font-weight: 700;
     cursor: pointer;
@@ -692,6 +711,8 @@
     justify-content: center;
     transition: background-color 0.2s;
     flex-shrink: 0;
+    min-height: 44px;
+    touch-action: manipulation;
   }
 
   .btn-search:hover:not(:disabled),
@@ -716,7 +737,7 @@
     flex-direction: column;
     gap: 0.85rem;
     background: var(--surface);
-    padding: 1.15rem;
+    padding: 1rem;
     border-radius: 0.5rem;
     border: 1px solid var(--border-subtle);
     width: 100%;
@@ -726,6 +747,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    width: 100%;
   }
 
   @media (min-width: 640px) {
@@ -746,7 +768,8 @@
   .chip-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.45rem;
+    gap: 0.5rem;
+    width: 100%;
   }
 
   .chip {
@@ -754,13 +777,18 @@
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
     border-radius: 9999px;
-    padding: 0.35rem 0.85rem;
+    padding: 0.5rem 0.95rem;
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
+    min-height: 44px;
+    min-width: 44px;
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    text-align: center;
+    touch-action: manipulation;
   }
 
   .chip:hover {
@@ -789,12 +817,13 @@
 
   /* Status and Empty States */
   .state-view {
-    padding: 3rem 1.5rem;
+    padding: 2.5rem 1.25rem;
     border-radius: 0.5rem;
     text-align: center;
     background-color: var(--surface);
     border: 1px solid var(--border-subtle);
     margin-top: 1rem;
+    width: 100%;
   }
 
   .loading-state {
@@ -856,6 +885,7 @@
     background: transparent;
     border: none;
     padding: 0;
+    width: 100%;
   }
 
   .results-meta {
@@ -869,6 +899,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.25rem;
+    width: 100%;
   }
 
   .document-card {
@@ -881,6 +912,9 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s ease-in-out;
     word-break: break-word;
+    overflow-wrap: break-word;
+    width: 100%;
+    min-width: 0;
   }
 
   .document-card:hover {
@@ -895,6 +929,7 @@
     justify-content: space-between;
     gap: 0.5rem;
     margin-bottom: 0.65rem;
+    flex-wrap: wrap;
   }
 
   .badge-doc-type {
@@ -921,6 +956,7 @@
     line-height: 1.4;
     font-weight: 700;
     color: var(--text-primary);
+    overflow-wrap: break-word;
   }
 
   .doc-author {
@@ -944,11 +980,13 @@
     flex-wrap: wrap;
     gap: 0.625rem;
     border-top: 1px solid var(--border-subtle);
+    width: 100%;
   }
 
   .btn-download {
     flex: 1 1 calc(50% - 0.35rem);
     min-width: 120px;
+    min-height: 44px;
     border-radius: 0.375rem;
     padding: 0.55rem 0.75rem;
     font-size: 0.8125rem;
@@ -960,6 +998,14 @@
     justify-content: center;
     gap: 0.4rem;
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    touch-action: manipulation;
+  }
+
+  @media (max-width: 400px) {
+    .btn-download {
+      flex: 1 1 100%;
+      width: 100%;
+    }
   }
 
   .btn-download-docx {
@@ -1007,6 +1053,7 @@
     align-items: center;
     z-index: 50;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+    width: 100%;
   }
 
   @media (min-width: 768px) {
@@ -1022,12 +1069,14 @@
     align-items: center;
     justify-content: center;
     height: 100%;
+    min-height: 48px;
     background: transparent;
     border: none;
     color: var(--text-secondary);
     padding: 0.25rem 0;
     cursor: pointer;
     transition: color 0.15s ease;
+    touch-action: manipulation;
   }
 
   .bottom-nav-item:focus-visible {
