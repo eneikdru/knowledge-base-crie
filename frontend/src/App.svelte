@@ -17,18 +17,20 @@
   let selectedSpecialty = 'all';
   let selectedDocType = 'all';
 
-  const specialties = [
-    { id: 'all', label: 'Все специальности' },
+  // FBUN CRIE educational institute domain entities (ordinators, aspirators, departments)
+  let specialties = [
+    { id: 'all', label: 'Все кафедры и специальности' },
     { id: '31.08.36', label: '31.08.36 Эпидемиология' },
     { id: '31.08.35', label: '31.08.35 Инфекционные болезни' },
-    { id: '31.08.19', label: '31.08.19 Педиатрия' }
+    { id: '31.08.19', label: '31.08.19 Педиатрия' },
+    { id: 'aspirantura', label: 'Аспирантура / Научные кадры' }
   ];
 
-  const docTypes = [
+  let docTypes = [
     { id: 'all', label: 'Все типы' },
     { id: 'fgos', label: 'ФГОС ВО' },
-    { id: 'order', label: 'Приказы' },
-    { id: 'regulations', label: 'Регламенты' },
+    { id: 'order', label: 'Приказы института' },
+    { id: 'regulations', label: 'Положения и регламенты' },
     { id: 'methodology', label: 'Методические материалы' }
   ];
 
@@ -75,11 +77,39 @@
     return `${base}?format=pdf`;
   }
 
-  async function fetchDocuments(searchQuery = '') {
+  async function fetchFacets() {
+    try {
+      const url = `${apiBaseUrl}/api/documents/facets`;
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data.specialties) && data.specialties.length > 0) {
+          specialties = [{ id: 'all', label: 'Все кафедры и специальности' }, ...data.specialties];
+        }
+        if (Array.isArray(data.doc_types || data.types) && (data.doc_types || data.types).length > 0) {
+          docTypes = [{ id: 'all', label: 'Все типы' }, ...(data.doc_types || data.types)];
+        }
+      }
+    } catch (err) {
+      // Fallback to static FBUN CRIE normative facets on network or parse error
+    }
+  }
+
+  async function fetchDocuments(searchQuery = '', specialty = selectedSpecialty, docType = selectedDocType) {
     status = 'loading';
     errorMessage = '';
     try {
-      const url = `${apiBaseUrl}/api/search?q=${encodeURIComponent(searchQuery)}`;
+      const params = new URLSearchParams();
+      if (searchQuery) params.set('q', searchQuery);
+      if (specialty && specialty !== 'all') params.set('specialty', specialty);
+      if (docType && docType !== 'all') params.set('type', docType);
+
+      const queryString = params.toString();
+      const url = `${apiBaseUrl}/api/search${queryString ? '?' + queryString : ''}`;
       const response = await fetch(url, {
         headers: {
           'Accept': 'application/json'
@@ -97,7 +127,7 @@
       status = 'success';
     } catch (err) {
       status = 'error';
-      errorMessage = err.message || 'Unable to connect to the document search service.';
+      errorMessage = err.message || 'Не удалось связаться со службой поиска нормативных документов.';
       rawDocuments = [];
       totalCount = 0;
     }
@@ -105,19 +135,21 @@
 
   function handleSearch(event) {
     if (event) event.preventDefault();
-    fetchDocuments(query);
+    fetchDocuments(query, selectedSpecialty, selectedDocType);
   }
 
   function handleRetry() {
-    fetchDocuments(query);
+    fetchDocuments(query, selectedSpecialty, selectedDocType);
   }
 
   function setSpecialtyFilter(specId) {
     selectedSpecialty = specId;
+    fetchDocuments(query, selectedSpecialty, selectedDocType);
   }
 
   function setDocTypeFilter(typeId) {
     selectedDocType = typeId;
+    fetchDocuments(query, selectedSpecialty, selectedDocType);
   }
 
   function selectTab(tabId) {
@@ -146,6 +178,7 @@
 
   onMount(() => {
     registerPWA();
+    fetchFacets();
     fetchDocuments('');
   });
 </script>
@@ -159,7 +192,7 @@
           <span class="institute-badge">ФБУН ЦНИИ Эпидемиологии</span>
           <span class="compliance-pill">WCAG AAA</span>
         </div>
-        <h1 class="app-title">База знаний и ИИ-помощник</h1>
+        <h1 class="app-title">База знаний и ИИ-помощник ординатуры</h1>
       </div>
       <!-- Desktop Tab Bar -->
       <nav class="desktop-nav" aria-label="Главная навигация">
@@ -182,41 +215,42 @@
   <main class="main-content" id="main-content">
     {#if currentTab === 'knowledge'}
       <div class="catalog-container">
-        <!-- Hero Section with FinTech Dark Mode & Telemetry Cards -->
+        <!-- Hero Section with Academic Domain Identity & Telemetry Cards -->
         <header class="catalog-header">
           <div class="hero-section">
             <div class="hero-text">
-              <h2>База знаний института</h2>
-              <p class="subtitle">Поиск и мгновенная фильтрация нормативных, методических и образовательных документов</p>
+              <h2>База знаний и каталог нормативных актов</h2>
+              <p class="subtitle">Поиск и фильтрация образовательных стандартов, рабочих программ дисциплин и нормативных актов ЦНИИ Эпидемиологии</p>
             </div>
 
-            <!-- Telemetry summary cards -->
+            <!-- Academic registry summary cards -->
             <div class="telemetry-cards" aria-label="Метрики базы знаний">
               <div class="telemetry-card">
-                <span class="telemetry-label">Документов</span>
+                <span class="telemetry-label">Нормативных актов</span>
                 <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
                 <span class="telemetry-trend positive">↑ 100% верифицировано</span>
               </div>
               <div class="telemetry-card">
                 <span class="telemetry-label">Стандарт</span>
                 <span class="telemetry-value">ФГОС ВО</span>
-                <span class="telemetry-trend">31.08 Специалитет</span>
+                <span class="telemetry-trend">31.08 Ординатура</span>
               </div>
               <div class="telemetry-card">
                 <span class="telemetry-label">Статус РПД</span>
                 <span class="telemetry-value active-status">Актуально</span>
-                <span class="telemetry-trend">Синхронизировано</span>
+                <span class="telemetry-trend">Учебный отдел</span>
               </div>
             </div>
           </div>
 
-          <!-- Accessible Mobile-first Search Form -->
-          <form class="search-form" on:submit={handleSearch} role="search">
+          <!-- Search Form binding directly to /api/search with submit handler -->
+          <form class="search-form" on:submit={handleSearch} action="/api/search" method="GET" role="search">
             <label for="catalog-search-input" class="visually-hidden">Поиск материалов</label>
             <div class="search-input-wrapper">
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input
                 id="catalog-search-input"
+                name="q"
                 type="search"
                 bind:value={query}
                 placeholder="Поиск по названию, автору или ключевому слову..."
@@ -228,10 +262,10 @@
             </button>
           </form>
 
-          <!-- One-click Dynamic Filter Chips -->
+          <!-- Live Dynamic Filter Chips bound to /api/documents/facets -->
           <div class="facet-filters-container" aria-label="Фильтры по категориям">
             <div class="facet-group">
-              <span class="facet-label" id="spec-label">Специальность:</span>
+              <span class="facet-label" id="spec-label">Кафедра / специальность:</span>
               <div class="chip-list" role="radiogroup" aria-labelledby="spec-label">
                 {#each specialties as spec}
                   <button
@@ -320,7 +354,7 @@
                     <h3 class="doc-title">{doc.title || 'Безымянный документ'}</h3>
 
                     {#if doc.author}
-                      <p class="doc-author"><strong>Автор:</strong> {doc.author}</p>
+                      <p class="doc-author"><strong>Кафедра / Автор:</strong> {doc.author}</p>
                     {/if}
 
                     <p class="doc-annotation">
@@ -555,7 +589,7 @@
     margin-bottom: 1.75rem;
   }
 
-  /* Hero & Telemetry Section */
+  /* Hero & Academic Registry Section */
   .hero-section {
     display: flex;
     flex-direction: column;
@@ -739,7 +773,7 @@
     font-size: 0.8125rem;
     font-weight: 700;
     color: var(--text-secondary);
-    min-width: 120px;
+    min-width: 160px;
     flex-shrink: 0;
   }
 
