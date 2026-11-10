@@ -1,0 +1,20 @@
+[
+  {
+    "concern": "(low) Touch target bounding boxes on mobile tag badges should be verified for 44x44px minimum tap target compliance in upcoming component refinements.",
+    "jtbd": "When interacting with tag badges on mobile touch screens, I want each interactive badge to provide a minimum 44x44px touch bounding target, so that I can reliably activate filters without triggering adjacent elements or suffering interaction errors.",
+    "acceptanceCriteria": "Given a mobile viewport (375px), When inspecting the interactive tag badges within the hero metadata section, Then each touch target bounding area measures at least 44x44 CSS pixels in compliance with WCAG 2.5.5 / 2.5.8 Target Size requirements.",
+    "editInstruction": "In design/approved/20261110013013-mockup/mockup.html, update the tag badges in the hero section container (div.flex.flex-wrap.gap-2.pt-1) to ensure 44x44px tap target compliance by adding 'min-h-[44px] min-w-[44px] inline-flex items-center justify-center' while preserving pill badge typography and visual padding.",
+    "kanoClass": "must_be",
+    "cynefinDomain": "clear",
+    "leanValue": "valuable"
+  },
+  {
+    "concern": "(low) Form control archetype options should be dynamically bound to institutional role catalog in next sprint cycle.",
+    "jtbd": "When selecting a target archetype in the control parameters form, I want the archetype options to reflect institutional domain roles rather than a single static placeholder, so that the interface accurately represents FBUN CRIE operational contexts.",
+    "acceptanceCriteria": "Given the control parameters form, When viewing the 'Target Archetype' select element (#project-archetype-select), Then the dropdown exposes representative institutional role options (e.g., Epidemiology, Pediatrics, Infectious Diseases, Normative Governance) rather than a single hardcoded FinTech option.",
+    "editInstruction": "In design/approved/20261110013013-mockup/mockup.html, replace the single option within <select id=\"project-archetype-select\" ...> with institutional role catalog options: <option value=\"EPIDEMIOLOGY\" selected>32.08.12 Epidemiology</option><option value=\"PEDIATRICS\">31.08.19 Pediatrics</option><option value=\"INFECTIOUS_DISEASES\">31.08.35 Infectious Diseases</option><option value=\"NORMATIVE_GOVERNANCE\">Normative &amp; RPD Governance</option>.",
+    "kanoClass": "performance",
+    "cynefinDomain": "complicated",
+    "leanValue": "valuable"
+  }
+]
