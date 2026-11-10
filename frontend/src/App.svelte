@@ -515,6 +515,7 @@
     color: var(--text-secondary);
     font-size: 0.875rem;
     font-weight: 600;
+    min-height: 44px;
     cursor: pointer;
     transition: all 0.2s;
   }
@@ -648,6 +649,7 @@
     padding: 0 0.85rem;
     transition: border-color 0.2s;
     min-width: 0;
+    min-height: 44px;
   }
 
   .search-input-wrapper:focus-within {
@@ -692,6 +694,8 @@
     justify-content: center;
     transition: background-color 0.2s;
     flex-shrink: 0;
+    min-height: 44px;
+    min-width: 44px;
   }
 
   .btn-search:hover:not(:disabled),
@@ -754,13 +758,15 @@
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
     border-radius: 9999px;
-    padding: 0.35rem 0.85rem;
+    padding: 0.5rem 0.85rem;
     font-size: 0.8125rem;
     font-weight: 600;
+    min-height: 44px;
     cursor: pointer;
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
   }
 
   .chip:hover {
@@ -949,6 +955,7 @@
   .btn-download {
     flex: 1 1 calc(50% - 0.35rem);
     min-width: 120px;
+    min-height: 44px;
     border-radius: 0.375rem;
     padding: 0.55rem 0.75rem;
     font-size: 0.8125rem;
@@ -1022,6 +1029,7 @@
     align-items: center;
     justify-content: center;
     height: 100%;
+    min-height: 48px;
     background: transparent;
     border: none;
     color: var(--text-secondary);
