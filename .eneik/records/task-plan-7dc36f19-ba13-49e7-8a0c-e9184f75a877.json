@@ -1,0 +1,34 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "e59b167a-75af-4f81-b7cc-01c00c7b02fd",
+      "title": null,
+      "jtbd": null,
+      "kanoClass": null,
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "Design token parity >= 99% against approved mockup 20261110013013",
+      "tocConstraintRef": "frontend/src/App.svelte",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Implement pixel-perfect UI updates matching approved mockup design/approved/20261110013013-mockup/mockup.html across frontend layout and styling"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Implement pixel-perfect UI refresh from approved mockup 20261110013013",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing design updates for this epic, I want to apply the approved mockup styling and layout structure to the existing frontend components, so that the knowledge base user interface achieves pixel-perfect alignment with the approved design reference.",
+          "acceptanceCriteria": "Given the approved mockup design/approved/20261110013013-mockup/mockup.html, When existing frontend templates and stylesheets are updated, Then all visual hierarchy, colors, typography, and responsive layouts match the mockup reference.\nGiven a viewport of desktop or mobile (375px width), When inspecting the interface, Then horizontal overflow is prevented and contrast ratios satisfy WCAG AAA standards.",
+          "leanValue": "valuable",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "frontend/src/App.svelte",
+          "sixSigmaMetric": "CSS visual discrepancy delta < 1%",
+          "hasUi": true,
+          "requirementRefs": [
+            "R1"
+          ]
+        }
+      ]
+    }
+  ]
+}
