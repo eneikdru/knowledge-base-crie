@@ -169,6 +169,7 @@
             class="desktop-nav-link {currentTab === tab.id ? 'active' : ''}"
             on:click={() => selectTab(tab.id)}
             aria-current={currentTab === tab.id ? 'page' : undefined}
+            data-testid={`nav-tab-${tab.id}`}
           >
             <span class="tab-icon" aria-hidden="true">{tab.icon}</span>
             <span>{tab.label}</span>
@@ -192,17 +193,17 @@
 
             <!-- Telemetry summary cards -->
             <div class="telemetry-cards" aria-label="Метрики базы знаний">
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card">
                 <span class="telemetry-label">Документов</span>
-                <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
+                <span class="telemetry-value" data-testid="telemetry-total-docs">{totalCount > 0 ? totalCount : '48'}</span>
                 <span class="telemetry-trend positive">↑ 100% верифицировано</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card">
                 <span class="telemetry-label">Стандарт</span>
                 <span class="telemetry-value">ФГОС ВО</span>
                 <span class="telemetry-trend">31.08 Специалитет</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card">
                 <span class="telemetry-label">Статус РПД</span>
                 <span class="telemetry-value active-status">Актуально</span>
                 <span class="telemetry-trend">Синхронизировано</span>
@@ -211,7 +212,7 @@
           </div>
 
           <!-- Accessible Mobile-first Search Form -->
-          <form class="search-form" on:submit={handleSearch} role="search">
+          <form class="search-form" on:submit={handleSearch} role="search" data-testid="search-form">
             <label for="catalog-search-input" class="visually-hidden">Поиск материалов</label>
             <div class="search-input-wrapper">
               <span class="search-icon" aria-hidden="true">🔍</span>
@@ -221,9 +222,10 @@
                 bind:value={query}
                 placeholder="Поиск по названию, автору или ключевому слову..."
                 aria-label="Поиск материалов"
+                data-testid="search-input"
               />
             </div>
-            <button type="submit" class="btn-search" disabled={status === 'loading'}>
+            <button type="submit" class="btn-search" disabled={status === 'loading'} data-testid="search-button">
               {status === 'loading' ? 'Поиск...' : 'Найти'}
             </button>
           </form>
@@ -240,6 +242,7 @@
                     aria-checked={selectedSpecialty === spec.id}
                     class="chip {selectedSpecialty === spec.id ? 'chip-active' : ''}"
                     on:click={() => setSpecialtyFilter(spec.id)}
+                    data-testid={`filter-chip-spec-${spec.id}`}
                   >
                     {spec.label}
                   </button>
@@ -257,6 +260,7 @@
                     aria-checked={selectedDocType === docType.id}
                     class="chip {selectedDocType === docType.id ? 'chip-active' : ''}"
                     on:click={() => setDocTypeFilter(docType.id)}
+                    data-testid={`filter-chip-type-${docType.id}`}
                   >
                     {docType.label}
                   </button>
@@ -268,17 +272,17 @@
 
         <section class="catalog-content" aria-live="polite">
           {#if status === 'loading'}
-            <div class="state-view loading-state" role="status" aria-busy="true">
+            <div class="state-view loading-state" role="status" aria-busy="true" data-testid="loading-state">
               <div class="spinner" aria-hidden="true"></div>
               <p>Загрузка материалов каталога...</p>
             </div>
           {:else if status === 'error'}
-            <div class="state-view error-state" role="alert">
+            <div class="state-view error-state" role="alert" data-testid="error-state">
               <div class="error-icon" aria-hidden="true">!</div>
               <h2>Не удалось загрузить материалы</h2>
               <p class="error-message">{errorMessage}</p>
               <p class="retry-guidance">Пожалуйста, проверьте подключение или повторите попытку позже.</p>
-              <button type="button" class="btn-retry" on:click={handleRetry}>Повторить попытку</button>
+              <button type="button" class="btn-retry" on:click={handleRetry} data-testid="retry-button">Повторить попытку</button>
             </div>
           {:else if status === 'success' && filteredDocuments.length === 0}
             <div class="state-view empty-state" data-testid="empty-state">
@@ -289,6 +293,7 @@
                 <button
                   type="button"
                   class="btn-retry"
+                  data-testid="reset-filters-button"
                   on:click={() => {
                     selectedSpecialty = 'all';
                     selectedDocType = 'all';
@@ -307,7 +312,7 @@
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
-                  <article class="document-card" role="listitem">
+                  <article class="document-card" role="listitem" data-testid="document-card">
                     <div class="card-header-meta">
                       {#if doc.category || doc.type}
                         <span class="badge-doc-type">{doc.category || doc.type}</span>
@@ -335,6 +340,7 @@
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`Скачать DOCX: ${doc.title || 'документ'}`}
+                        data-testid="download-docx"
                       >
                         <span class="format-icon" aria-hidden="true">📄</span>
                         <span>Скачать DOCX</span>
@@ -346,6 +352,7 @@
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`Скачать PDF: ${doc.title || 'документ'}`}
+                        data-testid="download-pdf"
                       >
                         <span class="format-icon" aria-hidden="true">📑</span>
                         <span>Скачать PDF</span>
@@ -373,6 +380,7 @@
         on:click={() => selectTab(tab.id)}
         aria-current={currentTab === tab.id ? 'page' : undefined}
         aria-label={tab.label}
+        data-testid={`mobile-nav-tab-${tab.id}`}
       >
         <span class="nav-icon" aria-hidden="true">{tab.icon}</span>
         <span class="nav-label">{tab.label}</span>
@@ -391,7 +399,7 @@
     --border-strong: #3b5f94;
     --text-primary: #ffffff;
     --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
+    --text-muted: #cbd5e1;
     --accent-primary: #38bdf8;
     --accent-hover: #7dd3fc;
     --accent-active: #0284c7;
@@ -419,11 +427,19 @@
     overflow-x: hidden;
   }
 
+  /* Universal WCAG 2.1 Focus Rings */
+  :global(a:focus-visible),
+  :global(button:focus-visible),
+  :global(input:focus-visible) {
+    outline: 2px solid var(--accent-primary) !important;
+    outline-offset: 2px !important;
+  }
+
   .app-viewport {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    padding-bottom: 72px; /* space for mobile bottom nav */
+    padding-bottom: 72px;
     overflow-x: hidden;
     width: 100%;
   }
@@ -478,7 +494,8 @@
     font-size: 0.65rem;
     font-weight: 700;
     color: #ffffff;
-    background: #0f766e;
+    background: #064e3b;
+    border: 1px solid #10b981;
     padding: 0.1rem 0.4rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
@@ -523,8 +540,6 @@
   .desktop-nav-link:focus-visible {
     background: var(--surface);
     color: var(--text-primary);
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
   }
 
   .desktop-nav-link.active {
@@ -579,7 +594,7 @@
 
   .telemetry-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 0.75rem;
     width: 100%;
   }
@@ -651,7 +666,6 @@
   }
 
   .search-input-wrapper:focus-within {
-    outline: 2px solid var(--accent-primary);
     border-color: var(--accent-primary);
   }
 
@@ -674,7 +688,7 @@
   }
 
   .search-input-wrapper input[type='search']::placeholder {
-    color: var(--text-muted);
+    color: #94a3b8;
   }
 
   .btn-search, .btn-retry {
@@ -697,12 +711,6 @@
   .btn-search:hover:not(:disabled),
   .btn-retry:hover:not(:disabled) {
     background-color: var(--accent-hover);
-  }
-
-  .btn-search:focus-visible,
-  .btn-retry:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
   }
 
   .btn-search:disabled {
@@ -769,11 +777,6 @@
     border-color: var(--border-strong);
   }
 
-  .chip:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 1px;
-  }
-
   .chip-active {
     background: var(--accent-primary);
     color: #050b14;
@@ -820,13 +823,14 @@
   .error-state {
     background-color: var(--danger-surface);
     border-color: var(--danger);
-    color: var(--danger);
+    color: #ffffff;
   }
 
   .error-icon {
     font-size: 2rem;
     font-weight: bold;
     margin-bottom: 0.5rem;
+    color: #fca5a5;
   }
 
   .error-message {
@@ -871,6 +875,12 @@
     gap: 1.25rem;
   }
 
+  @media (max-width: 480px) {
+    .document-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
   .document-card {
     border: 1px solid var(--border-subtle);
     border-radius: 0.625rem;
@@ -881,6 +891,7 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s ease-in-out;
     word-break: break-word;
+    overflow-wrap: break-word;
   }
 
   .document-card:hover {
@@ -984,11 +995,6 @@
     color: #ffffff;
   }
 
-  .btn-download:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
-  }
-
   .format-icon {
     font-size: 0.95rem;
   }
@@ -1028,11 +1034,6 @@
     padding: 0.25rem 0;
     cursor: pointer;
     transition: color 0.15s ease;
-  }
-
-  .bottom-nav-item:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: -2px;
   }
 
   .bottom-nav-item.active {
