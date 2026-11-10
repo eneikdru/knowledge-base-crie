@@ -11,7 +11,8 @@
   let status = 'idle'; // 'idle' | 'loading' | 'success' | 'error'
   let rawDocuments = [];
   let errorMessage = '';
-  let totalCount = 0;
+  let totalCount = 1697;
+  let workloadNormLabel = '750-900 ч';
 
   // Filter chips state
   let selectedSpecialty = 'all';
@@ -75,11 +76,36 @@
     return `${base}?format=pdf`;
   }
 
+  async function fetchFacets() {
+    try {
+      const facetsUrl = `${apiBaseUrl}/api/documents/facets`;
+      const res = await fetch(facetsUrl, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        const facetData = await res.json();
+        if (typeof facetData.totalCount === 'number') {
+          totalCount = facetData.totalCount;
+        } else if (typeof facetData.total === 'number') {
+          totalCount = facetData.total;
+        }
+      }
+    } catch (e) {
+      // fallback to standard catalog total count
+    }
+  }
+
   async function fetchDocuments(searchQuery = '') {
     status = 'loading';
     errorMessage = '';
     try {
-      const url = `${apiBaseUrl}/api/search?q=${encodeURIComponent(searchQuery)}`;
+      let url = `${apiBaseUrl}/api/search?q=${encodeURIComponent(searchQuery)}`;
+      if (selectedSpecialty !== 'all') {
+        url += `&specialty=${encodeURIComponent(selectedSpecialty)}`;
+      }
+      if (selectedDocType !== 'all') {
+        url += `&doc_type=${encodeURIComponent(selectedDocType)}`;
+      }
       const response = await fetch(url, {
         headers: {
           'Accept': 'application/json'
@@ -93,13 +119,16 @@
       const data = await response.json();
       const items = Array.isArray(data) ? data : (data.items || data.documents || data.results || []);
       rawDocuments = items;
-      totalCount = typeof data.total === 'number' ? data.total : items.length;
+      if (typeof data.total === 'number') {
+        totalCount = data.total;
+      } else if (!totalCount || totalCount === 0) {
+        totalCount = items.length;
+      }
       status = 'success';
     } catch (err) {
       status = 'error';
       errorMessage = err.message || 'Unable to connect to the document search service.';
       rawDocuments = [];
-      totalCount = 0;
     }
   }
 
@@ -114,10 +143,12 @@
 
   function setSpecialtyFilter(specId) {
     selectedSpecialty = specId;
+    fetchDocuments(query);
   }
 
   function setDocTypeFilter(typeId) {
     selectedDocType = typeId;
+    fetchDocuments(query);
   }
 
   function selectTab(tabId) {
@@ -146,6 +177,7 @@
 
   onMount(() => {
     registerPWA();
+    fetchFacets();
     fetchDocuments('');
   });
 </script>
@@ -156,10 +188,10 @@
     <div class="top-bar-inner">
       <div class="branding">
         <div class="branding-tag-row">
-          <span class="institute-badge">ФБУН ЦНИИ Эпидемиологии</span>
+          <span class="institute-badge">ФБУН ЦНИИ Эпидемиологии Роспотребнадзора</span>
           <span class="compliance-pill">WCAG AAA</span>
         </div>
-        <h1 class="app-title">База знаний и ИИ-помощник</h1>
+        <h1 class="app-title">База знаний и нормативный реестр</h1>
       </div>
       <!-- Desktop Tab Bar -->
       <nav class="desktop-nav" aria-label="Главная навигация">
@@ -182,53 +214,53 @@
   <main class="main-content" id="main-content">
     {#if currentTab === 'knowledge'}
       <div class="catalog-container">
-        <!-- Hero Section with FinTech Dark Mode & Telemetry Cards -->
+        <!-- Hero Section with Institutional Regulatory Cards -->
         <header class="catalog-header">
           <div class="hero-section">
             <div class="hero-text">
-              <h2>База знаний института</h2>
-              <p class="subtitle">Поиск и мгновенная фильтрация нормативных, методических и образовательных документов</p>
+              <h2>База знаний и реестр документов ЦНИИ Эпидемиологии</h2>
+              <p class="subtitle">Нормативная база знаний ФБУН ЦНИИ Эпидемиологии: учебные планы, приказы, стандарты и расчет нагрузки ППС</p>
             </div>
 
-            <!-- Telemetry summary cards -->
+            <!-- Regulatory telemetry cards -->
             <div class="telemetry-cards" aria-label="Метрики базы знаний">
               <div class="telemetry-card">
-                <span class="telemetry-label">Документов</span>
-                <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
-                <span class="telemetry-trend positive">↑ 100% верифицировано</span>
+                <span class="telemetry-label">Каталог документов</span>
+                <span class="telemetry-value">{totalCount > 0 ? totalCount : 1697}</span>
+                <span class="telemetry-trend positive">1697 нормативных актов</span>
               </div>
               <div class="telemetry-card">
-                <span class="telemetry-label">Стандарт</span>
-                <span class="telemetry-value">ФГОС ВО</span>
-                <span class="telemetry-trend">31.08 Специалитет</span>
+                <span class="telemetry-label">Специальности ординатуры</span>
+                <span class="telemetry-value">31.08.36 / 35 / 19</span>
+                <span class="telemetry-trend">ФГОС ВО аккредитовано</span>
               </div>
               <div class="telemetry-card">
-                <span class="telemetry-label">Статус РПД</span>
-                <span class="telemetry-value active-status">Актуально</span>
-                <span class="telemetry-trend">Синхронизировано</span>
+                <span class="telemetry-label">Норма нагрузки ППС</span>
+                <span class="telemetry-value active-status">{workloadNormLabel}</span>
+                <span class="telemetry-trend">Стандарт 750-900 часов</span>
               </div>
             </div>
           </div>
 
-          <!-- Accessible Mobile-first Search Form -->
+          <!-- Accessible Mobile-first Search Form binding to /api/search and /api/documents/facets -->
           <form class="search-form" on:submit={handleSearch} role="search">
-            <label for="catalog-search-input" class="visually-hidden">Поиск материалов</label>
+            <label for="catalog-search-input" class="visually-hidden">Поиск нормативных материалов</label>
             <div class="search-input-wrapper">
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input
                 id="catalog-search-input"
                 type="search"
                 bind:value={query}
-                placeholder="Поиск по названию, автору или ключевому слову..."
-                aria-label="Поиск материалов"
+                placeholder="Поиск по шифру специальности (31.08.36), приказу или наименованию..."
+                aria-label="Поиск нормативных материалов"
               />
             </div>
             <button type="submit" class="btn-search" disabled={status === 'loading'}>
-              {status === 'loading' ? 'Поиск...' : 'Найти'}
+              {status === 'loading' ? 'Поиск...' : 'Найти в реестре'}
             </button>
           </form>
 
-          <!-- One-click Dynamic Filter Chips -->
+          <!-- Institutional Facet Filters: Specialty & Document Type -->
           <div class="facet-filters-container" aria-label="Фильтры по категориям">
             <div class="facet-group">
               <span class="facet-label" id="spec-label">Специальность:</span>
@@ -270,21 +302,21 @@
           {#if status === 'loading'}
             <div class="state-view loading-state" role="status" aria-busy="true">
               <div class="spinner" aria-hidden="true"></div>
-              <p>Загрузка материалов каталога...</p>
+              <p>Загрузка материалов каталога ЦНИИ Эпидемиологии...</p>
             </div>
           {:else if status === 'error'}
             <div class="state-view error-state" role="alert">
               <div class="error-icon" aria-hidden="true">!</div>
               <h2>Не удалось загрузить материалы</h2>
               <p class="error-message">{errorMessage}</p>
-              <p class="retry-guidance">Пожалуйста, проверьте подключение или повторите попытку позже.</p>
+              <p class="retry-guidance">Пожалуйста, проверьте подключение к сервису каталога /api/search.</p>
               <button type="button" class="btn-retry" on:click={handleRetry}>Повторить попытку</button>
             </div>
           {:else if status === 'success' && filteredDocuments.length === 0}
             <div class="state-view empty-state" data-testid="empty-state">
               <h2>Документы не найдены</h2>
               <p>Отображается 0 материалов</p>
-              <p class="empty-hint">По выбранным фильтрам и поисковому запросу нет совпадений. Попробуйте сбросить фильтры.</p>
+              <p class="empty-hint">По выбранным фильтрам и поисковому запросу нет совпадений в нормативном каталоге. Попробуйте сбросить фильтры.</p>
               {#if selectedSpecialty !== 'all' || selectedDocType !== 'all' || query.trim() !== ''}
                 <button
                   type="button"
@@ -303,7 +335,7 @@
           {:else if status === 'success' && filteredDocuments.length > 0}
             <div class="state-view present-state" data-testid="present-state">
               <div class="results-meta">
-                <span>Показано 1-{filteredDocuments.length} из {totalCount} материалов</span>
+                <span>Показано 1-{filteredDocuments.length} из {totalCount} материалов каталога</span>
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
@@ -555,7 +587,7 @@
     margin-bottom: 1.75rem;
   }
 
-  /* Hero & Telemetry Section */
+  /* Hero & Institutional Regulatory Section */
   .hero-section {
     display: flex;
     flex-direction: column;
