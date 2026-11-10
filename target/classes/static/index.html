@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>ФБУН ЦНИИ Эпидемиологии — База Знаний и AI-Ассистент</title>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --primary-light: #e0f2fe;
+      --accent: #059669;
+      --accent-hover: #047857;
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-elevated: #334155;
+      --border: #475569;
+      --border-subtle: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --radius: 10px;
+      --shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    body { background: var(--bg); color: var(--text-main); display: flex; flex-direction: column; min-height: 100vh; }
+    header { background: var(--surface); border-bottom: 1px solid var(--border-subtle); padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+    .brand-title { font-size: 1.15rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 0.6rem; }
+    .brand-sub { font-size: 0.75rem; color: var(--text-muted); font-weight: normal; display: block; }
+    .auth-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.75rem; border-radius: 999px; background: rgba(5,150,105,0.15); border: 1px solid var(--accent); color: #34d399; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+    .nav-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border-subtle); padding: 0 1.5rem; overflow-x: auto; gap: 0.5rem; }
+    .nav-tab { padding: 0.9rem 1.25rem; font-size: 0.9rem; font-weight: 600; color: var(--text-muted); background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
+    .nav-tab:hover { color: var(--text-main); }
+    .nav-tab.active { color: #38bdf8; border-bottom-color: #38bdf8; }
+    main { flex: 1; padding: 1.5rem; max-width: 1400px; margin: 0 auto; width: 100%; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .banner-download { background: linear-gradient(135deg, #0369a1, #0f766e); border-radius: var(--radius); padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; box-shadow: var(--shadow); }
+    .banner-text h2 { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.25rem; color: #fff; }
+    .banner-text p { font-size: 0.85rem; color: #e0f2fe; }
+    .btn-download-all { background: #fff; color: #0f172a; border: none; border-radius: 6px; padding: 0.65rem 1.25rem; font-size: 0.9rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: background 0.2s; }
+    .btn-download-all:hover { background: #f1f5f9; }
+    .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+    .doc-card { background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 1.25rem; display: flex; flex-direction: column; box-shadow: var(--shadow); transition: transform 0.15s, border-color 0.15s; }
+    .doc-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+    .doc-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .badge-tag { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(2,132,199,0.2); color: #38bdf8; border: 1px solid rgba(2,132,199,0.3); }
+    .doc-title { font-size: 0.95rem; font-weight: 600; color: #fff; margin-bottom: 0.5rem; line-height: 1.4; flex: 1; }
+    .doc-annotation { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.4; }
+    .btn-download-docx { background: var(--primary); color: #fff; border: 1px solid var(--primary); border-radius: 6px; padding: 0.5rem 0.9rem; font-size: 0.825rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; cursor: pointer; transition: background 0.2s; margin-top: auto; }
+    .btn-download-docx:hover { background: var(--primary-dark); }
+    .chat-layout { display: flex; flex-direction: column; height: 70vh; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border-subtle); overflow: hidden; }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
+    .chat-msg { max-width: 85%; padding: 0.9rem 1.15rem; border-radius: var(--radius); line-height: 1.5; font-size: 0.925rem; }
+    .chat-msg.user { align-self: flex-end; background: var(--primary-dark); color: #fff; border-bottom-right-radius: 2px; }
+    .chat-msg.assistant { align-self: flex-start; background: var(--surface-elevated); color: var(--text-main); border-bottom-left-radius: 2px; border: 1px solid var(--border); }
+    .chat-citations { margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--border); font-size: 0.8rem; color: #38bdf8; }
+    .chat-citations strong { color: #fff; }
+    .chat-suggestions { display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.75rem 1.25rem; background: rgba(0,0,0,0.15); border-top: 1px solid var(--border-subtle); }
+    .btn-suggestion { font-size: 0.8rem; padding: 0.35rem 0.75rem; border-radius: 999px; background: var(--surface-elevated); border: 1px solid var(--border); color: #cbd5e1; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+    .btn-suggestion:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .chat-input-bar { display: flex; padding: 0.75rem 1rem; background: var(--surface); border-top: 1px solid var(--border-subtle); gap: 0.75rem; }
+    .chat-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.65rem 1rem; color: #fff; font-size: 0.9rem; outline: none; }
+    .chat-input:focus { border-color: #38bdf8; }
+    .btn-send { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 0.65rem 1.25rem; font-weight: 600; cursor: pointer; }
+    .btn-send:hover { background: var(--accent-hover); }
+    .search-bar-wrapper { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .search-input { flex: 1; min-width: 250px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.65rem 1rem; color: #fff; font-size: 0.9rem; outline: none; }
+    .search-select { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.65rem 1rem; color: #fff; font-size: 0.9rem; outline: none; }
+    .calc-card { background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 1.5rem; max-width: 600px; margin: 0 auto; }
+    .calc-row { margin-bottom: 1.25rem; }
+    .calc-row label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text-muted); }
+    .calc-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.65rem; color: #fff; font-size: 0.95rem; }
+    .calc-results { margin-top: 1.5rem; padding: 1rem; border-radius: 6px; background: var(--surface-elevated); border: 1px solid var(--border); }
+    .calc-metric { display: flex; justify-content: space-between; padding: 0.4rem 0; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .calc-metric:last-child { border-bottom: none; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+    .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; max-width: 420px; width: 90%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); text-align: center; }
+    .modal-box h3 { font-size: 1.25rem; margin-bottom: 0.5rem; color: #fff; }
+    .modal-box p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.4; }
+    .pin-input { font-size: 1.5rem; letter-spacing: 0.4rem; text-align: center; width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem; color: #fff; margin-bottom: 1rem; outline: none; }
+    .btn-login { width: 100%; background: var(--primary); color: #fff; border: none; border-radius: 6px; padding: 0.75rem; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
+    .btn-login:hover { background: var(--primary-dark); }
+    .pin-hint { font-size: 0.75rem; color: #64748b; margin-top: 0.75rem; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-title">
+      <span style="font-size: 1.5rem;">🏛️</span>
+      <div>
+        ФБУН ЦНИИ Эпидемиологии Роспотребнадзора
+        <span class="brand-sub">Институциональная База Знаний и Экспертный AI-Консультант (Spring Boot 3 / DeepSeek)</span>
+      </div>
+    </div>
+    <div id="authStatusBadge" class="auth-badge" onclick="showAuthModal()">
+      <span>🔒</span> <span id="authBadgeText">Авторизован: 152-ФЗ Активен</span>
+    </div>
+  </header>
+
+  <nav class="nav-tabs" role="tablist">
+    <button class="nav-tab active" onclick="switchTab('tab-generator')">📄 15 Документов пакета (ГОСТ)</button>
+    <button class="nav-tab" onclick="switchTab('tab-chat')">🤖 AI-Консультант (DeepSeek)</button>
+    <button class="nav-tab" onclick="switchTab('tab-catalog')">📚 Нормативная база (1 697 актов)</button>
+    <button class="nav-tab" onclick="switchTab('tab-calculator')">📊 Калькулятор нагрузки ППС</button>
+  </nav>
+
+  <main>
+    <!-- TAB 1: 15 ГОСТ ДОКУМЕНТОВ -->
+    <section id="tab-generator" class="tab-content active">
+      <div class="banner-download">
+        <div class="banner-text">
+          <h2>Сводный пакет институциональных документов (2026–2027)</h2>
+          <p>Все 15 регламентов, протоколов УМС, приказов и учебных планов по ГОСТ Р 7.0.97-2016 в одном архиве.</p>
+        </div>
+        <a href="/api/download/archive" class="btn-download-all" download>
+          <span>📥</span> Скачать весь пакет (.ZIP) — 538 КБ
+        </a>
+      </div>
+
+      <div class="grid-cards" id="benchmarkDocsGrid">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- TAB 2: AI-КОНСУЛЬТАНТ DEEPSEEK -->
+    <section id="tab-chat" class="tab-content">
+      <div class="chat-layout">
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-msg assistant">
+            Здравствуйте! Я — нормативно-методический консультант ФБУН ЦНИИ Эпидемиологии Роспотребнадзора на базе модели <strong>DeepSeek</strong>.
+            <br><br>
+            Я могу предоставить подробную справку по Федеральному закону № 273-ФЗ, нормативам Роспотребнадзора, образовательным программам ординатуры (32.08.12, 31.08.35, 31.08.19), проведению зимней сессии 2026/2027 и формированию государственных экзаменационных комиссий. Задайте ваш вопрос!
+          </div>
+        </div>
+
+        <div class="chat-suggestions">
+          <button class="btn-suggestion" onclick="askSuggestion('Порядок проведения текущего контроля и аттестации в ординатуре')">Текущий контроль и ПА в ординатуре</button>
+          <button class="btn-suggestion" onclick="askSuggestion('Формирование комиссий ГЭК и кандидатских на 2027 год')">Комиссии ГЭК и кандидатские на 2027</button>
+          <button class="btn-suggestion" onclick="askSuggestion('Расписание зимней сессии по группам 25ОЭ и 26ОЭ с 25.01 по 25.02')">Расписание зимней сессии (25.01-25.02)</button>
+          <button class="btn-suggestion" onclick="askSuggestion('Кадровое обеспечение и норматив остепененности ППС не менее 70%')">Остепененность ППС (не менее 70%)</button>
+        </div>
+
+        <div class="chat-input-bar">
+          <input type="text" id="chatInput" class="chat-input" placeholder="Введите нормативный или методический вопрос института..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+          <button class="btn-send" onclick="sendChatMessage()">Спросить DeepSeek</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: НОРМАТИВНАЯ БАЗА (1697) -->
+    <section id="tab-catalog" class="tab-content">
+      <div class="search-bar-wrapper">
+        <input type="text" id="searchInput" class="search-input" placeholder="Поиск по 1 697 нормативным документам, РПД, ФГОС..." oninput="debounceSearch()">
+        <select id="categorySelect" class="search-select" onchange="performSearch()">
+          <option value="all">Все категории документов</option>
+        </select>
+      </div>
+
+      <div class="grid-cards" id="normativeDocsGrid">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- TAB 4: КАЛЬКУЛЯТОР НАГРУЗКИ -->
+    <section id="tab-calculator" class="tab-content">
+      <div class="calc-card">
+        <h2 style="font-size: 1.15rem; margin-bottom: 1rem; color: #fff;">Калькулятор соответствия кадрового обеспечения ФГОС ВО</h2>
+        <div class="calc-row">
+          <label>Количество обучающихся (ординаторы и аспиранты):</label>
+          <input type="number" id="calcStudents" class="calc-input" value="45" oninput="recalculateWorkload()">
+        </div>
+        <div class="calc-row">
+          <label>Численность научно-педагогических работников (ППС):</label>
+          <input type="number" id="calcFaculty" class="calc-input" value="17" oninput="recalculateWorkload()">
+        </div>
+        <div class="calc-results" id="calcResults">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL AUTH 152-FZ -->
+  <div id="authModal" class="modal-overlay" style="display: none;">
+    <div class="modal-box">
+      <h3>Защищенный периметр (152-ФЗ)</h3>
+      <p>Для доступа к институциональному контуру введите служебный PIN-код доступа сотрудника ФБУН ЦНИИ Эпидемиологии.</p>
+      <input type="password" id="pinInput" class="pin-input" maxlength="8" placeholder="••••" value="2026">
+      <button class="btn-login" onclick="verifyPin()">Подтвердить доступ</button>
+      <div class="pin-hint">По умолчанию: <strong>2026</strong> (институциональный служебный PIN)</div>
+    </div>
+  </div>
+
+  <script>
+    const BENCHMARK_DOCS = [
+      { id: "01", name: "01_Протокол_УМС_9_26_от_09_09_2026.docx", title: "Протокол заседания УМС № 9/26 от 09.09.2026", type: "Протокол УМС", annotation: "Повестка, кворум академика Горелова А.В., внедрение модуля ИИ (72 ч.), пособие по кори Тагировой З.Г." },
+      { id: "02", name: "02_Протокол_УМС_10_26_от_14_10_2026.docx", title: "Протокол заседания УМС № 10/26 от 14.10.2026", type: "Протокол УМС", annotation: "Утверждение календарных графиков зимней сессии и 9 локальных положений института." },
+      { id: "03", name: "03_Приказ_о_формировании_комиссий_на_2027_год.docx", title: "Приказ о формировании комиссий на 2027 год", type: "Приказ директора", annotation: "Утверждение составов ГЭК, комиссий по приему кандидатских экзаменов и приемной комиссии по образцу приказа № 96." },
+      { id: "04", name: "04_Расписание_зимней_сессии_2026_2027.docx", title: "Расписание зимней экзаменационной сессии (25.01–25.02.2027)", type: "Расписание", annotation: "Расписание по группам 25ОЭ, 26ОЭ, 25ОИ, 26ОИ, 25ОП, 26ОП и аспирантуре с аудиториями и экзаменаторами." },
+      { id: "05", name: "05_Учебные_планы_ординатура_2026_2027.docx", title: "Сводные учебные планы ординатуры (120 з.е. / 4 320 ч.)", type: "Учебный план", annotation: "Специальности: 32.08.12 «Эпидемиология», 31.08.35 «Инфекционные болезни», 31.08.19 «Педиатрия»." },
+      { id: "06", name: "06_Справка_о_нагрузке_и_кадровом_обеспечении.docx", title: "Справка о кадровом обеспечении и нагрузке ППС", type: "Справка", annotation: "17 преподавателей, 4 450 ч. нагрузки кафедр, остепененность 88.2% при нормативе ФГОС не менее 70%." },
+      { id: "07_01", name: "07_01_Положение_об_организации_ОД_в_аспирантуре.docx", title: "Положение об организации ОД в аспирантуре ЦНИИЭ", type: "Положение", annotation: "Регламент образовательного процесса по программам подготовки научных кадров." },
+      { id: "07_02", name: "07_02_Положение_об_организации_ОД_в_ординатуре.docx", title: "Положение об организации ОД в ординатуре ЦНИИЭ", type: "Положение", annotation: "Порядок реализации программ ординатуры высшей квалификации." },
+      { id: "07_03", name: "07_03_Положение_о_проведении_ВСОКО.docx", title: "Положение о внутренней системе оценки качества (ВСОКО)", type: "Положение", annotation: "Критерии оценки и мониторинг качества образовательных программ." },
+      { id: "07_04", name: "07_04_Положение_о_текущем_контроле_и_ПА_в_ординатуре.docx", title: "Положение о текущем контроле и ПА в ординатуре", type: "Положение", annotation: "Формы контроля успеваемости и регламент промежуточной аттестации ординаторов." },
+      { id: "07_05", name: "07_05_Положение_о_текущем_контроле_и_ПА_в_аспирантуре.docx", title: "Положение о текущем контроле и ПА в аспирантуре", type: "Положение", annotation: "Оценка выполнения индивидуального плана научной работы аспирантов." },
+      { id: "07_06", name: "07_06_Положение_об_ЭИОС.docx", title: "Положение об электронной среде (ЭИОС ЦНИИЭ)", type: "Положение", annotation: "Функционирование ЭИОС, учет успеваемости и электронные ресурсы института." },
+      { id: "07_07", name: "07_07_Положение_о_ГИА_в_ординатуре.docx", title: "Положение о государственной итоговой аттестации (ГИА)", type: "Положение", annotation: "Порядок работы ГЭК, этапы сдачи экзамена и апелляций." },
+      { id: "07_08", name: "07_08_Положение_об_итоговой_аттестации_в_аспирантуре.docx", title: "Положение об итоговой аттестации в аспирантуре", type: "Положение", annotation: "Оценка научного доклада и готовности диссертационного исследования." },
+      { id: "07_09", name: "07_09_Положение_о_стипендиальном_обеспечении.docx", title: "Положение о стипендиальном обеспечении", type: "Положение", annotation: "Назначение академических и материальных выплат обучающимся." }
+    ];
+
+    function renderBenchmarkDocs() {
+      const grid = document.getElementById("benchmarkDocsGrid");
+      grid.innerHTML = BENCHMARK_DOCS.map(doc => `
+        <article class="doc-card">
+          <div class="doc-header">
+            <span class="badge-tag">${doc.type}</span>
+            <span style="font-size: 0.75rem; color: #64748b;">2026–2027</span>
+          </div>
+          <h3 class="doc-title">${doc.title}</h3>
+          <p class="doc-annotation">${doc.annotation}</p>
+          <a href="/api/download/${doc.name}" class="btn-download-docx" download>
+            <span>📄</span> Скачать .DOCX
+          </a>
+        </article>
+      `).join("");
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+      document.querySelectorAll(".nav-tab").forEach(el => el.classList.remove("active"));
+      document.getElementById(tabId).classList.add("active");
+      event.target.classList.add("active");
+      if (tabId === "tab-catalog") {
+        performSearch();
+      }
+    }
+
+    function showAuthModal() {
+      document.getElementById("authModal").style.display = "flex";
+    }
+
+    function verifyPin() {
+      const pin = document.getElementById("pinInput").value;
+      fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: pin })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          localStorage.setItem("crie_token", data.token);
+          document.getElementById("authModal").style.display = "none";
+          document.getElementById("authBadgeText").innerText = "Авторизован (152-ФЗ)";
+          document.getElementById("authStatusBadge").style.borderColor = "#059669";
+        } else {
+          alert(data.error || "Неверный PIN");
+        }
+      })
+      .catch(() => {
+        // Local fallback PIN check
+        if (pin === "2026") {
+          localStorage.setItem("crie_token", "token-2026");
+          document.getElementById("authModal").style.display = "none";
+          document.getElementById("authBadgeText").innerText = "Авторизован (152-ФЗ)";
+        } else {
+          alert("Неверный служебный PIN");
+        }
+      });
+    }
+
+    function askSuggestion(text) {
+      document.getElementById("chatInput").value = text;
+      sendChatMessage();
+    }
+
+    function sendChatMessage() {
+      const input = document.getElementById("chatInput");
+      const text = input.value.trim();
+      if (!text) return;
+
+      const container = document.getElementById("chatMessages");
+      const userDiv = document.createElement("div");
+      userDiv.className = "chat-msg user";
+      userDiv.innerText = text;
+      container.appendChild(userDiv);
+      input.value = "";
+      container.scrollTop = container.scrollHeight;
+
+      const loadingDiv = document.createElement("div");
+      loadingDiv.className = "chat-msg assistant";
+      loadingDiv.innerText = "Формирование ответа DeepSeek по нормативной базе института...";
+      container.appendChild(loadingDiv);
+      container.scrollTop = container.scrollHeight;
+
+      fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CRIE-Token": localStorage.getItem("crie_token") || "2026"
+        },
+        body: JSON.stringify({ query: text })
+      })
+      .then(r => r.json())
+      .then(data => {
+        let citationsHtml = "";
+        if (data.citations && data.citations.length > 0) {
+          citationsHtml = `<div class="chat-citations"><strong>Нормативные источники:</strong><br>` +
+            data.citations.map(c => `• ${c.title}`).join("<br>") + `</div>`;
+        }
+        loadingDiv.innerHTML = (data.response || data.answer || "Ответ сформирован.").replace(/\n/g, "<br>") + citationsHtml;
+        container.scrollTop = container.scrollHeight;
+      })
+      .catch(err => {
+        loadingDiv.innerText = "Ошибка обращения к сервису: " + err;
+      });
+    }
+
+    let searchTimeout = null;
+    function debounceSearch() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(performSearch, 300);
+    }
+
+    function performSearch() {
+      const q = document.getElementById("searchInput").value;
+      const cat = document.getElementById("categorySelect").value;
+      fetch(`/api/catalog/search?q=${encodeURIComponent(q)}&category=${encodeURIComponent(cat)}&limit=30`)
+        .then(r => r.json())
+        .then(data => {
+          const items = data.items || data.results || [];
+          const grid = document.getElementById("normativeDocsGrid");
+          if (items.length === 0) {
+            grid.innerHTML = `<p style="grid-column: 1/-1; color: #94a3b8; text-align: center; padding: 2rem;">По вашему запросу документов не найдено.</p>`;
+            return;
+          }
+          grid.innerHTML = items.map(doc => `
+            <article class="doc-card">
+              <div class="doc-header">
+                <span class="badge-tag">${doc.type || 'Документ'}</span>
+                <span style="font-size: 0.75rem; color: #64748b;">${doc.extension || '.docx'}</span>
+              </div>
+              <h3 class="doc-title">${doc.title || doc.file_name}</h3>
+              <p class="doc-annotation">${doc.annotation || doc.category || ''}</p>
+              <a href="${doc.download_url || ('/api/download/' + doc.file_name)}" class="btn-download-docx" download>
+                <span>📄</span> Скачать документ
+              </a>
+            </article>
+          `).join("");
+
+          // Update categories select if first load
+          if (data.categories && document.getElementById("categorySelect").children.length <= 1) {
+            const select = document.getElementById("categorySelect");
+            Object.keys(data.categories).forEach(c => {
+              const opt = document.createElement("option");
+              opt.value = c;
+              opt.innerText = `${c} (${data.categories[c]})`;
+              select.appendChild(opt);
+            });
+          }
+        });
+    }
+
+    function recalculateWorkload() {
+      const students = parseInt(document.getElementById("calcStudents").value) || 45;
+      const faculty = parseInt(document.getElementById("calcFaculty").value) || 17;
+      fetch("/api/workload/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ students_count: students, faculty_count: faculty })
+      })
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById("calcResults").innerHTML = `
+          <div class="calc-metric"><span>Учебная программа ординатуры:</span><strong>120 з.е. (4 320 ч.)</strong></div>
+          <div class="calc-metric"><span>Суммарная нагрузка кафедр:</span><strong>${data.total_planned_hours} ч.</strong></div>
+          <div class="calc-metric"><span>Средняя нагрузка на 1 преподавателя:</span><strong>${data.average_load_per_faculty_member_hours} ч./год</strong></div>
+          <div class="calc-metric"><span>Доля преподавателей с учеными степенями:</span><strong style="color: #34d399;">${data.degree_holding_percentage}% (Норматив ФГОС: ≥ 70%)</strong></div>
+          <div class="calc-metric"><span>Статус соответствия лицензионным нормам:</span><strong style="color: #38bdf8;">${data.compliance_status}</strong></div>
+        `;
+      });
+    }
+
+    window.onload = function() {
+      renderBenchmarkDocs();
+      recalculateWorkload();
+    };
+  </script>
+</body>
+</html>
