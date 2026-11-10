@@ -1,0 +1,13 @@
+/workspace/src/main/java/com/eneik/crie/CrieAssistantApplication.java
+/workspace/src/main/java/com/eneik/crie/config/SecurityConfig.java
+/workspace/src/main/java/com/eneik/crie/controller/CrieApiController.java
+/workspace/src/main/java/com/eneik/crie/controller/WebViewController.java
+/workspace/src/main/java/com/eneik/crie/models/persistence/GeneratedDocumentEntity.java
+/workspace/src/main/java/com/eneik/crie/service/DeepSeekService.java
+/workspace/src/main/java/com/eneik/crie/service/NormativeCatalogService.java
+/workspace/src/main/java/com/eneik/telemetry/TelemetryEvent.java
+/workspace/src/main/java/com/eneik/telemetry/TelemetryMetricsService.java
+/workspace/src/main/java/com/eneik/telemetry/TelemetrySummary.java
+/workspace/src/main/java/com/eneik/telemetry/models/persistence/InternalEntity.java
+/workspace/src/main/java/com/eneik/telemetry/services/InternalService.java
+/workspace/src/main/java/com/eneik/telemetry/services/security/InternalSecurityService.java
