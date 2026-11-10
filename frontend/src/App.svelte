@@ -192,17 +192,17 @@
 
             <!-- Telemetry summary cards -->
             <div class="telemetry-cards" aria-label="Метрики базы знаний">
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card-total">
                 <span class="telemetry-label">Документов</span>
                 <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
                 <span class="telemetry-trend positive">↑ 100% верифицировано</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card-standard">
                 <span class="telemetry-label">Стандарт</span>
                 <span class="telemetry-value">ФГОС ВО</span>
                 <span class="telemetry-trend">31.08 Специалитет</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card-status">
                 <span class="telemetry-label">Статус РПД</span>
                 <span class="telemetry-value active-status">Актуально</span>
                 <span class="telemetry-trend">Синхронизировано</span>
@@ -387,16 +387,16 @@
     --bg-secondary: #0c1527;
     --surface: #132238;
     --surface-elevated: #1e3352;
-    --border-subtle: #243b5e;
-    --border-strong: #3b5f94;
+    --border-subtle: #2b456e;
+    --border-strong: #456fa8;
     --text-primary: #ffffff;
-    --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
+    --text-secondary: #e2e8f0; /* WCAG AAA >= 7.0:1 on #132238 (12.8:1) */
+    --text-muted: #cbd5e1;     /* WCAG AAA >= 7.0:1 on #132238 (10.4:1) */
     --accent-primary: #38bdf8;
     --accent-hover: #7dd3fc;
     --accent-active: #0284c7;
-    --success-accent: #34d399;
-    --danger: #f87171;
+    --success-accent: #34d399; /* WCAG AAA >= 7.0:1 on #132238 (8.1:1) */
+    --danger: #fca5a5;         /* WCAG AAA >= 7.0:1 on #450a0a (9.2:1) */
     --danger-surface: #450a0a;
   }
 
@@ -478,7 +478,8 @@
     font-size: 0.65rem;
     font-weight: 700;
     color: #ffffff;
-    background: #0f766e;
+    background: #042f2e;
+    border: 1px solid #14b8a6;
     padding: 0.1rem 0.4rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
@@ -574,7 +575,7 @@
     margin: 0;
     color: var(--text-secondary);
     font-size: 0.9375rem;
-    line-height: 1.4;
+    line-height: 1.5;
   }
 
   .telemetry-cards {
@@ -591,12 +592,19 @@
     padding: 0.85rem 1rem;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.35rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .telemetry-card:hover {
+    border-color: var(--border-strong);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   }
 
   .telemetry-label {
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-muted);
@@ -616,7 +624,7 @@
   .telemetry-trend {
     font-size: 0.75rem;
     color: var(--text-secondary);
-    font-weight: 500;
+    font-weight: 600;
   }
 
   .telemetry-trend.positive {
@@ -646,13 +654,15 @@
     border: 1px solid var(--border-strong);
     border-radius: 0.375rem;
     padding: 0 0.85rem;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
     min-width: 0;
   }
 
   .search-input-wrapper:focus-within {
     outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
     border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
   }
 
   .search-icon {
@@ -675,6 +685,7 @@
 
   .search-input-wrapper input[type='search']::placeholder {
     color: var(--text-muted);
+    opacity: 0.85;
   }
 
   .btn-search, .btn-retry {
@@ -690,7 +701,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, box-shadow 0.2s;
     flex-shrink: 0;
   }
 
@@ -703,6 +714,7 @@
   .btn-retry:focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.25);
   }
 
   .btn-search:disabled {
@@ -771,7 +783,8 @@
 
   .chip:focus-visible {
     outline: 2px solid var(--accent-primary);
-    outline-offset: 1px;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
   }
 
   .chip-active {
@@ -907,7 +920,7 @@
     border-radius: 0.25rem;
     background: var(--surface-elevated);
     color: var(--accent-primary);
-    border: 1px solid var(--border-subtle);
+    border: 1px solid var(--border-strong);
   }
 
   .doc-date {
@@ -987,6 +1000,7 @@
   .btn-download:focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
   }
 
   .format-icon {
