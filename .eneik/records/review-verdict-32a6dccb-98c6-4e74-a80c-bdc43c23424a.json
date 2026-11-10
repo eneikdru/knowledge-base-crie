@@ -1,0 +1,15 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "Ensure inverted index token pruning for repealed acts is consistently synchronized with scheduled automated update runs.",
+          "severity": "low"
+        }
+      ]
+    }
+  ]
+}
