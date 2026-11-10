@@ -169,6 +169,7 @@
             class="desktop-nav-link {currentTab === tab.id ? 'active' : ''}"
             on:click={() => selectTab(tab.id)}
             aria-current={currentTab === tab.id ? 'page' : undefined}
+            data-testid={`desktop-tab-${tab.id}`}
           >
             <span class="tab-icon" aria-hidden="true">{tab.icon}</span>
             <span>{tab.label}</span>
@@ -192,17 +193,17 @@
 
             <!-- Telemetry summary cards -->
             <div class="telemetry-cards" aria-label="Метрики базы знаний">
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card">
                 <span class="telemetry-label">Документов</span>
                 <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
                 <span class="telemetry-trend positive">↑ 100% верифицировано</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card">
                 <span class="telemetry-label">Стандарт</span>
                 <span class="telemetry-value">ФГОС ВО</span>
                 <span class="telemetry-trend">31.08 Специалитет</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card">
                 <span class="telemetry-label">Статус РПД</span>
                 <span class="telemetry-value active-status">Актуально</span>
                 <span class="telemetry-trend">Синхронизировано</span>
@@ -217,13 +218,19 @@
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input
                 id="catalog-search-input"
+                data-testid="search-input"
                 type="search"
                 bind:value={query}
                 placeholder="Поиск по названию, автору или ключевому слову..."
                 aria-label="Поиск материалов"
               />
             </div>
-            <button type="submit" class="btn-search" disabled={status === 'loading'}>
+            <button
+              type="submit"
+              class="btn-search"
+              data-testid="search-submit"
+              disabled={status === 'loading'}
+            >
               {status === 'loading' ? 'Поиск...' : 'Найти'}
             </button>
           </form>
@@ -239,6 +246,7 @@
                     role="radio"
                     aria-checked={selectedSpecialty === spec.id}
                     class="chip {selectedSpecialty === spec.id ? 'chip-active' : ''}"
+                    data-testid={`filter-specialty-${spec.id}`}
                     on:click={() => setSpecialtyFilter(spec.id)}
                   >
                     {spec.label}
@@ -256,6 +264,7 @@
                     role="radio"
                     aria-checked={selectedDocType === docType.id}
                     class="chip {selectedDocType === docType.id ? 'chip-active' : ''}"
+                    data-testid={`filter-type-${docType.id}`}
                     on:click={() => setDocTypeFilter(docType.id)}
                   >
                     {docType.label}
@@ -307,7 +316,7 @@
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
-                  <article class="document-card" role="listitem">
+                  <article class="document-card" role="listitem" data-testid="document-card">
                     <div class="card-header-meta">
                       {#if doc.category || doc.type}
                         <span class="badge-doc-type">{doc.category || doc.type}</span>
@@ -331,6 +340,7 @@
                       <a
                         href={getDocxDownloadUrl(doc)}
                         class="btn-download btn-download-docx"
+                        data-testid="download-docx"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -342,6 +352,7 @@
                       <a
                         href={getPdfDownloadUrl(doc)}
                         class="btn-download btn-download-pdf"
+                        data-testid="download-pdf"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -370,6 +381,7 @@
       <button
         type="button"
         class="bottom-nav-item {currentTab === tab.id ? 'active' : ''}"
+        data-testid={`bottom-nav-${tab.id}`}
         on:click={() => selectTab(tab.id)}
         aria-current={currentTab === tab.id ? 'page' : undefined}
         aria-label={tab.label}
@@ -402,6 +414,8 @@
 
   :global(html) {
     box-sizing: border-box;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   :global(*), :global(*::before), :global(*::after) {
@@ -417,6 +431,7 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    max-width: 100%;
   }
 
   .app-viewport {
@@ -426,6 +441,7 @@
     padding-bottom: 72px; /* space for mobile bottom nav */
     overflow-x: hidden;
     width: 100%;
+    max-width: 100vw;
   }
 
   @media (min-width: 768px) {
@@ -442,6 +458,7 @@
     position: sticky;
     top: 0;
     z-index: 40;
+    width: 100%;
   }
 
   .top-bar-inner {
@@ -479,7 +496,7 @@
     font-weight: 700;
     color: #ffffff;
     background: #0f766e;
-    padding: 0.1rem 0.4rem;
+    padding: 0.15rem 0.45rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
   }
@@ -507,11 +524,13 @@
   .desktop-nav-link {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.4rem;
     background: transparent;
     border: 1px solid transparent;
     border-radius: 0.375rem;
     padding: 0.5rem 0.85rem;
+    min-height: 44px;
     color: var(--text-secondary);
     font-size: 0.875rem;
     font-weight: 600;
@@ -546,7 +565,7 @@
     max-width: 1040px;
     width: 100%;
     margin: 0 auto;
-    padding: 1.5rem 1rem;
+    padding: 1.25rem 1rem;
     box-sizing: border-box;
     overflow-x: hidden;
   }
@@ -579,9 +598,10 @@
 
   .telemetry-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
     gap: 0.75rem;
     width: 100%;
+    box-sizing: border-box;
   }
 
   .telemetry-card {
@@ -592,6 +612,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    box-sizing: border-box;
   }
 
   .telemetry-label {
@@ -630,6 +651,7 @@
     gap: 0.75rem;
     margin-bottom: 1.25rem;
     width: 100%;
+    box-sizing: border-box;
   }
 
   @media (min-width: 640px) {
@@ -646,8 +668,10 @@
     border: 1px solid var(--border-strong);
     border-radius: 0.375rem;
     padding: 0 0.85rem;
+    min-height: 44px;
     transition: border-color 0.2s;
     min-width: 0;
+    box-sizing: border-box;
   }
 
   .search-input-wrapper:focus-within {
@@ -664,13 +688,14 @@
 
   .search-input-wrapper input[type='search'] {
     width: 100%;
-    padding: 0.75rem 0;
+    padding: 0.65rem 0;
     border: none;
     outline: none;
     font-size: 0.95rem;
     color: var(--text-primary);
     background: transparent;
     min-width: 0;
+    line-height: 1.4;
   }
 
   .search-input-wrapper input[type='search']::placeholder {
@@ -682,7 +707,8 @@
     color: #050b14;
     border: none;
     border-radius: 0.375rem;
-    padding: 0.75rem 1.35rem;
+    padding: 0.65rem 1.35rem;
+    min-height: 44px;
     font-size: 0.9375rem;
     font-weight: 700;
     cursor: pointer;
@@ -692,6 +718,7 @@
     justify-content: center;
     transition: background-color 0.2s;
     flex-shrink: 0;
+    box-sizing: border-box;
   }
 
   .btn-search:hover:not(:disabled),
@@ -716,10 +743,11 @@
     flex-direction: column;
     gap: 0.85rem;
     background: var(--surface);
-    padding: 1.15rem;
+    padding: 1rem;
     border-radius: 0.5rem;
     border: 1px solid var(--border-subtle);
     width: 100%;
+    box-sizing: border-box;
   }
 
   .facet-group {
@@ -746,7 +774,8 @@
   .chip-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.45rem;
+    gap: 0.5rem;
+    width: 100%;
   }
 
   .chip {
@@ -754,13 +783,16 @@
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
     border-radius: 9999px;
-    padding: 0.35rem 0.85rem;
+    padding: 0.5rem 0.875rem;
+    min-height: 44px;
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
   }
 
   .chip:hover {
@@ -789,12 +821,13 @@
 
   /* Status and Empty States */
   .state-view {
-    padding: 3rem 1.5rem;
+    padding: 2.5rem 1.25rem;
     border-radius: 0.5rem;
     text-align: center;
     background-color: var(--surface);
     border: 1px solid var(--border-subtle);
     margin-top: 1rem;
+    box-sizing: border-box;
   }
 
   .loading-state {
@@ -867,8 +900,10 @@
 
   .document-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 1.25rem;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .document-card {
@@ -881,6 +916,9 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s ease-in-out;
     word-break: break-word;
+    overflow-wrap: break-word;
+    box-sizing: border-box;
+    max-width: 100%;
   }
 
   .document-card:hover {
@@ -944,11 +982,13 @@
     flex-wrap: wrap;
     gap: 0.625rem;
     border-top: 1px solid var(--border-subtle);
+    width: 100%;
   }
 
   .btn-download {
     flex: 1 1 calc(50% - 0.35rem);
-    min-width: 120px;
+    min-width: 110px;
+    min-height: 44px;
     border-radius: 0.375rem;
     padding: 0.55rem 0.75rem;
     font-size: 0.8125rem;
@@ -960,6 +1000,7 @@
     justify-content: center;
     gap: 0.4rem;
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    box-sizing: border-box;
   }
 
   .btn-download-docx {
@@ -1007,6 +1048,9 @@
     align-items: center;
     z-index: 50;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
   }
 
   @media (min-width: 768px) {
@@ -1022,12 +1066,15 @@
     align-items: center;
     justify-content: center;
     height: 100%;
+    min-height: 48px;
+    min-width: 48px;
     background: transparent;
     border: none;
     color: var(--text-secondary);
     padding: 0.25rem 0;
     cursor: pointer;
     transition: color 0.15s ease;
+    box-sizing: border-box;
   }
 
   .bottom-nav-item:focus-visible {
