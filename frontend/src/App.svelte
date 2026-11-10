@@ -17,14 +17,14 @@
   let selectedSpecialty = 'all';
   let selectedDocType = 'all';
 
-  const specialties = [
+  let specialties = [
     { id: 'all', label: 'Все специальности' },
     { id: '31.08.36', label: '31.08.36 Эпидемиология' },
     { id: '31.08.35', label: '31.08.35 Инфекционные болезни' },
     { id: '31.08.19', label: '31.08.19 Педиатрия' }
   ];
 
-  const docTypes = [
+  let docTypes = [
     { id: 'all', label: 'Все типы' },
     { id: 'fgos', label: 'ФГОС ВО' },
     { id: 'order', label: 'Приказы' },
@@ -75,11 +75,42 @@
     return `${base}?format=pdf`;
   }
 
-  async function fetchDocuments(searchQuery = '') {
+  async function fetchFacets() {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/documents/facets`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (Array.isArray(data.specialties) && data.specialties.length > 0) {
+        specialties = [
+          { id: 'all', label: 'Все специальности' },
+          ...data.specialties.map(s => (typeof s === 'string' ? { id: s, label: s } : s))
+        ];
+      }
+      if (Array.isArray(data.types || data.categories) && (data.types || data.categories).length > 0) {
+        const raw = data.types || data.categories;
+        docTypes = [
+          { id: 'all', label: 'Все типы' },
+          ...raw.map(t => (typeof t === 'string' ? { id: t, label: t } : t))
+        ];
+      }
+    } catch (e) {
+      // Graceful fallback to default FBUN CRIE facets
+    }
+  }
+
+  async function fetchDocuments(searchQuery = '', specialty = selectedSpecialty, docType = selectedDocType) {
     status = 'loading';
     errorMessage = '';
     try {
-      const url = `${apiBaseUrl}/api/search?q=${encodeURIComponent(searchQuery)}`;
+      const params = new URLSearchParams();
+      if (searchQuery) params.set('q', searchQuery);
+      if (specialty && specialty !== 'all') params.set('specialty', specialty);
+      if (docType && docType !== 'all') params.set('category', docType);
+
+      const queryString = params.toString();
+      const url = `${apiBaseUrl}/api/search${queryString ? '?' + queryString : ''}`;
       const response = await fetch(url, {
         headers: {
           'Accept': 'application/json'
@@ -105,19 +136,21 @@
 
   function handleSearch(event) {
     if (event) event.preventDefault();
-    fetchDocuments(query);
+    fetchDocuments(query, selectedSpecialty, selectedDocType);
   }
 
   function handleRetry() {
-    fetchDocuments(query);
+    fetchDocuments(query, selectedSpecialty, selectedDocType);
   }
 
   function setSpecialtyFilter(specId) {
     selectedSpecialty = specId;
+    fetchDocuments(query, specId, selectedDocType);
   }
 
   function setDocTypeFilter(typeId) {
     selectedDocType = typeId;
+    fetchDocuments(query, selectedSpecialty, typeId);
   }
 
   function selectTab(tabId) {
@@ -146,6 +179,7 @@
 
   onMount(() => {
     registerPWA();
+    fetchFacets();
     fetchDocuments('');
   });
 </script>
@@ -182,15 +216,15 @@
   <main class="main-content" id="main-content">
     {#if currentTab === 'knowledge'}
       <div class="catalog-container">
-        <!-- Hero Section with FinTech Dark Mode & Telemetry Cards -->
+        <!-- Hero Section with Institutional Educational Stats & Telemetry Cards -->
         <header class="catalog-header">
           <div class="hero-section">
             <div class="hero-text">
               <h2>База знаний института</h2>
-              <p class="subtitle">Поиск и мгновенная фильтрация нормативных, методических и образовательных документов</p>
+              <p class="subtitle">Поиск и мгновенная фильтрация нормативных, методических и образовательных документов ординатуры и аспирантуры</p>
             </div>
 
-            <!-- Telemetry summary cards -->
+            <!-- Academic registry telemetry cards -->
             <div class="telemetry-cards" aria-label="Метрики базы знаний">
               <div class="telemetry-card">
                 <span class="telemetry-label">Документов</span>
@@ -200,23 +234,24 @@
               <div class="telemetry-card">
                 <span class="telemetry-label">Стандарт</span>
                 <span class="telemetry-value">ФГОС ВО</span>
-                <span class="telemetry-trend">31.08 Специалитет</span>
+                <span class="telemetry-trend">Ординатура / Аспирантура</span>
               </div>
               <div class="telemetry-card">
                 <span class="telemetry-label">Статус РПД</span>
                 <span class="telemetry-value active-status">Актуально</span>
-                <span class="telemetry-trend">Синхронизировано</span>
+                <span class="telemetry-trend">Кафедры эпидемиологии</span>
               </div>
             </div>
           </div>
 
-          <!-- Accessible Mobile-first Search Form -->
-          <form class="search-form" on:submit={handleSearch} role="search">
+          <!-- Accessible Mobile-first Search Form with Live API Binding -->
+          <form class="search-form" action="/api/search" method="GET" on:submit={handleSearch} role="search">
             <label for="catalog-search-input" class="visually-hidden">Поиск материалов</label>
             <div class="search-input-wrapper">
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input
                 id="catalog-search-input"
+                name="q"
                 type="search"
                 bind:value={query}
                 placeholder="Поиск по названию, автору или ключевому слову..."
@@ -555,7 +590,7 @@
     margin-bottom: 1.75rem;
   }
 
-  /* Hero & Telemetry Section */
+  /* Hero & Academic Telemetry Section */
   .hero-section {
     display: flex;
     flex-direction: column;
