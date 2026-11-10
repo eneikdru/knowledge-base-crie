@@ -13,23 +13,24 @@
   let errorMessage = '';
   let totalCount = 0;
 
-  // Filter chips state
+  // Dynamic facet counts and filter chips state
   let selectedSpecialty = 'all';
   let selectedDocType = 'all';
 
-  const specialties = [
+  let specialties = [
     { id: 'all', label: 'Все специальности' },
     { id: '31.08.36', label: '31.08.36 Эпидемиология' },
     { id: '31.08.35', label: '31.08.35 Инфекционные болезни' },
-    { id: '31.08.19', label: '31.08.19 Педиатрия' }
+    { id: '31.08.05', label: '31.08.05 Клиническая лабораторная диагностика' },
+    { id: '32.08.12', label: '32.08.12 Бактериология' }
   ];
 
-  const docTypes = [
-    { id: 'all', label: 'Все типы' },
-    { id: 'fgos', label: 'ФГОС ВО' },
-    { id: 'order', label: 'Приказы' },
-    { id: 'regulations', label: 'Регламенты' },
-    { id: 'methodology', label: 'Методические материалы' }
+  let docTypes = [
+    { id: 'all', label: 'Все категории' },
+    { id: 'fgos', label: 'ФГОС ВО и стандарты' },
+    { id: 'order', label: 'Приказы института' },
+    { id: 'regulations', label: 'Положения и регламенты' },
+    { id: 'methodology', label: 'Методические рекомендации' }
   ];
 
   const navTabs = [
@@ -43,6 +44,7 @@
   $: filteredDocuments = rawDocuments.filter(doc => {
     if (selectedSpecialty !== 'all') {
       const specMatch = (doc.specialty && doc.specialty.includes(selectedSpecialty)) ||
+        (doc.specialty_code && doc.specialty_code.includes(selectedSpecialty)) ||
         (doc.title && doc.title.includes(selectedSpecialty)) ||
         (doc.description && doc.description.includes(selectedSpecialty)) ||
         (doc.annotation && doc.annotation.includes(selectedSpecialty));
@@ -75,11 +77,40 @@
     return `${base}?format=pdf`;
   }
 
+  async function fetchFacets() {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/documents/facets`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data.specialties) && data.specialties.length > 0) {
+          specialties = [{ id: 'all', label: 'Все специальности' }, ...data.specialties.map(s => ({
+            id: s.id || s.code || s,
+            label: s.label || (s.code ? `${s.code} ${s.name || ''}`.trim() : String(s))
+          }))];
+        }
+        if (Array.isArray(data.docTypes) && data.docTypes.length > 0) {
+          docTypes = [{ id: 'all', label: 'Все категории' }, ...data.docTypes.map(t => ({
+            id: t.id || t.key || t,
+            label: t.label || t.name || String(t)
+          }))];
+        }
+      }
+    } catch (err) {
+      // Fall back gracefully to institutional FBUN CRIE defaults
+    }
+  }
+
   async function fetchDocuments(searchQuery = '') {
     status = 'loading';
     errorMessage = '';
     try {
-      const url = `${apiBaseUrl}/api/search?q=${encodeURIComponent(searchQuery)}`;
+      const params = new URLSearchParams();
+      if (searchQuery) params.set('q', searchQuery);
+      if (selectedSpecialty !== 'all') params.set('specialty', selectedSpecialty);
+      if (selectedDocType !== 'all') params.set('category', selectedDocType);
+      const url = `${apiBaseUrl}/api/search?${params.toString()}`;
       const response = await fetch(url, {
         headers: {
           'Accept': 'application/json'
@@ -97,7 +128,7 @@
       status = 'success';
     } catch (err) {
       status = 'error';
-      errorMessage = err.message || 'Unable to connect to the document search service.';
+      errorMessage = err.message || 'Не удалось подключиться к службе поиска документов института.';
       rawDocuments = [];
       totalCount = 0;
     }
@@ -114,10 +145,12 @@
 
   function setSpecialtyFilter(specId) {
     selectedSpecialty = specId;
+    fetchDocuments(query);
   }
 
   function setDocTypeFilter(typeId) {
     selectedDocType = typeId;
+    fetchDocuments(query);
   }
 
   function selectTab(tabId) {
@@ -146,6 +179,7 @@
 
   onMount(() => {
     registerPWA();
+    fetchFacets();
     fetchDocuments('');
   });
 </script>
@@ -156,10 +190,10 @@
     <div class="top-bar-inner">
       <div class="branding">
         <div class="branding-tag-row">
-          <span class="institute-badge">ФБУН ЦНИИ Эпидемиологии</span>
+          <span class="institute-badge">ФБУН ЦНИИ Эпидемиологии Роспотребнадзора</span>
           <span class="compliance-pill">WCAG AAA</span>
         </div>
-        <h1 class="app-title">База знаний и ИИ-помощник</h1>
+        <h1 class="app-title">Учебно-методический портал ординатуры и аспирантуры</h1>
       </div>
       <!-- Desktop Tab Bar -->
       <nav class="desktop-nav" aria-label="Главная навигация">
@@ -182,53 +216,54 @@
   <main class="main-content" id="main-content">
     {#if currentTab === 'knowledge'}
       <div class="catalog-container">
-        <!-- Hero Section with FinTech Dark Mode & Telemetry Cards -->
+        <!-- Hero Section with Institutional FBUN CRIE Metrics -->
         <header class="catalog-header">
           <div class="hero-section">
             <div class="hero-text">
-              <h2>База знаний института</h2>
-              <p class="subtitle">Поиск и мгновенная фильтрация нормативных, методических и образовательных документов</p>
+              <h2>Нормативно-образовательный реестр института</h2>
+              <p class="subtitle">Поиск и мгновенная фасетная навигация по ФГОС ВО, РПД, приказам и учебно-методическим материалам кафедр</p>
             </div>
 
-            <!-- Telemetry summary cards -->
-            <div class="telemetry-cards" aria-label="Метрики базы знаний">
+            <!-- Institutional FBUN CRIE summary cards -->
+            <div class="telemetry-cards" aria-label="Метрики образовательного каталога">
               <div class="telemetry-card">
-                <span class="telemetry-label">Документов</span>
+                <span class="telemetry-label">Нормативных актов</span>
                 <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
-                <span class="telemetry-trend positive">↑ 100% верифицировано</span>
+                <span class="telemetry-trend positive">✓ Реестр актуализирован</span>
               </div>
               <div class="telemetry-card">
-                <span class="telemetry-label">Стандарт</span>
-                <span class="telemetry-value">ФГОС ВО</span>
-                <span class="telemetry-trend">31.08 Специалитет</span>
+                <span class="telemetry-label">Кафедры и секторы</span>
+                <span class="telemetry-value">Ординатура / Аспирантура</span>
+                <span class="telemetry-trend">31.08 и 32.08 ФГОС ВО</span>
               </div>
               <div class="telemetry-card">
-                <span class="telemetry-label">Статус РПД</span>
-                <span class="telemetry-value active-status">Актуально</span>
-                <span class="telemetry-trend">Синхронизировано</span>
+                <span class="telemetry-label">Статус РПД и КУГ</span>
+                <span class="telemetry-value active-status">Утверждено УМС</span>
+                <span class="telemetry-trend">2025/2026 уч. год</span>
               </div>
             </div>
           </div>
 
-          <!-- Accessible Mobile-first Search Form -->
-          <form class="search-form" on:submit={handleSearch} role="search">
-            <label for="catalog-search-input" class="visually-hidden">Поиск материалов</label>
+          <!-- Accessible Mobile-first Search Form wired to /api/search -->
+          <form class="search-form" on:submit={handleSearch} role="search" action="/api/search" method="get">
+            <label for="catalog-search-input" class="visually-hidden">Поиск нормативных и методических материалов</label>
             <div class="search-input-wrapper">
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input
                 id="catalog-search-input"
+                name="q"
                 type="search"
                 bind:value={query}
-                placeholder="Поиск по названию, автору или ключевому слову..."
-                aria-label="Поиск материалов"
+                placeholder="Поиск по шифру специальности, названию дисциплины, приказу..."
+                aria-label="Поиск материалов ординатуры и нормативных документов"
               />
             </div>
             <button type="submit" class="btn-search" disabled={status === 'loading'}>
-              {status === 'loading' ? 'Поиск...' : 'Найти'}
+              {status === 'loading' ? 'Поиск...' : 'Найти в реестре'}
             </button>
           </form>
 
-          <!-- One-click Dynamic Filter Chips -->
+          <!-- Dynamic Filter Chips with live Facets from /api/documents/facets -->
           <div class="facet-filters-container" aria-label="Фильтры по категориям">
             <div class="facet-group">
               <span class="facet-label" id="spec-label">Специальность:</span>
@@ -270,21 +305,21 @@
           {#if status === 'loading'}
             <div class="state-view loading-state" role="status" aria-busy="true">
               <div class="spinner" aria-hidden="true"></div>
-              <p>Загрузка материалов каталога...</p>
+              <p>Загрузка материалов реестра ФБУН ЦНИИ Эпидемиологии...</p>
             </div>
           {:else if status === 'error'}
             <div class="state-view error-state" role="alert">
               <div class="error-icon" aria-hidden="true">!</div>
               <h2>Не удалось загрузить материалы</h2>
               <p class="error-message">{errorMessage}</p>
-              <p class="retry-guidance">Пожалуйста, проверьте подключение или повторите попытку позже.</p>
+              <p class="retry-guidance">Пожалуйста, проверьте сетевое подключение к серверу ЦНИИЭ или повторите попытку позже.</p>
               <button type="button" class="btn-retry" on:click={handleRetry}>Повторить попытку</button>
             </div>
           {:else if status === 'success' && filteredDocuments.length === 0}
             <div class="state-view empty-state" data-testid="empty-state">
               <h2>Документы не найдены</h2>
               <p>Отображается 0 материалов</p>
-              <p class="empty-hint">По выбранным фильтрам и поисковому запросу нет совпадений. Попробуйте сбросить фильтры.</p>
+              <p class="empty-hint">По выбранным параметрам поиска и фильтрам специальностей документов не найдено.</p>
               {#if selectedSpecialty !== 'all' || selectedDocType !== 'all' || query.trim() !== ''}
                 <button
                   type="button"
@@ -303,7 +338,7 @@
           {:else if status === 'success' && filteredDocuments.length > 0}
             <div class="state-view present-state" data-testid="present-state">
               <div class="results-meta">
-                <span>Показано 1-{filteredDocuments.length} из {totalCount} материалов</span>
+                <span>Показано 1-{filteredDocuments.length} из {totalCount} материалов реестра</span>
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
@@ -317,14 +352,16 @@
                       {/if}
                     </div>
 
-                    <h3 class="doc-title">{doc.title || 'Безымянный документ'}</h3>
+                    <h3 class="doc-title">{doc.title || 'Нормативный документ'}</h3>
 
-                    {#if doc.author}
-                      <p class="doc-author"><strong>Автор:</strong> {doc.author}</p>
+                    {#if doc.specialty || doc.specialty_code}
+                      <p class="doc-author"><strong>Специальность:</strong> {doc.specialty || doc.specialty_code}</p>
+                    {:else if doc.author}
+                      <p class="doc-author"><strong>Отдел / Автор:</strong> {doc.author}</p>
                     {/if}
 
                     <p class="doc-annotation">
-                      {doc.annotation || doc.description || 'Краткая аннотация и нормативные реквизиты документа ФБУН ЦНИИ Эпидемиологии.'}
+                      {doc.annotation || doc.description || 'Официальный регламент и учебно-методический материал ФБУН ЦНИИ Эпидемиологии Роспотребнадзора.'}
                     </p>
 
                     <div class="card-actions" role="group" aria-label="Скачать документ">
@@ -555,7 +592,7 @@
     margin-bottom: 1.75rem;
   }
 
-  /* Hero & Telemetry Section */
+  /* Hero & Academic Telemetry Section */
   .hero-section {
     display: flex;
     flex-direction: column;
