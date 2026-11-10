@@ -1,0 +1,54 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "e59b167a-75af-4f81-b7cc-01c00c7b02fd",
+      "title": "Standalone Responsive Knowledge Base & Fast Search Tool",
+      "jtbd": "When an educational resident, researcher, or faculty member accesses the CRIE knowledge base on desktop or mobile, I want a fast, thoughtful, self-contained search and document exploration interface without third-party integration friction, so that I can immediately find and inspect clinical, academic, and normative resources in seconds.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "Normative entity fidelity index >= 99.5% with zero FinTech placeholder artifacts",
+      "tocConstraintRef": "Approved mockup domain entity alignment and API binding bottleneck",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Purge synthetic FinTech placeholder artifacts ('operator@domain.com', 'Target Archetype: FinTech', '16 Slots', '99.94%') from the approved interface mockup and frontend views, replacing them with authentic FBUN CRIE domain structures.",
+        "R2: Re-anchor the UI/mockup to authentic CRIE educational entities including medical residency and postgraduate specialties (31.08.19 Pediatrics, 31.08.35 Infectious Diseases, 31.08.36 / 32.08.12 Epidemiology) and institutional identifiers (ORD-XXXX, ASP-XXXX, FAC-XXXX).",
+        "R3: Bind orphaned control parameters and telemetry elements to active backend service endpoints (/api/search, /api/documents/filter, /api/workload/calculate, and RAG /api/chat) operating over the 1,697-document normative corpus."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Remediate Mockup and UI Register to Authentic CRIE Educational Entities and Active Endpoints",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing domain object register remediation for this epic, I want to replace synthetic FinTech controls with authentic CRIE specialty cards, registry selectors, and real search/workload API bindings, so that the knowledge base interface truthfully represents the 1,697-document normative corpus and educational workflows.",
+          "acceptanceCriteria": "Given the approved mockup and frontend views containing synthetic FinTech labels ('FIN_TECH', 'operator@domain.com', '16 Slots'), When the domain object register patch is applied, Then all placeholder strings and controls are replaced with authentic CRIE specialties (31.08.19, 31.08.35, 31.08.36), residency codes (ORD-XXXX), and faculty workload parameters (750-900 hrs/year).\nGiven a user interacting with the refreshed knowledge base interface, When submitting search queries, specialty filters, or workload calculations, Then requests connect directly to existing /api/search, /api/documents/filter, and /api/workload/calculate endpoints without orphaned state or broken bindings.\nGiven the end-to-end knowledge base journey on mobile and desktop viewports, When verifying document exploration against the 1,697 catalog entries, Then normative documents, RPD/RPP annotations, and GOST order templates render with valid institutional typography and full WCAG accessibility.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Synthetic mockup template decoupling bottleneck",
+          "sixSigmaMetric": "Placeholder defect count == 0 and API binding success rate == 100%",
+          "hasUi": true,
+          "requirementRefs": [
+            "R1",
+            "R2",
+            "R3"
+          ]
+        },
+        {
+          "title": "Verify CRIE Domain Integrity and API Binding Regression Suite",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When testing CRIE domain object alignment for this epic, I want to execute unit, integration, and E2E regression suites verifying that all FinTech placeholders are absent and all UI controls resolve against real CRIE endpoints, so that the knowledge base operates without orphaned layers or entity violations.",
+          "acceptanceCriteria": "Given automated static and template inspection tests, When scanning markup, styles, and client scripts, Then zero occurrences of 'FinTech', 'operator@domain.com', or synthetic slot telemetry are detected across the codebase.\nGiven integration test suites against crie_assistant_api.py and CrieApiController, When dispatching queries for specialties 31.08.19, 31.08.35, and 31.08.36, Then HTTP 200 responses return authentic corpus documents from the 1,697-item catalog with elapsed_ms < 50ms.\nGiven Playwright E2E browser tests on mobile and desktop, When traversing the search, filter, and workload calculation user journeys, Then all forms submit cleanly with visible progress feedback and no console errors.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Domain fidelity regression test coverage floor",
+          "sixSigmaMetric": "Test pass rate == 100% across the complete CRIE normative test pyramid",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1",
+            "R2",
+            "R3"
+          ]
+        }
+      ]
+    }
+  ]
+}
