@@ -1,0 +1,34 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "cef22a22-f3ce-4cd0-aaef-772944777cc5",
+      "title": "Runtime Observation & Launch Failure Remediation",
+      "jtbd": "When an automated verification harness executes post-clone runtime inspection, I want root docker-compose assets present and immediately discoverable, so that the runtime observation gate passes without launcher file-not-found errors.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "Container launch success rate >= 99.9% without host port collision",
+      "tocConstraintRef": "docker-compose port binding conflict during runtime observation",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Configure docker-compose backend port binding with configurable host port or non-conflicting fallback variable to prevent 127.0.0.1:18080 bind collision during concurrent runtime observation harness runs"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Fix docker-compose backend host port binding collision in runtime observation stack",
+          "roleTag": "BARCAN-TAG-05",
+          "jtbd": "When implementing containerized runtime launch remediation for this epic, I want docker-compose.yml to support a configurable host port mapping (e.g. ${CRIE_BACKEND_PORT:-18080}) and clean container lifecycle flags, so that automated verification harnesses can launch the backend without 127.0.0.1:18080 port collision failures",
+          "acceptanceCriteria": "Given a host environment where port 18080 is already allocated,\nWhen docker-compose is evaluated or executed with CRIE_BACKEND_PORT set to an alternate port,\nThen the backend container successfully binds to the designated host port without socket collision;\nGiven docker-compose.yml in the repository root,\nWhen inspecting service port definitions for the backend service,\nThen the port specification uses an environment variable fallback syntax enabling flexible port assignment during automated observation.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "host socket allocation constraint on port 18080",
+          "sixSigmaMetric": "Zero port-binding failures across 100 consecutive container initialization attempts",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1"
+          ]
+        }
+      ]
+    }
+  ]
+}
