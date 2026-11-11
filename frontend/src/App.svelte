@@ -17,14 +17,14 @@
   let selectedSpecialty = 'all';
   let selectedDocType = 'all';
 
-  const specialties = [
+  let specialties = [
     { id: 'all', label: 'Все специальности' },
     { id: '31.08.36', label: '31.08.36 Эпидемиология' },
     { id: '31.08.35', label: '31.08.35 Инфекционные болезни' },
     { id: '31.08.19', label: '31.08.19 Педиатрия' }
   ];
 
-  const docTypes = [
+  let docTypes = [
     { id: 'all', label: 'Все типы' },
     { id: 'fgos', label: 'ФГОС ВО' },
     { id: 'order', label: 'Приказы' },
@@ -73,6 +73,25 @@
     const base = doc.download_url || doc.url || `/api/documents/${doc.id || 'doc'}/download`;
     if (base.includes('?')) return `${base}&format=pdf`;
     return `${base}?format=pdf`;
+  }
+
+  async function fetchFacets() {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/documents/facets`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.specialties && Array.isArray(data.specialties)) {
+          specialties = [{ id: 'all', label: 'Все специальности' }, ...data.specialties.map(s => typeof s === 'string' ? { id: s, label: s } : s)];
+        }
+        if (data.types && Array.isArray(data.types)) {
+          docTypes = [{ id: 'all', label: 'Все типы' }, ...data.types.map(t => typeof t === 'string' ? { id: t, label: t } : t)];
+        }
+      }
+    } catch (err) {
+      // Fallback to institutional defaults on network failure
+    }
   }
 
   async function fetchDocuments(searchQuery = '') {
@@ -146,6 +165,7 @@
 
   onMount(() => {
     registerPWA();
+    fetchFacets();
     fetchDocuments('');
   });
 </script>
@@ -159,7 +179,7 @@
           <span class="institute-badge">ФБУН ЦНИИ Эпидемиологии</span>
           <span class="compliance-pill">WCAG AAA</span>
         </div>
-        <h1 class="app-title">База знаний и ИИ-помощник</h1>
+        <h1 class="app-title">Учебно-методический комплекс ординатуры и аспирантуры</h1>
       </div>
       <!-- Desktop Tab Bar -->
       <nav class="desktop-nav" aria-label="Главная навигация">
@@ -182,28 +202,28 @@
   <main class="main-content" id="main-content">
     {#if currentTab === 'knowledge'}
       <div class="catalog-container">
-        <!-- Hero Section with FinTech Dark Mode & Telemetry Cards -->
+        <!-- Hero Section with Academic Entities & Telemetry Cards -->
         <header class="catalog-header">
           <div class="hero-section">
             <div class="hero-text">
-              <h2>База знаний института</h2>
-              <p class="subtitle">Поиск и мгновенная фильтрация нормативных, методических и образовательных документов</p>
+              <h2>База знаний и регламентов института</h2>
+              <p class="subtitle">Реестр нормативных документов, рабочих программ дисциплин и методических материалов кафедр</p>
             </div>
 
             <!-- Telemetry summary cards -->
             <div class="telemetry-cards" aria-label="Метрики базы знаний">
               <div class="telemetry-card">
-                <span class="telemetry-label">Документов</span>
+                <span class="telemetry-label">Нормативных актов</span>
                 <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
                 <span class="telemetry-trend positive">↑ 100% верифицировано</span>
               </div>
               <div class="telemetry-card">
-                <span class="telemetry-label">Стандарт</span>
+                <span class="telemetry-label">Ординатура и Аспирантура</span>
                 <span class="telemetry-value">ФГОС ВО</span>
-                <span class="telemetry-trend">31.08 Специалитет</span>
+                <span class="telemetry-trend">31.08 Кафедры ЦНИИ</span>
               </div>
               <div class="telemetry-card">
-                <span class="telemetry-label">Статус РПД</span>
+                <span class="telemetry-label">Учебный отдел</span>
                 <span class="telemetry-value active-status">Актуально</span>
                 <span class="telemetry-trend">Синхронизировано</span>
               </div>
@@ -211,15 +231,16 @@
           </div>
 
           <!-- Accessible Mobile-first Search Form -->
-          <form class="search-form" on:submit={handleSearch} role="search">
+          <form class="search-form" action="/api/search" method="GET" on:submit={handleSearch} role="search">
             <label for="catalog-search-input" class="visually-hidden">Поиск материалов</label>
             <div class="search-input-wrapper">
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input
                 id="catalog-search-input"
+                name="q"
                 type="search"
                 bind:value={query}
-                placeholder="Поиск по названию, автору или ключевому слову..."
+                placeholder="Поиск по нормативным документам, приказам, кафедрам..."
                 aria-label="Поиск материалов"
               />
             </div>
@@ -320,7 +341,7 @@
                     <h3 class="doc-title">{doc.title || 'Безымянный документ'}</h3>
 
                     {#if doc.author}
-                      <p class="doc-author"><strong>Автор:</strong> {doc.author}</p>
+                      <p class="doc-author"><strong>Кафедра / Автор:</strong> {doc.author}</p>
                     {/if}
 
                     <p class="doc-annotation">
@@ -555,7 +576,7 @@
     margin-bottom: 1.75rem;
   }
 
-  /* Hero & Telemetry Section */
+  /* Hero & Academic Entities Section */
   .hero-section {
     display: flex;
     flex-direction: column;
