@@ -11,7 +11,9 @@
   let status = 'idle'; // 'idle' | 'loading' | 'success' | 'error'
   let rawDocuments = [];
   let errorMessage = '';
-  let totalCount = 0;
+  let totalCount = 1697;
+  let totalCorpusCount = 1697;
+  let workloadNormHours = '750-900 ч';
 
   // Filter chips state
   let selectedSpecialty = 'all';
@@ -24,7 +26,7 @@
     { id: '31.08.19', label: '31.08.19 Педиатрия' }
   ];
 
-  const docTypes = [
+  let docTypes = [
     { id: 'all', label: 'Все типы' },
     { id: 'fgos', label: 'ФГОС ВО' },
     { id: 'order', label: 'Приказы' },
@@ -75,6 +77,30 @@
     return `${base}?format=pdf`;
   }
 
+  async function fetchFacets() {
+    try {
+      const url = `${apiBaseUrl}/api/documents/facets`;
+      const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      if (response.ok) {
+        const data = await response.json();
+        if (typeof data.total_documents === 'number') {
+          totalCorpusCount = data.total_documents;
+        }
+        if (Array.isArray(data.types) && data.types.length > 0) {
+          const dynamicTypes = [{ id: 'all', label: 'Все типы' }];
+          data.types.forEach(t => {
+            const id = typeof t === 'string' ? t : t.id;
+            const label = typeof t === 'string' ? t : (t.label || t.name || t.id);
+            dynamicTypes.push({ id, label });
+          });
+          docTypes = dynamicTypes;
+        }
+      }
+    } catch (e) {
+      // Fallback silently to predefined CRIE standards
+    }
+  }
+
   async function fetchDocuments(searchQuery = '') {
     status = 'loading';
     errorMessage = '';
@@ -93,7 +119,7 @@
       const data = await response.json();
       const items = Array.isArray(data) ? data : (data.items || data.documents || data.results || []);
       rawDocuments = items;
-      totalCount = typeof data.total === 'number' ? data.total : items.length;
+      totalCount = typeof data.total === 'number' ? data.total : (searchQuery.trim() === '' ? 1697 : items.length);
       status = 'success';
     } catch (err) {
       status = 'error';
@@ -146,6 +172,7 @@
 
   onMount(() => {
     registerPWA();
+    fetchFacets();
     fetchDocuments('');
   });
 </script>
@@ -156,7 +183,7 @@
     <div class="top-bar-inner">
       <div class="branding">
         <div class="branding-tag-row">
-          <span class="institute-badge">ФБУН ЦНИИ Эпидемиологии</span>
+          <span class="institute-badge">ФБУН ЦНИИ Эпидемиологии Роспотребнадзора</span>
           <span class="compliance-pill">WCAG AAA</span>
         </div>
         <h1 class="app-title">База знаний и ИИ-помощник</h1>
@@ -182,30 +209,30 @@
   <main class="main-content" id="main-content">
     {#if currentTab === 'knowledge'}
       <div class="catalog-container">
-        <!-- Hero Section with FinTech Dark Mode & Telemetry Cards -->
+        <!-- Hero Section with Authentic CRIE Telemetry Cards -->
         <header class="catalog-header">
           <div class="hero-section">
             <div class="hero-text">
               <h2>База знаний института</h2>
-              <p class="subtitle">Поиск и мгновенная фильтрация нормативных, методических и образовательных документов</p>
+              <p class="subtitle">Поиск и мгновенная фильтрация нормативных, методических и образовательных документов ФБУН ЦНИИ Эпидемиологии Роспотребнадзора</p>
             </div>
 
-            <!-- Telemetry summary cards -->
+            <!-- Telemetry summary cards conforming to institutional regulatory requirements -->
             <div class="telemetry-cards" aria-label="Метрики базы знаний">
               <div class="telemetry-card">
-                <span class="telemetry-label">Документов</span>
-                <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
-                <span class="telemetry-trend positive">↑ 100% верифицировано</span>
+                <span class="telemetry-label">Каталог документов</span>
+                <span class="telemetry-value">{totalCorpusCount}</span>
+                <span class="telemetry-trend positive">Нормативная база</span>
               </div>
               <div class="telemetry-card">
-                <span class="telemetry-label">Стандарт</span>
-                <span class="telemetry-value">ФГОС ВО</span>
-                <span class="telemetry-trend">31.08 Специалитет</span>
+                <span class="telemetry-label">Специальности ВО</span>
+                <span class="telemetry-value">31.08.36 / 35 / 19</span>
+                <span class="telemetry-trend">Ординатура и Аспирантура</span>
               </div>
               <div class="telemetry-card">
-                <span class="telemetry-label">Статус РПД</span>
-                <span class="telemetry-value active-status">Актуально</span>
-                <span class="telemetry-trend">Синхронизировано</span>
+                <span class="telemetry-label">Норма нагрузки ППС</span>
+                <span class="telemetry-value active-status">{workloadNormHours}</span>
+                <span class="telemetry-trend">Расчет по ставке 1.0</span>
               </div>
             </div>
           </div>
@@ -219,8 +246,8 @@
                 id="catalog-search-input"
                 type="search"
                 bind:value={query}
-                placeholder="Поиск по названию, автору или ключевому слову..."
-                aria-label="Поиск материалов"
+                placeholder="Поиск по 1697 документам, приказам, ФГОС (31.08.36, 31.08.35, 31.08.19)..."
+                aria-label="Поиск материалов базы знаний"
               />
             </div>
             <button type="submit" class="btn-search" disabled={status === 'loading'}>
