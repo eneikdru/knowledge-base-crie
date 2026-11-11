@@ -1,0 +1,1 @@
+{"verdicts": [{"sourceIndex": 0, "verdict": "approve", "criticalReason": "", "concerns": [{"text": "Ensure docker-compose environment variable defaults properly match test harnesses when CRIE_BACKEND_PORT is unset.", "severity": "low"}]}]}
