@@ -1,0 +1,15 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "Ensure default fallback port syntax in docker-compose is aligned with both standalone and compose healthchecks.",
+          "severity": "low"
+        }
+      ]
+    }
+  ]
+}
