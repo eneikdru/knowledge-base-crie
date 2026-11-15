@@ -1,23 +1,28 @@
 """
-crie_autonomous_agent.py: Автономный агент подготовки и верстки документов
-по эпидемиологии (CRIE Document Agent with Tools).
+crie_autonomous_agent.py: Автономный агент Образовательного центра (Ординатура и Аспирантура)
+ФБУН ЦНИИ Эпидемиологии Роспотребнадзора.
 
-Это НЕ простой чат-бот, а агент с набором исполняемых инструментов (tools):
-1. tool_query_normative_corpus — проверка норм СанПиН 3.3686-21, 2.1.3678-20, Приказов Минздрава РФ.
-2. tool_use_approved_template — применение жесткого утвержденного образца (когда вариативность не нужна).
-3. tool_compose_custom_document — самостоятельная верстка документа агентом (разделы, таблицы, требования).
-4. tool_patch_document — интерактивное внесение правок пользователя (по пунктам, таблицам, лицам, датам).
-5. tool_register_template — утверждение и регистрация нового образца.
+Специальности:
+- 32.08.12 «Эпидемиология» (ординатура, 120 з.е. / 4 320 ч.)
+- 31.08.35 «Инфекционные болезни» (ординатура)
+- 31.08.19 «Педиатрия» (ординатура)
+- 3.2.2 «Эпидемиология» (аспирантура)
+- 3.1.22 «Инфекционные болезни» (аспирантура)
+
+Инструменты Агента (Tools):
+1. tool_use_approved_template — жесткие утвержденные эталоны приказов, протоколов УМС, допусков к ГИА.
+2. tool_compose_custom_document — верстка расписаний сессий, таблиц учебных планов и кадровых справок.
+3. tool_patch_document — внесение правок по обучающимся, преподавателям, датам и комиссиям.
+4. tool_register_template — загрузка и утверждение новых образцов ОЦ.
+5. tool_query_normative — проверка ФЗ № 273-ФЗ, ФГОС ВО, приказов Минобрнауки и регламентов ЦНИИЭ.
 """
 
 import os
 import re
 import json
-import urllib.request
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 
-from crie_normative_knowledge import retrieve_normative_clauses, build_grounded_citations_text
 from crie_document_engine import compile_agent_composed_document
 from crie_template_manager import (
     load_template_registry,
@@ -29,66 +34,36 @@ from crie_template_manager import (
 )
 
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
-DEEPSEEK_API_URL = os.environ.get("DEEPSEEK_API_URL", "https://api.deepseek.com/chat/completions")
 
 
 class CrieDocumentAgent:
     """
-    Интеллектуальный агент верстки и правок документов.
+    Интеллектуальный агент Образовательного центра с инструментами.
     """
 
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or DEEPSEEK_API_KEY
 
-    # -------------------------------------------------------------
-    # ИНСТРУМЕНТЫ АГЕНТА (AGENT TOOLS)
-    # -------------------------------------------------------------
-
-    def tool_query_normative(self, query: str) -> List[Dict[str, str]]:
-        """Инструмент поиска нормативных норм СанПиН/приказов."""
-        return retrieve_normative_clauses(query, max_clauses=3)
-
     def tool_list_templates(self) -> List[Dict[str, Any]]:
-        """Инструмент получения реестра образцов."""
         return load_template_registry()
 
     def tool_use_approved_template(
         self,
         template_id: str,
-        department: str,
-        infection: str,
-        number: Optional[str] = None,
-        date: Optional[str] = None
+        params: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """Инструмент создания документа строго по утвержденному эталону."""
         session = create_document_session(
             template_id=template_id,
-            params={
-                "department": department,
-                "infection": infection,
-                "number": number,
-                "date": date
-            },
+            params=params or {},
             is_approved_flag=True
         )
         return session
 
     def tool_compose_custom_document(self, doc_model: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Инструмент самостоятельной верстки агентом:
-        принимает структурированную верстку (разделы, таблицы, пункты)
-        и компилирует ее в .docx по ГОСТ Р 7.0.97-2016.
-        """
-        compiled = compile_agent_composed_document(doc_model)
-        return compiled
+        return compile_agent_composed_document(doc_model)
 
     def tool_patch_document(self, session_id: str, patches: Dict[str, Any], reason: str) -> Dict[str, Any]:
-        """Инструмент точечного внесения правок в сессию документа."""
         return patch_document_session(session_id, patches, reason=reason)
-
-    # -------------------------------------------------------------
-    # АВТОНОМНЫЙ ЦИКЛ ОБРАБОТКИ ЗАПРОСА
-    # -------------------------------------------------------------
 
     def process_request(
         self,
@@ -96,32 +71,28 @@ class CrieDocumentAgent:
         session_id: Optional[str] = None,
         use_approved_template_only: bool = False
     ) -> Dict[str, Any]:
-        """
-        Главная точка входа агента:
-        1. Определяет тип операции (новый документ / правка существующего).
-        2. Применяет нужный инструмент: утвержденный образец или авторскую верстку.
-        3. Возвращает ответ, лог выполненных действий и скомпилированный .docx.
-        """
         q_low = query.lower()
         active_session = get_document_session(session_id) if session_id else None
 
+        # -----------------------------------------------------------------
         # СЦЕНАРИЙ 1: ПРАВКА СУЩЕСТВУЮЩЕГО ДОКУМЕНТА (INTERACTIVE PATCHING)
+        # -----------------------------------------------------------------
         if active_session:
-            patch_intent = self._detect_patch_intent(query, active_session)
+            patch_intent = self._detect_academic_patch_intent(query, active_session)
             if patch_intent:
                 updated_session = self.tool_patch_document(session_id, patch_intent, reason=query)
                 doc_meta = updated_session["compiled_doc"]
+                status_tag = "✓ [УТВЕРЖДЕННЫЙ ОБРАЗЕЦ ОЦ]" if updated_session.get("is_approved") else "[РАБОЧИЙ ПРОЕКТ]"
                 
-                status_tag = "✓ [УТВЕРЖДЕННЫЙ ОБРАЗЕЦ]" if updated_session.get("is_approved") else "[РАБОЧИЙ ПРОЕКТ]"
                 reply_text = (
                     f"⚡ **Агент применил инструмент `tool_patch_document`**\n"
                     f"Документ обновлен до версии **v{updated_session['version']}** {status_tag}\n\n"
-                    f"• **Заголовок:** {updated_session.get('title')}\n"
+                    f"• **Документ:** {updated_session.get('title')}\n"
                     f"• **Реквизиты:** № {updated_session.get('number')} от {updated_session.get('date')}\n"
-                    f"• **Руководитель:** {updated_session.get('head_doctor')}\n"
-                    f"• **Эпидемиолог:** {updated_session.get('hospital_epidemiologist')}\n"
-                    f"• **Число пунктов распоряжения:** {len(updated_session.get('actions', []))}\n\n"
-                    f"📄 Файл Microsoft Word успешно пересобран бэкендом по ГОСТ Р 7.0.97-2016."
+                    f"• **Подписант:** {updated_session.get('head_doctor')}\n"
+                    f"• **Куратор/отдел:** {updated_session.get('hospital_epidemiologist')}\n"
+                    f"• **Количество пунктов/решений:** {len(updated_session.get('actions', []))}\n\n"
+                    f"📄 Обновленный файл Microsoft Word пересобран бэкендом по ГОСТ Р 7.0.97-2016."
                 )
 
                 return {
@@ -134,31 +105,31 @@ class CrieDocumentAgent:
                     "document_session": updated_session
                 }
 
-        # СЦЕНАРИЙ 2: ТРЕБУЕТСЯ ЖЕСТКИЙ УТВЕРЖДЕННЫЙ ОБРАЗЕЦ
-        # (если пользователь поставил галочку ИЛИ в запросе указано «по утвержденному образцу»)
+        # -----------------------------------------------------------------
+        # СЦЕНАРИЙ 2: ПРИМЕНЕНИЕ ЖЕСТКОГО УТВЕРЖДЕННОГО ОБРАЗЦА ИНСТИТУТА
+        # -----------------------------------------------------------------
         if use_approved_template_only or any(w in q_low for w in ["утвержденный образец", "по образцу", "эталонный приказ", "строго по шаблону"]):
-            infection = "корь"
-            if "сальмонелл" in q_low or "оки" in q_low:
-                tpl_id = "TPL-APPROVED-SALMONELLA"
-                infection = "сальмонеллез"
-            elif "дезинфекц" in q_low or "соп" in q_low:
-                tpl_id = "TPL-APPROVED-SOP-DISINFECTION"
-                infection = "дезинфекция"
-            elif "акт" in q_low or "расследован" in q_low:
-                tpl_id = "TPL-APPROVED-OUTBREAK-ACT"
-            else:
-                tpl_id = "TPL-APPROVED-MEASLES"
+            tpl_id = "TPL-APPROVED-ADMISSION-RESIDENCY"
+            if any(w in q_low for w in ["гиа", "допуск к гиа", "итоговая аттестация"]):
+                tpl_id = "TPL-APPROVED-GIA-ADMISSION"
+            elif any(w in q_low for w in ["умс", "учебно-методический совет", "протокол умс"]):
+                tpl_id = "TPL-APPROVED-UMS-PROTOCOL"
+            elif any(w in q_low for w in ["аспирантур", "тема диссертации", "научный руководитель"]):
+                tpl_id = "TPL-APPROVED-ASPIRANTURA-THEME"
+            elif any(w in q_low for w in ["практик", "клиническая база"]):
+                tpl_id = "TPL-APPROVED-PRACTICE-ORDER"
+            elif any(w in q_low for w in ["нагрузк", "кадров", "остепененност"]):
+                tpl_id = "TPL-APPROVED-STAFFING-WORKLOAD"
 
-            dept = self._extract_department(query)
-            session = self.tool_use_approved_template(tpl_id, department=dept, infection=infection)
+            session = self.tool_use_approved_template(tpl_id, params={"query": query})
             doc_meta = session["compiled_doc"]
 
             reply_text = (
-                f"🛡️ **Агент применил инструмент `tool_use_approved_template`**\n"
-                f"Использован эталонный образец: **{session.get('template_name')}**\n"
-                f"Статус: **✓ Утвержденный образец** ({session.get('authority')})\n\n"
-                f"Формулировки преамбулы и распорядительной части зафиксированы по СанПиН 3.3686-21 и ГОСТ Р 7.0.97-2016. "
-                f"Файл Word скомпилирован бэкендом и доступен для скачивания."
+                f"🎓 **Агент применил утвержденный эталон Образовательного центра (`tool_use_approved_template`)**\n"
+                f"Образец: **{session.get('template_name')}**\n"
+                f"Статус: **✓ Утвержденный образец института** ({session.get('authority')})\n\n"
+                f"Основание: {session.get('basis')}, ФГОС ВО ординатуры (120 з.е. / 4 320 ч.). "
+                f"Формулировки зафиксированы по регламентам ЦНИИЭ и стандарту ГОСТ Р 7.0.97-2016."
             )
 
             return {
@@ -171,73 +142,63 @@ class CrieDocumentAgent:
                 "document_session": session
             }
 
-        # СЦЕНАРИЙ 3: ВАРИАТИВНАЯ ВЕРСТКА АГЕНТОМ (AGENT COMPOSER)
-        # Агент сам верстает структуру документа: разделы, таблицы, требования
-        if any(w in q_low for w in ["приказ", "соп", "регламент", "акт", "подготовь", "составь", "сверстай"]):
-            normative = self.tool_query_normative(query)
-            infection = self._extract_infection(query)
-            dept = self._extract_department(query)
+        # -----------------------------------------------------------------
+        # СЦЕНАРИЙ 3: АВТОРСКАЯ ВЕРСТКА АГЕНТОМ (РАСПИСАНИЕ СЕССИИ / ПЛАН)
+        # -----------------------------------------------------------------
+        if any(w in q_low for w in ["расписание", "сесси", "экзамен", "график", "учебный план", "сверстай"]):
             now = datetime.now()
-
-            # Агент верстает структуру документа (включая таблицы контроля)
             doc_model = {
-                "tag": f"Приказ_{infection}",
-                "doc_type": "ПРИКАЗ",
-                "title": f"О комплексе дополнительных санитарно-противоэпидемических мероприятий при выявлении заболевания ({infection}) в {dept}",
-                "organization": "ФБУН ЦНИИ Эпидемиологии Роспотребнадзора",
+                "tag": "Расписание_сессии_ординатура",
+                "doc_type": "РАСПИСАНИЕ",
+                "title": "Расписание зимней экзаменационной сессии на 2026/2027 учебный год (группы 25ОЭ и 26ОЭ)",
+                "organization": (
+                    "ФЕДЕРАЛЬНАЯ СЛУЖБА ПО НАДЗОРУ В СФЕРЕ ЗАЩИТЫ ПРАВ ПОТРЕБИТЕЛЕЙ И БЛАГОПОЛУЧИЯ ЧЕЛОВЕКА\n"
+                    "ФБУН ЦНИИ ЭПИДЕМИОЛОГИИ РОСПОТРЕБНАДЗОРА\n"
+                    "ОБРАЗОВАТЕЛЬНЫЙ ЦЕНТР"
+                ),
                 "is_approved": False,
                 "date": now.strftime("%d.%m.%Y"),
-                "number": f"{now.strftime('%y')}-ЭПИД/{now.day:02d}",
+                "number": "УМС-26/11",
                 "city": "г. Москва",
                 "preamble": (
-                    f"В связи с регистрацией случая с подозрением на {infection} у пациента в {dept}, "
-                    f"в целях локализации очага, предотвращения внутрибольничного инфицирования "
-                    f"и на основании требований СанПиН 3.3686-21 и СанПиН 2.1.3678-20:"
+                    "В соответствии с календарным учебным графиком ординатуры по специальности 32.08.12 «Эпидемиология» "
+                    "и Положением о проведении текущего контроля успеваемости и промежуточной аттестации:"
                 ),
                 "sections": [
                     {
-                        "heading": "1. Первоочередные изоляционные мероприятия",
-                        "items": [
-                            f"Немедленно изолировать пациента с признаками {infection} в боксированную палату отделения.",
-                            "Обеспечить подачу экстренного извещения по ф. 058/у в территориальный орган Роспотребнадзора в течение 12 часов (первичная информация по телефону — в течение 2 часов)."
-                        ]
-                    },
-                    {
-                        "heading": "2. Дезинфекционный режим и мониторинг",
-                        "text": "Перевести отделение на усиленный дезинфекционный режим по вирулицидному и бактерицидному графику.",
+                        "heading": "1. Сроки и порядок проведения промежуточной аттестации",
+                        "text": "Экзаменационная сессия проводится в период с 25 января по 25 февраля 2027 г. Допуск осуществляется при отсутствии задолженностей по текущему контролю.",
                         "table": {
-                            "headers": ["Зона обработки", "Используемое средство", "Концентрация (%)", "Экспозиция (мин.)", "Кратность"],
+                            "headers": ["Дата и время", "Учебная группа", "Дисциплина", "Форма контроля", "Экзаменатор / Комиссия", "Аудитория"],
                             "rows": [
-                                ["Палата больного", "Хлорактивные препараты", "0.5%", "60 мин.", "3 раза в сутки"],
-                                ["Манипуляционная", "Кислородактивные средства", "0.2%", "30 мин.", "После каждого пациента"],
-                                ["Места общего пользования", "ЧАС + спирты", "0.1%", "15 мин.", "Каждые 2 часа"],
-                                ["Воздушная среда", "УФ-рециркуляторы закрытого типа", "—", "Постоянно", "24/7 непрерывно"]
+                                ["26.01.2027, 10:00", "25ОЭ (1 год)", "Общая эпидемиология", "Экзамен (тестирование + собеседование)", "проф. Горелов А.В.", "Конференц-зал ОЦ"],
+                                ["29.01.2027, 10:00", "25ОЭ (1 год)", "Инфекционные болезни (модуль)", "Дифференцированный зачет", "доц. Семенова Е.В.", "Ауд. 204"],
+                                ["04.02.2027, 11:00", "26ОЭ (2 год)", "Эпидемиологический надзор за ИСМП", "Экзамен (ситуационные задачи)", "проф. Малеев В.В.", "Конференц-зал ОЦ"],
+                                ["09.02.2027, 10:00", "26ОЭ (2 год)", "Молекулярная эпидемиология", "Зачет с оценкой", "д.б.н. Климова О.Н.", "Лаб. корпус"],
+                                ["16.02–25.02.2027", "25ОЭ, 26ОЭ", "Ликвидация академических задолженностей", "Повторная аттестация комиссии", "Комиссия УМС", "Учебный отдел"]
                             ]
                         }
                     },
                     {
-                        "heading": "3. Экстренная иммунизация и наблюдение за контактными",
+                        "heading": "2. Требования к составу экзаменационной комиссии",
                         "items": [
-                            "Госпитальному эпидемиологу составить список всех контактных пациентов и медицинского персонала.",
-                            "Организовать экстренную вакцинацию лиц, не имеющих документально подтвержденных сведений о прививках, в первые 72 часа от момента контакта.",
-                            "Установить медицинское наблюдение за контактными сроком на 21 день с двукратной ежедневной термометрией."
+                            "Доля преподавателей кафедры с учеными степенями кандидата или доктора наук — не менее 70%.",
+                            "Результаты аттестации вносятся в экзаменационные ведомости и личные кабинеты ЭИОС в день проведения испытания.",
+                            "Сводная ведомость с подписями членов комиссии передается в учебный отдел в течение 2 рабочих дней."
                         ]
                     }
                 ],
                 "signatures": [
-                    {"position": "Главный врач стационара", "name": "А.К. Горелов"}
+                    {"position": "Руководитель Образовательного центра, проф.", "name": "А.В. Горелов"},
+                    {"position": "Заведующий кафедрой эпидемиологии, академик", "name": "В.В. Малеев"}
                 ],
                 "visas": [
-                    "Госпитальный эпидемиолог: ___________________ / Е.В. Семенова /",
-                    "Начальник медицинской части: ___________________ / И.П. Воронов /"
+                    "Начальник Учебно-методического отдела: ___________________ / О.Н. Климова /"
                 ]
             }
 
-            # Агент компилирует сверстанную им модель в .docx
             doc_meta = self.tool_compose_custom_document(doc_model)
-            
-            # Сохраняем как новую сессию для возможности последующих правок
-            session_id_new = f"session_custom_{now.strftime('%H%M%S')}"
+            session_id_new = f"session_sess_{now.strftime('%H%M%S')}"
             session_data = {
                 "session_id": session_id_new,
                 "version": 1,
@@ -245,10 +206,9 @@ class CrieDocumentAgent:
                 "title": doc_model["title"],
                 "number": doc_model["number"],
                 "date": doc_model["date"],
-                "department": dept,
-                "infection": infection,
-                "head_doctor": "А.К. Горелов",
-                "hospital_epidemiologist": "Е.В. Семенова",
+                "specialty": "32.08.12 «Эпидемиология»",
+                "head_doctor": "А.В. Горелов",
+                "hospital_epidemiologist": "О.Н. Климова",
                 "actions": [it for s in doc_model["sections"] for it in s.get("items", [])],
                 "compiled_doc": doc_meta,
                 "doc_model": doc_model
@@ -257,13 +217,12 @@ class CrieDocumentAgent:
             _DOCUMENT_SESSIONS[session_id_new] = session_data
 
             reply_text = (
-                f"🛠️ **Агент выполнил кастомную верстку документа (`tool_compose_custom_document`)**\n\n"
-                f"Сверстан специализированный документ с таблицей дезинфекционных режимов:\n"
+                f"🛠️ **Агент сверстал расписание экзаменационной сессии (`tool_compose_custom_document`)**\n\n"
+                f"Сформирован документ с подробной таблицей дат, дисциплин и комиссий:\n"
                 f"• **Документ:** {doc_model['title']}\n"
-                f"• **Реквизиты:** Приказ № {doc_model['number']} от {doc_model['date']}\n"
-                f"• **Сверстано разделов:** 3 раздела, включая нормативную таблицу ротации дезсредств.\n\n"
-                f"Вы можете написать правки агенту (*«измени концентрацию в таблице», «замени врача»*) "
-                f"или нажать кнопку и утвердить этот документ как эталонный образец."
+                f"• **Сроки сессии:** 25.01–25.02.2027 (в полном соответствии с регламентом ОЦ ЦНИИЭ)\n"
+                f"• **Сверстана таблица:** 5 экзаменационных контрольных точек для групп 25ОЭ и 26ОЭ.\n\n"
+                f"Вы можете написать правки (*«поменяй дату экзамена по ИСМП», «замени экзаменатора»*) или утвердить этот образец."
             )
 
             return {
@@ -276,29 +235,31 @@ class CrieDocumentAgent:
                 "document_session": session_data
             }
 
-        # СЦЕНАРИЙ 4: СПРАВОЧНЫЙ НОРМАТИВНЫЙ ЗАПРОС (RAG)
-        clauses = self.tool_query_normative(query)
-        grounded_text = build_grounded_citations_text(query)
-        
+        # -----------------------------------------------------------------
+        # СЦЕНАРИЙ 4: СПРАВКА ПО ОРДИНАТУРЕ И АСПИРАНТУРЕ (RAG)
+        # -----------------------------------------------------------------
         reply_text = (
-            f"📚 **Агент выполнил нормативную проверку по базе СанПиН (`tool_query_normative`)**:\n\n"
-            f"{grounded_text}\n\n"
-            f"Вы можете скомандовать: *«Подготовь приказ по утвержденному образцу»* или *«Сверстай приказ для отделения...»*."
+            f"🎓 **Образовательный центр ФБУН ЦНИИ Эпидемиологии Роспотребнадзора**:\n\n"
+            f"Я обеспечиваю подготовку официальной документации по программам **ординатуры** (32.08.12 «Эпидемиология», 31.08.35 «Инфекционные болезни», 31.08.19 «Педиатрия») и **аспирантуры** (3.2.2 «Эпидемиология»):\n\n"
+            f"• **Приказы директора института:** зачисление, допуск к ГИА, утверждение тем диссертаций, направление на практику;\n"
+            f"• **Протоколы УМС и ГЭК:** утверждение РПД, ФОС, прием экзаменов (остепененность комиссии $\\ge$ 70%);\n"
+            f"• **Расписания экзаменационных сессий:** зимняя (25.01–25.02) и летняя сессии;\n"
+            f"• **Кадровое обеспечение и нагрузка ППС:** норматив 750–900 ч/год на ставку.\n\n"
+            f"Поставьте галочку **«✓ Утвержденный образец»** или напишите: *«Подготовь приказ о зачислении в ординатуру»*, *«Составь приказ о допуске к ГИА»*, *«Сверстай расписание зимней сессии»*."
         )
 
         return {
-            "agent_action": "query_normative",
+            "agent_action": "query_academic",
             "response": reply_text,
             "answer": reply_text,
-            "citations": clauses,
-            "total_hits": len(clauses)
+            "citations": [
+                {"title": "Федеральный закон № 273-ФЗ «Об образовании в РФ»"},
+                {"title": "ФГОС ВО по специальности 32.08.12 «Эпидемиология» (120 з.е.)"},
+                {"title": "Положение об организации образовательной деятельности в ординатуре ФБУН ЦНИИЭ"}
+            ]
         }
 
-    # -------------------------------------------------------------
-    # Вспомогательные парсеры интентов
-    # -------------------------------------------------------------
-
-    def _detect_patch_intent(self, query: str, session: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _detect_academic_patch_intent(self, query: str, session: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         q_low = query.lower()
         patches = {}
 
@@ -307,13 +268,9 @@ class CrieDocumentAgent:
         elif any(w in q_low for w in ["сними утверждение", "черновик"]):
             patches["is_approved"] = False
 
-        m_doc = re.search(r"(?:замени|назначь|главврач[а-я]*|главный врач)\s+(?:на\s+)?([А-Яа-яA-Za-z\s.]+)", query, re.IGNORECASE)
-        if m_doc:
-            raw_val = m_doc.group(1).strip().strip(",.!")
-            # Отсекаем последующие союзы и команды
-            clean_name = re.split(r"\s+(?:и\s+добавь|и\s+включи|и\s+поставь|и\s+утверди|и\s+замени)\b", raw_val, flags=re.IGNORECASE)[0].strip()
-            # Убираем префикс "главного врача на" если он попал в группу
-            clean_name = re.sub(r"^(?:главного\s+врача\s+на|главврача\s+на|руководителя\s+на)\s+", "", clean_name, flags=re.IGNORECASE).strip()
+        m_head = re.search(r"(?:директор|председател[а-я]*|руководител[а-я]*)\s+(?:на\s+)?([А-Яа-яA-Za-z\s.]+)", query, re.IGNORECASE)
+        if m_head:
+            clean_name = re.split(r"\s+(?:и\s+добавь|и\s+поставь|и\s+замени)\b", m_head.group(1), flags=re.IGNORECASE)[0].strip().strip(",.!")
             if len(clean_name) > 3:
                 patches["head_doctor"] = clean_name
 
@@ -321,23 +278,12 @@ class CrieDocumentAgent:
         if m_del:
             patches["remove_action_index"] = int(m_del.group(1)) - 1
 
-        m_add = re.search(r"(?:добавь|включи|вставь)\s+(?:пункт|требование)?\s*[:\-]?\s*(.+)", query, re.IGNORECASE)
+        m_add = re.search(r"(?:добавь|включи|вставь)\s+(?:пункт|решение|постановление)?\s*[:\-]?\s*(.+)", query, re.IGNORECASE)
         if m_add and not m_del:
             patches["add_action"] = m_add.group(1).strip()
 
+        m_stud = re.search(r"(?:добавь|зачисли|включи)\s+(?:ординатор[а-я]*|аспирант[а-я]*|студент[а-я]*)\s+([А-Яа-яA-Za-z\s.,]+)", query, re.IGNORECASE)
+        if m_stud:
+            patches["add_action"] = f"Зачислить в очную ординатуру: {m_stud.group(1).strip()}."
+
         return patches if patches else None
-
-    def _extract_infection(self, query: str) -> str:
-        q = query.lower()
-        if "сальмонелл" in q: return "сальмонеллез"
-        if "ковид" in q or "covid" in q: return "COVID-19"
-        if "ветрян" in q or "оспа" in q: return "ветряная оспа"
-        if "грипп" in q or "орви" in q: return "грипп и ОРВИ"
-        if "исмп" in q or "вби" in q: return "ИСМП"
-        return "корь"
-
-    def _extract_department(self, query: str) -> str:
-        m = re.search(r"в ([а-яё0-9\s]+отделени[а-яё0-9\s]+)", query, re.IGNORECASE)
-        if m:
-            return m.group(1).strip().capitalize()
-        return "Терапевтическое отделение № 1"

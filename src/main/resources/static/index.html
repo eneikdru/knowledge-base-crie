@@ -161,12 +161,14 @@
               <span>✓ Утвержденный образец</span>
             </label>
             <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <select id="quickTemplateSelect" class="search-select" style="padding: 0.3rem 0.6rem; font-size: 0.775rem; max-width: 190px;" onchange="selectPredefinedTemplate()">
-                <option value="">Шаблоны института...</option>
-                <option value="TPL-APPROVED-MEASLES">Приказ по кори (СанПиН 3.3686-21)</option>
-                <option value="TPL-APPROVED-SOP-DISINFECTION">СОП дезинфекции и стерилизации</option>
-                <option value="TPL-APPROVED-SALMONELLA">Приказ по сальмонеллезу / ОКИ</option>
-                <option value="TPL-APPROVED-OUTBREAK-ACT">Акт расследования очага (ф. 162/у)</option>
+              <select id="quickTemplateSelect" class="search-select" style="padding: 0.3rem 0.6rem; font-size: 0.775rem; max-width: 210px;" onchange="selectPredefinedTemplate()">
+                <option value="">Образцы Образовательного центра...</option>
+                <option value="TPL-APPROVED-ADMISSION-RESIDENCY">Зачисление в ординатуру (32.08.12)</option>
+                <option value="TPL-APPROVED-GIA-ADMISSION">Допуск к ГИА ординаторов</option>
+                <option value="TPL-APPROVED-UMS-PROTOCOL">Протокол УМС института</option>
+                <option value="TPL-APPROVED-ASPIRANTURA-THEME">Темы диссертаций аспирантов</option>
+                <option value="TPL-APPROVED-PRACTICE-ORDER">Направление на практику</option>
+                <option value="TPL-APPROVED-STAFFING-WORKLOAD">Справка о нагрузке ППС</option>
               </select>
               <button class="btn-upload-tpl" onclick="openUploadModal()">
                 <span>📤</span> Загрузить образец
@@ -176,20 +178,21 @@
 
           <div class="chat-messages" id="chatMessages">
             <div class="chat-msg assistant">
-              Здравствуйте! Я — <strong>Агент верстки и эпидемиологического надзора ЦНИИЭ</strong>.
+              Здравствуйте! Я — <strong>Агент документов Образовательного центра (Ординатура и Аспирантура) ФБУН ЦНИИ Эпидемиологии</strong>.
               <br><br>
-              У меня подключены специализированные инструменты:
-              <br>• <strong>Жесткие утвержденные образцы:</strong> гарантируют строгое соблюдение СанПиН 3.3686-21 и ГОСТ Р 7.0.97-2016 без отклонений;
-              <br>• <strong>Авторская верстка:</strong> умею сам верстать сложные приказы с таблицами дезконтроля и алгоритмами;
-              <br>• <strong>Интерактивные правки:</strong> напишите <em>«замени главврача на Сидорова»</em>, <em>«убери пункт 2»</em> или <em>«добавь контроль смывов через 24ч»</em> — я мгновенно обновлю документ на бэкенде.
+              Моя задача — подготовка официальной учебно-организационной и научно-аттестационной документации:
+              <br>• <strong>Ординатура:</strong> 32.08.12 «Эпидемиология», 31.08.35 «Инфекционные болезни», 31.08.19 «Педиатрия» (объем 120 з.е. / 4 320 ч.);
+              <br>• <strong>Аспирантура:</strong> 3.2.2 «Эпидемиология», 3.1.22 «Инфекционные болезни»;
+              <br>• <strong>Инструменты:</strong> утвержденные эталоны приказов, протоколов УМС и допусков к ГИА, авторская верстка расписаний экзаменов, интерактивные правки на лету.
             </div>
           </div>
 
           <div class="chat-suggestions">
-            <button class="btn-suggestion" onclick="askSuggestion('Подготовь приказ о противоэпидемических мерах при выявлении кори в стационаре по СанПиН 3.3686-21')">📝 Приказ: корь</button>
-            <button class="btn-suggestion" onclick="askSuggestion('Сверстай приказ об усилении дезинфекционного режима с таблицей зон обработки и концентраций')">🛠️ Сверстать с таблицей</button>
-            <button class="btn-suggestion" onclick="askSuggestion('Подготовь СОП по текущей и генеральной дезинфекции по СанПиН 3.3686-21')">📋 СОП дезинфекции</button>
-            <button class="btn-suggestion" onclick="askSuggestion('Составь Акт эпидемиологического расследования очага кори по форме 162/у')">📑 Акт ф. 162/у</button>
+            <button class="btn-suggestion" onclick="askSuggestion('Подготовь приказ о зачислении в ординатуру по специальности 32.08.12 Эпидемиология')">🎓 Зачисление в ординатуру</button>
+            <button class="btn-suggestion" onclick="askSuggestion('Сверстай расписание зимней экзаменационной сессии для групп 25ОЭ и 26ОЭ с 25.01 по 25.02')">📅 Сверстать расписание сессии</button>
+            <button class="btn-suggestion" onclick="askSuggestion('Составь приказ о допуске к ГИА ординаторов 2 года обучения')">📜 Допуск к ГИА (3 этапа)</button>
+            <button class="btn-suggestion" onclick="askSuggestion('Сформируй протокол заседания Учебно-методического совета УМС по утверждению РПД')">🏛️ Протокол УМС</button>
+            <button class="btn-suggestion" onclick="askSuggestion('Подготовь приказ об утверждении тем диссертаций аспирантов 1 года')">🔬 Темы диссертаций</button>
           </div>
 
           <div class="chat-input-bar">

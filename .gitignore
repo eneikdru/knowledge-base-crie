@@ -22,3 +22,7 @@ desktop.ini
 
 target/
 *.log
+
+# Generated & uploaded runtime documents
+generated_documents/
+data/templates/uploaded/
