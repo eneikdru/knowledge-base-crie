@@ -512,7 +512,40 @@ def generate_document_by_request(
 ) -> Dict[str, Any]:
     """
     Универсальный фасад генерации документов под свободный запрос пользователя.
+    Поддерживает как академические регламенты Образовательного центра
+    (ординатура/аспирантура), так и противоэпидемические акты.
     """
+    # 1. Проверяем академические шаблоны Образовательного центра
+    academic_mapping = {
+        "admission": "TPL-APPROVED-ADMISSION-RESIDENCY",
+        "order_admission": "TPL-APPROVED-ADMISSION-RESIDENCY",
+        "residency": "TPL-APPROVED-ADMISSION-RESIDENCY",
+        "gia": "TPL-APPROVED-GIA-ADMISSION",
+        "gia_admission": "TPL-APPROVED-GIA-ADMISSION",
+        "ums": "TPL-APPROVED-UMS-PROTOCOL",
+        "ums_protocol": "TPL-APPROVED-UMS-PROTOCOL",
+        "aspirantura": "TPL-APPROVED-ASPIRANTURA-THEME",
+        "dissertation": "TPL-APPROVED-ASPIRANTURA-THEME",
+        "practice": "TPL-APPROVED-PRACTICE-ORDER",
+        "workload": "TPL-APPROVED-STAFFING-WORKLOAD",
+        "staffing_cert": "TPL-APPROVED-STAFFING-WORKLOAD"
+    }
+
+    subtype = params.get("subtype") or ""
+    matched_tpl = academic_mapping.get(doc_type) or academic_mapping.get(subtype)
+
+    if not matched_tpl and doc_type == "director_order":
+        if subtype in academic_mapping:
+            matched_tpl = academic_mapping[subtype]
+        else:
+            matched_tpl = "TPL-APPROVED-ADMISSION-RESIDENCY"
+
+    if matched_tpl:
+        from crie_template_manager import create_document_session
+        session = create_document_session(matched_tpl, params=params, is_approved_flag=True)
+        return session.get("compiled_doc", {})
+
+    # 2. Противоэпидемические акты и СОПы
     infection = params.get("infection") or params.get("disease") or "корь"
     department = params.get("department") or "Отделение стационара"
     org = params.get("organization")
@@ -538,13 +571,10 @@ def generate_document_by_request(
             organization=org
         )
     else:
-        # Fallback to standard order
-        fp = generate_epidemiology_order(
-            title=f"Приказ о противоэпидемических мероприятиях: {infection}",
-            infection=infection,
-            department=department,
-            organization=org
-        )
+        # Fallback to academic admission
+        from crie_template_manager import create_document_session
+        session = create_document_session("TPL-APPROVED-ADMISSION-RESIDENCY", params=params, is_approved_flag=True)
+        return session.get("compiled_doc", {})
 
     file_name = fp.name
     return {

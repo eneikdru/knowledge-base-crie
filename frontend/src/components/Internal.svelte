@@ -245,10 +245,14 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          doc_type: selectedDocCategory === 'director_order' ? 'order' : (selectedDocCategory === 'sop' ? 'sop' : 'order'),
-          infection: specialtyCode === '31.08.36' ? 'корь' : 'инфекционные заболевания',
-          department: deptName || 'Отделение стационара',
-          title: docNumber ? `Приказ № ${docNumber}` : 'Официальный приказ по ГОСТ Р 7.0.97-2016'
+          doc_type: selectedDocCategory,
+          subtype: orderSubtype,
+          specialty: specialtyCode === '32.08.12' ? '32.08.12 «Эпидемиология»' : (specialtyCode === '31.08.35' ? '31.08.35 «Инфекционные болезни»' : '32.08.12 «Эпидемиология»'),
+          students: recipientName || 'Иванов И.И., Петров П.П.',
+          number: docNumber || '26-ОД/01',
+          date: docDate,
+          department: 'Кафедра эпидемиологии и доказательной медицины',
+          title: docNumber ? `Приказ № ${docNumber}` : 'Официальный приказ Образовательного центра'
         })
       });
 

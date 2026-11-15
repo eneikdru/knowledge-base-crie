@@ -426,10 +426,10 @@
       // Поля документа
       document.getElementById("gostDocType").innerText = session.doc_type || "ПРИКАЗ";
       document.getElementById("gostDate").innerText = session.date ? `«${session.date.slice(0,2)}» ${session.date.slice(3)}` : "Дата";
-      document.getElementById("gostNumber").innerHTML = `№ ${session.number || '1-ЭПИД'}<br>г. Москва`;
-      document.getElementById("gostSubject").innerText = session.title || "О противоэпидемических мероприятиях";
+      document.getElementById("gostNumber").innerHTML = `№ ${session.number || '26-ОД/01'}<br>г. Москва`;
+      document.getElementById("gostSubject").innerText = session.title || "Приказ по Образовательному центру";
       document.getElementById("gostPreamble").innerText = session.preamble || "";
-      document.getElementById("gostHeadDoctor").innerText = session.head_doctor || "Главный врач";
+      document.getElementById("gostHeadDoctor").innerText = session.head_doctor || "Директор института, академик РАН";
 
       // Пункты
       const itemsContainer = document.getElementById("gostItemsContainer");
