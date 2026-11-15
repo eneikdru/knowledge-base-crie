@@ -161,6 +161,8 @@ if STATIC_DIR.exists():
 
 
 @app.get("/")
+@app.get("/crie")
+@app.get("/crie/")
 def serve_index():
     idx_file = STATIC_DIR / "index.html"
     if idx_file.exists():
@@ -480,6 +482,7 @@ from crie.workload.schemas import (
 )
 
 @app.post("/api/workload/calculate", response_model=WorkloadCalculationResult)
+@app.post("/crie/api/workload/calculate", response_model=WorkloadCalculationResult)
 def calculate_teaching_workload(payload: TeachingWorkloadInput):
     return calculate_workload(payload)
 

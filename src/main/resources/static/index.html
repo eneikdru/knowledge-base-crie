@@ -212,7 +212,7 @@
           <h2>Сводный пакет институциональных документов (2026–2027)</h2>
           <p>Все 15 регламентов, протоколов УМС, приказов и учебных планов по ГОСТ Р 7.0.97-2016 в одном архиве.</p>
         </div>
-        <a href="/api/download/archive" class="btn-download-all" download>
+        <a id="btnArchiveDl" href="/api/download/archive" class="btn-download-all" download>
           <span>📥</span> Скачать весь пакет (.ZIP) — 538 КБ
         </a>
       </div>
@@ -372,7 +372,7 @@
           <button class="btn-download-all" style="background: #0284c7; cursor: pointer; border: none;" onclick="openFeedbackModal()">
             <span>➕</span> Зафиксировать замечание
           </button>
-          <a href="/api/feedback/export" class="btn-download-all" style="background: #059669;" download>
+          <a id="btnFeedbackExport" href="/api/feedback/export" class="btn-download-all" style="background: #059669;" download>
             <span>📥</span> Выгрузить реестр (.CSV)
           </a>
         </div>
@@ -439,6 +439,7 @@
   </div>
 
   <script>
+    const API_BASE = window.location.pathname.startsWith("/crie") ? "/crie" : "";
     const BENCHMARK_DOCS = [
       { id: "01", name: "01_Протокол_УМС_9_26_от_09_09_2026.docx", title: "Протокол заседания УМС № 9/26 от 09.09.2026", type: "Протокол УМС", annotation: "Повестка, кворум академика Горелова А.В., внедрение модуля ИИ (72 ч.), пособие по кори Тагировой З.Г." },
       { id: "02", name: "02_Протокол_УМС_10_26_от_14_10_2026.docx", title: "Протокол заседания УМС № 10/26 от 14.10.2026", type: "Протокол УМС", annotation: "Утверждение календарных графиков зимней сессии и 9 локальных положений института." },
@@ -467,7 +468,7 @@
           </div>
           <h3 class="doc-title">${doc.title}</h3>
           <p class="doc-annotation">${doc.annotation}</p>
-          <a href="/api/download/${doc.name}" class="btn-download-docx" download>
+          <a href="${API_BASE}/api/download/${doc.name}" class="btn-download-docx" download>
             <span>📄</span> Скачать .DOCX
           </a>
         </article>
@@ -495,7 +496,7 @@
 
     function verifyPin() {
       const pin = document.getElementById("pinInput").value;
-      fetch("/api/auth/login", {
+      fetch(`${API_BASE}/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pin: pin })
@@ -529,7 +530,7 @@
       const isChecked = document.getElementById("approvedCheckbox").checked;
       if (activeSessionId) {
         // Уведомляем бэкенд о смене статуса утверждения для текущей сессии
-        fetch(`/api/documents/session/${activeSessionId}/patch`, {
+        fetch(`${API_BASE}/api/documents/session/${activeSessionId}/patch`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ is_approved: isChecked })
@@ -617,7 +618,7 @@
         alert("Сначала создайте или откройте документ для утверждения.");
         return;
       }
-      fetch(`/api/documents/session/${activeSessionId}/patch`, {
+      fetch(`${API_BASE}/api/documents/session/${activeSessionId}/patch`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_approved: true })
@@ -653,7 +654,7 @@
       fd.append("name", name);
       fd.append("is_approved", isApproved ? "true" : "false");
 
-      fetch("/api/templates/upload", {
+      fetch(`${API_BASE}/api/templates/upload", {
         method: "POST",
         body: fd
       })
@@ -703,7 +704,7 @@
 
       const isApprovedChecked = document.getElementById("approvedCheckbox").checked;
 
-      fetch("/api/chat", {
+      fetch(`${API_BASE}/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -763,7 +764,7 @@
     function performSearch() {
       const q = document.getElementById("searchInput").value;
       const cat = document.getElementById("categorySelect").value;
-      fetch(`/api/catalog/search?q=${encodeURIComponent(q)}&category=${encodeURIComponent(cat)}&limit=30`)
+      fetch(`${API_BASE}/api/catalog/search?q=${encodeURIComponent(q)}&category=${encodeURIComponent(cat)}&limit=30`)
         .then(r => r.json())
         .then(data => {
           const items = data.items || data.results || [];
@@ -802,7 +803,7 @@
     function recalculateWorkload() {
       const students = parseInt(document.getElementById("calcStudents").value) || 45;
       const faculty = parseInt(document.getElementById("calcFaculty").value) || 17;
-      fetch("/api/workload/calculate", {
+      fetch(`${API_BASE}/api/workload/calculate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ students_count: students, faculty_count: faculty })
@@ -877,7 +878,7 @@
       localStorage.setItem("crie_feedback_author", author);
       localStorage.setItem("crie_feedback_role", role);
 
-      fetch("/api/feedback", {
+      fetch(`${API_BASE}/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -920,7 +921,7 @@
 
       container.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 2rem;">Загрузка реестра замечаний с сервера...</div>`;
 
-      let url = `/api/feedback?limit=200`;
+      let url = `${API_BASE}/api/feedback?limit=200`;
       if (status && status !== "all") url += `&status=${encodeURIComponent(status)}`;
       if (category && category !== "all") url += `&category=${encodeURIComponent(category)}`;
 
@@ -1000,7 +1001,7 @@
     }
 
     function updateFeedbackStatusItem(feedbackId, newStatus) {
-      fetch(`/api/feedback/${feedbackId}/status`, {
+      fetch(`${API_BASE}/api/feedback/${feedbackId}/status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus })
@@ -1017,6 +1018,12 @@
     }
 
     window.onload = function() {
+      if (API_BASE) {
+        const arch = document.getElementById("btnArchiveDl");
+        if (arch) arch.href = API_BASE + "/api/download/archive";
+        const fbExp = document.getElementById("btnFeedbackExport");
+        if (fbExp) fbExp.href = API_BASE + "/api/feedback/export";
+      }
       renderBenchmarkDocs();
       recalculateWorkload();
     };
