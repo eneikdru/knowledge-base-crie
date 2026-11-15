@@ -1,12 +1,21 @@
 import os
 import time
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 from pathlib import Path
 from urllib.parse import quote
 from fastapi import FastAPI, HTTPException, Query, Body, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
+
+from crie_feedback_manager import (
+    add_feedback,
+    list_feedback,
+    get_feedback_stats,
+    update_feedback_status,
+    export_feedback_csv
+)
 
 from crie_assistant_index import NormativeInvertedIndex, get_normative_index
 from crie_smart_consultant import ask_crie_consultant
@@ -473,6 +482,71 @@ from crie.workload.schemas import (
 @app.post("/api/workload/calculate", response_model=WorkloadCalculationResult)
 def calculate_teaching_workload(payload: TeachingWorkloadInput):
     return calculate_workload(payload)
+
+
+class FeedbackCreateRequest(BaseModel):
+    author: Optional[str] = "Сотрудник ОЦ"
+    role: Optional[str] = "Пользователь"
+    category: Optional[str] = "Общее замечание"
+    severity: Optional[str] = "Важно"
+    feedback_text: str
+    expected_behavior: Optional[str] = None
+    document_context: Optional[str] = None
+    session_id: Optional[str] = None
+
+
+class FeedbackStatusUpdateRequest(BaseModel):
+    status: str
+    admin_notes: Optional[str] = None
+
+
+@app.post("/api/feedback")
+@app.post("/crie/api/feedback")
+def submit_feedback_endpoint(payload: FeedbackCreateRequest):
+    try:
+        record = add_feedback(payload.model_dump())
+        return {"status": "success", "message": "Замечание успешно сохранено на сервере", "feedback": record}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка сохранения замечания: {e}")
+
+
+@app.get("/api/feedback")
+@app.get("/crie/api/feedback")
+def get_feedback_endpoint(
+    limit: int = Query(100, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    status: Optional[str] = Query(None),
+    category: Optional[str] = Query(None)
+):
+    items = list_feedback(limit=limit, offset=offset, status=status, category=category)
+    stats = get_feedback_stats()
+    return {"status": "success", "items": items, "stats": stats}
+
+
+@app.post("/api/feedback/{feedback_id}/status")
+@app.post("/crie/api/feedback/{feedback_id}/status")
+def update_feedback_status_endpoint(feedback_id: int, payload: FeedbackStatusUpdateRequest):
+    res = update_feedback_status(feedback_id, payload.status, admin_notes=payload.admin_notes)
+    if not res:
+        raise HTTPException(status_code=404, detail="Замечание не найдено")
+    return {"status": "success", "feedback": res}
+
+
+@app.get("/api/feedback/export")
+@app.get("/crie/api/feedback/export")
+def export_feedback_endpoint():
+    csv_str = export_feedback_csv()
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"crie_feedback_log_{ts}.csv"
+    headers = {
+        "Content-Disposition": f"attachment; filename=\"{filename}\"",
+        "Content-Type": "text/csv; charset=utf-8",
+        "X-Content-Type-Options": "nosniff"
+    }
+    bom_csv = "\ufeff" + csv_str
+    return Response(content=bom_csv.encode("utf-8"), media_type="text/csv", headers=headers)
 
 
 if __name__ == "__main__":

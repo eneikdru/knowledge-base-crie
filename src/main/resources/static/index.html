@@ -107,6 +107,78 @@
     .btn-login { width: 100%; background: var(--primary); color: #fff; border: none; border-radius: 6px; padding: 0.75rem; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
     .btn-login:hover { background: var(--primary-dark); }
     .pin-hint { font-size: 0.75rem; color: #64748b; margin-top: 0.75rem; }
+
+    /* FEEDBACK & OBSERVATIONS SYSTEM */
+    .floating-feedback-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+      padding: 0.75rem 1.4rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 999;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .floating-feedback-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 28px -5px rgba(2, 132, 199, 0.65);
+      background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
+    }
+    .feedback-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .feedback-stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .feedback-stat-val { font-size: 1.8rem; font-weight: 800; color: #fff; line-height: 1.1; }
+    .feedback-stat-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .feedback-item-card {
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      transition: border-color 0.2s;
+    }
+    .feedback-item-card:hover { border-color: var(--primary); }
+    .feedback-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .badge-sev-critical { background: rgba(239,68,68,0.18); color: #f87171; border: 1px solid #ef4444; border-radius: 999px; padding: 0.15rem 0.55rem; font-size: 0.725rem; font-weight: 700; }
+    .badge-sev-important { background: rgba(245,158,11,0.18); color: #fbbf24; border: 1px solid #f59e0b; border-radius: 999px; padding: 0.15rem 0.55rem; font-size: 0.725rem; font-weight: 700; }
+    .badge-sev-suggestion { background: rgba(16,185,129,0.18); color: #34d399; border: 1px solid #10b981; border-radius: 999px; padding: 0.15rem 0.55rem; font-size: 0.725rem; font-weight: 700; }
+    .badge-status-new { background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid #0284c7; border-radius: 4px; padding: 0.15rem 0.5rem; font-size: 0.75rem; font-weight: 600; }
+    .badge-status-in_progress { background: rgba(234,179,8,0.15); color: #facc15; border: 1px solid #ca8a04; border-radius: 4px; padding: 0.15rem 0.5rem; font-size: 0.75rem; font-weight: 600; }
+    .badge-status-implemented { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid #16a34a; border-radius: 4px; padding: 0.15rem 0.5rem; font-size: 0.75rem; font-weight: 600; }
+    .badge-status-rejected { background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid #64748b; border-radius: 4px; padding: 0.15rem 0.5rem; font-size: 0.75rem; font-weight: 600; }
+    .feedback-text-block { font-size: 0.925rem; color: #f1f5f9; line-height: 1.45; white-space: pre-wrap; }
+    .feedback-expected-block { background: rgba(0,0,0,0.25); border-left: 3px solid #38bdf8; padding: 0.5rem 0.75rem; border-radius: 0 6px 6px 0; font-size: 0.85rem; color: #cbd5e1; }
+    .feedback-context-block { font-size: 0.775rem; color: #64748b; display: flex; gap: 0.5rem; align-items: center; }
   </style>
 </head>
 <body>
@@ -129,6 +201,7 @@
     <button class="nav-tab" onclick="switchTab('tab-chat')">🤖 AI-Консультант (DeepSeek)</button>
     <button class="nav-tab" onclick="switchTab('tab-catalog')">📚 Нормативная база (1 697 актов)</button>
     <button class="nav-tab" onclick="switchTab('tab-calculator')">📊 Калькулятор нагрузки ППС</button>
+    <button class="nav-tab" onclick="switchTab('tab-feedback')">📝 Журнал замечаний (Пилот)</button>
   </nav>
 
   <main>
@@ -287,6 +360,71 @@
         </div>
       </div>
     </section>
+
+    <!-- TAB 5: ЖУРНАЛ ЗАМЕЧАНИЙ И ПРЕДЛОЖЕНИЙ (ПИЛОТНАЯ ЭКСПЛУАТАЦИЯ) -->
+    <section id="tab-feedback" class="tab-content">
+      <div class="banner-download" style="background: linear-gradient(135deg, rgba(2,132,199,0.15) 0%, rgba(15,23,42,0.6) 100%);">
+        <div class="banner-text">
+          <h2>Журнал замечаний и калибровки системы (Пилотная эксплуатация)</h2>
+          <p>Все замечания экспертов, неточности в ГОСТе, формулировках шаблонов или ответах Агента накапливаются на сервере для систематического анализа.</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <button class="btn-download-all" style="background: #0284c7; cursor: pointer; border: none;" onclick="openFeedbackModal()">
+            <span>➕</span> Зафиксировать замечание
+          </button>
+          <a href="/api/feedback/export" class="btn-download-all" style="background: #059669;" download>
+            <span>📥</span> Выгрузить реестр (.CSV)
+          </a>
+        </div>
+      </div>
+
+      <!-- СТАТИСТИКА ЗАМЕЧАНИЙ -->
+      <div class="feedback-stats-grid" id="feedbackStatsGrid">
+        <div class="feedback-stat-card">
+          <div class="feedback-stat-val" id="statTotalFeedback">0</div>
+          <div class="feedback-stat-label">Всего замечаний</div>
+        </div>
+        <div class="feedback-stat-card">
+          <div class="feedback-stat-val" style="color: #38bdf8;" id="statNewFeedback">0</div>
+          <div class="feedback-stat-label">Новые (требуют анализа)</div>
+        </div>
+        <div class="feedback-stat-card">
+          <div class="feedback-stat-val" style="color: #facc15;" id="statInProgressFeedback">0</div>
+          <div class="feedback-stat-label">В работе</div>
+        </div>
+        <div class="feedback-stat-card">
+          <div class="feedback-stat-val" style="color: #4ade80;" id="statImplementedFeedback">0</div>
+          <div class="feedback-stat-label">Учтено / Внедрено</div>
+        </div>
+      </div>
+
+      <!-- ПАНЕЛЬ ФИЛЬТРОВ -->
+      <div class="search-bar-wrapper">
+        <select id="feedbackFilterStatus" class="search-select" onchange="loadFeedbackRegistry()">
+          <option value="all">Все статусы</option>
+          <option value="new">Новые</option>
+          <option value="in_progress">В работе</option>
+          <option value="implemented">Учтено / Реализовано</option>
+          <option value="rejected">Отклонено</option>
+        </select>
+        <select id="feedbackFilterCategory" class="search-select" onchange="loadFeedbackRegistry()">
+          <option value="all">Все категории замечаний</option>
+          <option value="Ошибка в шаблоне / ГОСТ">Ошибка в шаблоне / ГОСТ</option>
+          <option value="Неточность в формулировке">Неточность в формулировке</option>
+          <option value="Вопрос по ФГОС / нормативной базе">Вопрос по ФГОС / нормативной базе</option>
+          <option value="Замечание по поведению Агента">Замечание по поведению Агента</option>
+          <option value="Удобство интерфейса (UX/UI)">Удобство интерфейса (UX/UI)</option>
+          <option value="Предложение нового документа">Предложение нового документа</option>
+          <option value="Общее замечание">Общее замечание</option>
+        </select>
+        <button class="btn-send" style="padding: 0.65rem 1.25rem;" onclick="loadFeedbackRegistry()">🔄 Обновить</button>
+      </div>
+
+      <!-- СПИСОК ЗАМЕЧАНИЙ -->
+      <div id="feedbackListContainer">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
   </main>
 
   <!-- MODAL AUTH 152-FZ -->
@@ -339,10 +477,15 @@
     function switchTab(tabId) {
       document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
       document.querySelectorAll(".nav-tab").forEach(el => el.classList.remove("active"));
-      document.getElementById(tabId).classList.add("active");
-      event.target.classList.add("active");
+      const targetTab = document.getElementById(tabId);
+      if (targetTab) targetTab.classList.add("active");
+      if (window.event && window.event.target && window.event.target.classList && window.event.target.classList.contains("nav-tab")) {
+        window.event.target.classList.add("active");
+      }
       if (tabId === "tab-catalog") {
         performSearch();
+      } else if (tabId === "tab-feedback") {
+        loadFeedbackRegistry();
       }
     }
 
@@ -676,6 +819,203 @@
       });
     }
 
+    // FEEDBACK & OBSERVATIONS SYSTEM
+    function openFeedbackModal() {
+      const modal = document.getElementById("feedbackModal");
+      if (!modal) return;
+      modal.style.display = "flex";
+
+      const savedAuthor = localStorage.getItem("crie_feedback_author") || "";
+      const savedRole = localStorage.getItem("crie_feedback_role") || "Сотрудник учебного отдела";
+      if (savedAuthor && !document.getElementById("fbAuthor").value) {
+        document.getElementById("fbAuthor").value = savedAuthor;
+      }
+      if (savedRole) {
+        document.getElementById("fbRole").value = savedRole;
+      }
+
+      let ctx = "";
+      const subjectEl = document.getElementById("gostSubject");
+      const verEl = document.getElementById("previewVersion");
+      const quickSel = document.getElementById("quickTemplateSelect");
+      if (subjectEl && subjectEl.innerText && subjectEl.innerText !== "Приказ по Образовательному центру") {
+        ctx = subjectEl.innerText + (verEl ? ` (${verEl.innerText})` : "");
+      } else if (quickSel && quickSel.selectedOptions && quickSel.selectedOptions[0]) {
+        ctx = quickSel.selectedOptions[0].innerText;
+      }
+      if (activeSessionId) {
+        ctx += (ctx ? " • " : "") + `Сессия: ${activeSessionId}`;
+      }
+      document.getElementById("fbDocContext").value = ctx;
+      document.getElementById("fbText").focus();
+    }
+
+    function closeFeedbackModal() {
+      const modal = document.getElementById("feedbackModal");
+      if (modal) modal.style.display = "none";
+    }
+
+    function submitFeedbackForm() {
+      const author = document.getElementById("fbAuthor").value.trim() || "Сотрудник ОЦ";
+      const role = document.getElementById("fbRole").value;
+      const category = document.getElementById("fbCategory").value;
+      const severity = document.getElementById("fbSeverity").value;
+      const docContext = document.getElementById("fbDocContext").value.trim();
+      const feedbackText = document.getElementById("fbText").value.trim();
+      const expectedBehavior = document.getElementById("fbExpected").value.trim();
+
+      if (!feedbackText) {
+        alert("Пожалуйста, опишите суть замечания или обнаруженную ошибку.");
+        document.getElementById("fbText").focus();
+        return;
+      }
+
+      const btn = document.getElementById("btnSubmitFeedback");
+      btn.disabled = true;
+      btn.innerText = "Сохранение...";
+
+      localStorage.setItem("crie_feedback_author", author);
+      localStorage.setItem("crie_feedback_role", role);
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          author: author,
+          role: role,
+          category: category,
+          severity: severity,
+          feedback_text: feedbackText,
+          expected_behavior: expectedBehavior,
+          document_context: docContext,
+          session_id: activeSessionId
+        })
+      })
+      .then(r => r.json())
+      .then(res => {
+        btn.disabled = false;
+        btn.innerText = "Сохранить на сервере";
+        if (res.status === "success") {
+          alert("✓ Замечание успешно зафиксировано на сервере в базе данных опытной эксплуатации!");
+          closeFeedbackModal();
+          document.getElementById("fbText").value = "";
+          document.getElementById("fbExpected").value = "";
+          loadFeedbackRegistry();
+        } else {
+          alert("Ошибка сохранения: " + (res.detail || "Неизвестная ошибка"));
+        }
+      })
+      .catch(err => {
+        btn.disabled = false;
+        btn.innerText = "Сохранить на сервере";
+        alert("Ошибка сети при отправке замечания: " + err);
+      });
+    }
+
+    function loadFeedbackRegistry() {
+      const status = document.getElementById("feedbackFilterStatus") ? document.getElementById("feedbackFilterStatus").value : "all";
+      const category = document.getElementById("feedbackFilterCategory") ? document.getElementById("feedbackFilterCategory").value : "all";
+      const container = document.getElementById("feedbackListContainer");
+      if (!container) return;
+
+      container.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 2rem;">Загрузка реестра замечаний с сервера...</div>`;
+
+      let url = `/api/feedback?limit=200`;
+      if (status && status !== "all") url += `&status=${encodeURIComponent(status)}`;
+      if (category && category !== "all") url += `&category=${encodeURIComponent(category)}`;
+
+      fetch(url)
+      .then(r => r.json())
+      .then(data => {
+        if (data.stats) {
+          const s = data.stats;
+          document.getElementById("statTotalFeedback").innerText = s.total || 0;
+          document.getElementById("statNewFeedback").innerText = (s.by_status && s.by_status.new) || 0;
+          document.getElementById("statInProgressFeedback").innerText = (s.by_status && s.by_status.in_progress) || 0;
+          document.getElementById("statImplementedFeedback").innerText = (s.by_status && s.by_status.implemented) || 0;
+        }
+
+        const items = data.items || [];
+        if (items.length === 0) {
+          container.innerHTML = `
+            <div style="text-align: center; color: #94a3b8; padding: 3rem; background: var(--surface); border-radius: var(--radius); border: 1px dashed var(--border-subtle);">
+              <span style="font-size: 2rem; display: block; margin-bottom: 0.5rem;">📋</span>
+              <strong style="color: #cbd5e1; font-size: 1.1rem;">Замечаний по выбранным фильтрам пока нет</strong>
+              <p style="font-size: 0.85rem; margin-top: 0.5rem;">
+                В процессе работы с документами и Агентом фиксируйте любые предложения, нажав кнопку «➕ Зафиксировать замечание» или круглую кнопку в правом нижнем углу.
+              </p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = items.map(it => {
+          let sevClass = "badge-sev-important";
+          if (it.severity === "Критично") sevClass = "badge-sev-critical";
+          else if (it.severity === "Пожелание") sevClass = "badge-sev-suggestion";
+
+          let statusClass = "badge-status-new";
+          if (it.status === "in_progress") { statusClass = "badge-status-in_progress"; }
+          else if (it.status === "implemented") { statusClass = "badge-status-implemented"; }
+          else if (it.status === "rejected") { statusClass = "badge-status-rejected"; }
+
+          const dateStr = (it.created_at || "").replace("T", " ").slice(0, 16);
+
+          return `
+            <div class="feedback-item-card" id="fb-card-${it.id}">
+              <div class="feedback-item-header">
+                <div>
+                  <span class="${sevClass}">${it.severity}</span>
+                  <span style="font-size: 0.8rem; font-weight: 700; color: #cbd5e1; margin-left: 0.4rem;">${it.category}</span>
+                  <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.5rem;">#${it.id} • ${dateStr}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="font-size: 0.8rem; color: #94a3b8;">${it.author} (${it.role || 'Пользователь'})</span>
+                  <select class="search-select" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onchange="updateFeedbackStatusItem(${it.id}, this.value)">
+                    <option value="new" ${it.status === 'new' ? 'selected' : ''}>🔵 Новое</option>
+                    <option value="in_progress" ${it.status === 'in_progress' ? 'selected' : ''}>🟡 В работе</option>
+                    <option value="implemented" ${it.status === 'implemented' ? 'selected' : ''}>🟢 Учтено</option>
+                    <option value="rejected" ${it.status === 'rejected' ? 'selected' : ''}>⚪ Отклонено</option>
+                  </select>
+                </div>
+              </div>
+
+              ${it.document_context ? `<div class="feedback-context-block"><span>📄 Контекст:</span> <strong>${it.document_context}</strong></div>` : ''}
+
+              <div class="feedback-text-block">${it.feedback_text}</div>
+
+              ${it.expected_behavior ? `
+                <div class="feedback-expected-block">
+                  <strong style="color: #38bdf8; font-size: 0.8rem; display: block; margin-bottom: 2px;">Эталон / Как должно быть:</strong>
+                  ${it.expected_behavior}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join("");
+      })
+      .catch(err => {
+        container.innerHTML = `<div style="color: #f87171; padding: 1.5rem; text-align: center;">Ошибка загрузки реестра замечаний: ${err}</div>`;
+      });
+    }
+
+    function updateFeedbackStatusItem(feedbackId, newStatus) {
+      fetch(`/api/feedback/${feedbackId}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus })
+      })
+      .then(r => r.json())
+      .then(res => {
+        if (res.status === "success") {
+          loadFeedbackRegistry();
+        } else {
+          alert("Ошибка обновления статуса: " + (res.detail || "Неизвестная ошибка"));
+        }
+      })
+      .catch(err => alert("Ошибка сети: " + err));
+    }
+
     window.onload = function() {
       renderBenchmarkDocs();
       recalculateWorkload();
@@ -713,5 +1053,85 @@
       </div>
     </div>
   </div>
+
+  <!-- MODAL: ФИКСАЦИЯ ЗАМЕЧАНИЯ -->
+  <div class="modal-overlay" id="feedbackModal" style="display: none;">
+    <div class="modal-box" style="text-align: left; max-width: 600px; width: 95%; max-height: 90vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+        <h3 style="color: #fff; margin: 0; font-size: 1.2rem;">📝 Фиксация замечания / предложения</h3>
+        <button onclick="closeFeedbackModal()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;">&times;</button>
+      </div>
+      <p style="margin-bottom: 1rem; font-size: 0.825rem; color: #94a3b8;">
+        Замечание сохранится на сервере в постоянной базе данных для доработки системы в период опытной эксплуатации.
+      </p>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+        <div>
+          <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem;">Ваше ФИО / Автор:</label>
+          <input type="text" id="fbAuthor" class="search-input" style="width: 100%;" placeholder="Иванов И.И.">
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem;">Должность / Роль:</label>
+          <select id="fbRole" class="search-select" style="width: 100%;">
+            <option value="Сотрудник учебного отдела">Сотрудник учебного отдела</option>
+            <option value="Куратор ординатуры">Куратор ординатуры</option>
+            <option value="Секретарь УМС/ГЭК">Секретарь УМС/ГЭК</option>
+            <option value="Преподаватель кафедры">Преподаватель кафедры</option>
+            <option value="Руководитель ОЦ">Руководитель ОЦ</option>
+            <option value="Эксперт / Тестировщик">Эксперт / Тестировщик</option>
+            <option value="Другое">Другое</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+        <div>
+          <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem;">Категория замечания:</label>
+          <select id="fbCategory" class="search-select" style="width: 100%;">
+            <option value="Ошибка в шаблоне / ГОСТ">Ошибка в шаблоне / ГОСТ</option>
+            <option value="Неточность в формулировке">Неточность в формулировке</option>
+            <option value="Вопрос по ФГОС / нормативной базе">Вопрос по ФГОС / нормативной базе</option>
+            <option value="Замечание по поведению Агента">Замечание по поведению Агента</option>
+            <option value="Удобство интерфейса (UX/UI)">Удобство интерфейса (UX/UI)</option>
+            <option value="Предложение нового документа">Предложение нового документа</option>
+            <option value="Общее замечание">Общее замечание</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem;">Важность (приоритет):</label>
+          <select id="fbSeverity" class="search-select" style="width: 100%;">
+            <option value="Важно">Важно (требует исправления)</option>
+            <option value="Критично">Критично (блокирует работу)</option>
+            <option value="Пожелание">Пожелание / предложение</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 0.75rem;">
+        <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem;">Контекст документа (автоопределение):</label>
+        <input type="text" id="fbDocContext" class="search-input" style="width: 100%;" placeholder="Название документа или сессии">
+      </div>
+
+      <div style="margin-bottom: 0.75rem;">
+        <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem;">Суть замечания / обнаруженная ошибка <span style="color: #ef4444;">*</span>:</label>
+        <textarea id="fbText" class="search-input" style="width: 100%; height: 90px; resize: vertical; font-family: inherit;" placeholder="Опишите, что именно работает не так, какую ошибку допустил агент или шаблон..."></textarea>
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem;">Как должно быть правильно (по эталону или вашему мнению):</label>
+        <textarea id="fbExpected" class="search-input" style="width: 100%; height: 60px; resize: vertical; font-family: inherit;" placeholder="Укажите правильную формулировку пункта, правильную ссылку на статью или ожидаемое поведение..."></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button class="btn-download-docx" style="background: transparent; border-color: var(--border); color: #cbd5e1;" onclick="closeFeedbackModal()">Отмена</button>
+        <button id="btnSubmitFeedback" class="btn-send" style="padding: 0.6rem 1.4rem;" onclick="submitFeedbackForm()">Сохранить на сервере</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- КНОПКА БЫСТРОЙ ФИКСАЦИИ ЗАМЕЧАНИЯ -->
+  <button id="btnFloatingFeedback" class="floating-feedback-btn" onclick="openFeedbackModal()" title="Нажмите, чтобы зафиксировать замечание или неточность">
+    <span>💬</span> Замечание / отзыв
+  </button>
 </body>
 </html>

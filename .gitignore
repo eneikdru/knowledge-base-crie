@@ -26,3 +26,7 @@ target/
 # Generated & uploaded runtime documents
 generated_documents/
 data/templates/uploaded/
+
+# User feedback runtime database
+data/feedback/*.db
+data/feedback/*.jsonl
