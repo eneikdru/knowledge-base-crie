@@ -48,21 +48,47 @@
     .doc-annotation { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.4; }
     .btn-download-docx { background: var(--primary); color: #fff; border: 1px solid var(--primary); border-radius: 6px; padding: 0.5rem 0.9rem; font-size: 0.825rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; cursor: pointer; transition: background 0.2s; margin-top: auto; }
     .btn-download-docx:hover { background: var(--primary-dark); }
-    .chat-layout { display: flex; flex-direction: column; height: 70vh; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border-subtle); overflow: hidden; }
-    .chat-messages { flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
-    .chat-msg { max-width: 85%; padding: 0.9rem 1.15rem; border-radius: var(--radius); line-height: 1.5; font-size: 0.925rem; }
+    .agent-workspace { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.25rem; height: calc(100vh - 160px); min-height: 640px; }
+    @media (max-width: 980px) { .agent-workspace { grid-template-columns: 1fr; height: auto; } }
+    .agent-chat-pane { display: flex; flex-direction: column; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border-subtle); overflow: hidden; }
+    .agent-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 1rem; background: rgba(0,0,0,0.25); border-bottom: 1px solid var(--border-subtle); flex-wrap: wrap; gap: 0.5rem; }
+    .approved-label { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.825rem; font-weight: 600; color: #34d399; cursor: pointer; user-select: none; }
+    .approved-checkbox { accent-color: #059669; width: 16px; height: 16px; cursor: pointer; }
+    .btn-upload-tpl { background: var(--primary); color: #fff; border: none; border-radius: 6px; padding: 0.35rem 0.75rem; font-size: 0.775rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; }
+    .btn-upload-tpl:hover { background: var(--primary-dark); }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.85rem; }
+    .chat-msg { max-width: 90%; padding: 0.8rem 1.1rem; border-radius: var(--radius); line-height: 1.5; font-size: 0.9rem; }
     .chat-msg.user { align-self: flex-end; background: var(--primary-dark); color: #fff; border-bottom-right-radius: 2px; }
     .chat-msg.assistant { align-self: flex-start; background: var(--surface-elevated); color: var(--text-main); border-bottom-left-radius: 2px; border: 1px solid var(--border); }
     .chat-citations { margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--border); font-size: 0.8rem; color: #38bdf8; }
     .chat-citations strong { color: #fff; }
-    .chat-suggestions { display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.75rem 1.25rem; background: rgba(0,0,0,0.15); border-top: 1px solid var(--border-subtle); }
-    .btn-suggestion { font-size: 0.8rem; padding: 0.35rem 0.75rem; border-radius: 999px; background: var(--surface-elevated); border: 1px solid var(--border); color: #cbd5e1; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+    .chat-suggestions { display: flex; gap: 0.4rem; overflow-x: auto; padding: 0.6rem 1rem; background: rgba(0,0,0,0.15); border-top: 1px solid var(--border-subtle); }
+    .btn-suggestion { font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 999px; background: var(--surface-elevated); border: 1px solid var(--border); color: #cbd5e1; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
     .btn-suggestion:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .chat-input-bar { display: flex; padding: 0.75rem 1rem; background: var(--surface); border-top: 1px solid var(--border-subtle); gap: 0.75rem; }
+    .chat-input-bar { display: flex; padding: 0.65rem 1rem; background: var(--surface); border-top: 1px solid var(--border-subtle); gap: 0.65rem; }
     .chat-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.65rem 1rem; color: #fff; font-size: 0.9rem; outline: none; }
     .chat-input:focus { border-color: #38bdf8; }
-    .btn-send { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 0.65rem 1.25rem; font-weight: 600; cursor: pointer; }
+    .btn-send { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 0.65rem 1.1rem; font-weight: 600; cursor: pointer; }
     .btn-send:hover { background: var(--accent-hover); }
+    .doc-preview-pane { display: flex; flex-direction: column; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border-subtle); overflow: hidden; }
+    .doc-preview-header { padding: 0.65rem 1rem; background: rgba(0,0,0,0.25); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+    .doc-badge-approved { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid #059669; border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; }
+    .doc-badge-draft { background: rgba(2,132,199,0.15); color: #38bdf8; border: 1px solid var(--primary); border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.75rem; font-weight: 700; }
+    .btn-preview-dl { background: #059669; color: #fff; text-decoration: none; border-radius: 6px; padding: 0.4rem 0.85rem; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; }
+    .btn-preview-dl:hover { background: #047857; }
+    .doc-preview-sheet { flex: 1; overflow-y: auto; padding: 1.5rem; background: #ffffff; color: #1e293b; font-family: 'Times New Roman', serif; font-size: 0.925rem; line-height: 1.35; box-shadow: inset 0 0 10px rgba(0,0,0,0.05); }
+    .gost-header { text-align: center; font-weight: bold; font-size: 0.825rem; margin-bottom: 1rem; text-transform: uppercase; color: #000; }
+    .gost-title { text-align: center; font-size: 1.25rem; font-weight: bold; margin: 0.75rem 0; letter-spacing: 0.05em; color: #000; }
+    .gost-meta-row { display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 0.9rem; color: #000; }
+    .gost-subject { font-weight: bold; text-indent: 1.25cm; text-align: justify; margin-bottom: 0.75rem; font-size: 0.95rem; color: #000; }
+    .gost-preamble { text-indent: 1.25cm; text-align: justify; margin-bottom: 0.75rem; color: #000; }
+    .gost-cmd { text-align: center; font-weight: bold; margin: 0.5rem 0; font-size: 1rem; color: #000; }
+    .gost-item { text-indent: 1.25cm; text-align: justify; margin-bottom: 0.5rem; color: #000; }
+    .gost-table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.825rem; }
+    .gost-table th, .gost-table td { border: 1px solid #475569; padding: 0.4rem 0.6rem; text-align: left; }
+    .gost-table th { background: #f1f5f9; font-weight: bold; text-align: center; }
+    .gost-sig { margin-top: 1.5rem; display: flex; justify-content: space-between; font-weight: bold; color: #000; }
+    .gost-visas { margin-top: 1rem; font-size: 0.8rem; color: #334155; border-top: 1px dashed #cbd5e1; padding-top: 0.5rem; }
     .search-bar-wrapper { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
     .search-input { flex: 1; min-width: 250px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.65rem 1rem; color: #fff; font-size: 0.9rem; outline: none; }
     .search-select { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.65rem 1rem; color: #fff; font-size: 0.9rem; outline: none; }
@@ -123,29 +149,107 @@
       </div>
     </section>
 
-    <!-- TAB 2: AI-КОНСУЛЬТАНТ DEEPSEEK -->
+    <!-- TAB 2: АГЕНТ ВЕРСТКИ И ПРАВОК ДОКУМЕНТОВ (SPLIT-VIEW) -->
     <section id="tab-chat" class="tab-content">
-      <div class="chat-layout">
-        <div class="chat-messages" id="chatMessages">
-          <div class="chat-msg assistant">
-            Здравствуйте! Я — нормативно-методический консультант ФБУН ЦНИИ Эпидемиологии Роспотребнадзора на базе модели <strong>DeepSeek</strong>.
-            <br><br>
-            Я могу предоставить подробную справку по Федеральному закону № 273-ФЗ, нормативам Роспотребнадзора, образовательным программам ординатуры (32.08.12, 31.08.35, 31.08.19), проведению зимней сессии 2026/2027 и формированию государственных экзаменационных комиссий. Задайте ваш вопрос!
+      <div class="agent-workspace">
+        
+        <!-- ЛЕВАЯ ПАНЕЛЬ: ДИАЛОГ С АГЕНТОМ И УПРАВЛЕНИЕ -->
+        <div class="agent-chat-pane">
+          <div class="agent-toolbar">
+            <label class="approved-label" title="Если включено — агент использует строго утвержденный образец без вариативности">
+              <input type="checkbox" id="approvedCheckbox" class="approved-checkbox" checked onchange="toggleApprovedStandard()">
+              <span>✓ Утвержденный образец</span>
+            </label>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <select id="quickTemplateSelect" class="search-select" style="padding: 0.3rem 0.6rem; font-size: 0.775rem; max-width: 190px;" onchange="selectPredefinedTemplate()">
+                <option value="">Шаблоны института...</option>
+                <option value="TPL-APPROVED-MEASLES">Приказ по кори (СанПиН 3.3686-21)</option>
+                <option value="TPL-APPROVED-SOP-DISINFECTION">СОП дезинфекции и стерилизации</option>
+                <option value="TPL-APPROVED-SALMONELLA">Приказ по сальмонеллезу / ОКИ</option>
+                <option value="TPL-APPROVED-OUTBREAK-ACT">Акт расследования очага (ф. 162/у)</option>
+              </select>
+              <button class="btn-upload-tpl" onclick="openUploadModal()">
+                <span>📤</span> Загрузить образец
+              </button>
+            </div>
+          </div>
+
+          <div class="chat-messages" id="chatMessages">
+            <div class="chat-msg assistant">
+              Здравствуйте! Я — <strong>Агент верстки и эпидемиологического надзора ЦНИИЭ</strong>.
+              <br><br>
+              У меня подключены специализированные инструменты:
+              <br>• <strong>Жесткие утвержденные образцы:</strong> гарантируют строгое соблюдение СанПиН 3.3686-21 и ГОСТ Р 7.0.97-2016 без отклонений;
+              <br>• <strong>Авторская верстка:</strong> умею сам верстать сложные приказы с таблицами дезконтроля и алгоритмами;
+              <br>• <strong>Интерактивные правки:</strong> напишите <em>«замени главврача на Сидорова»</em>, <em>«убери пункт 2»</em> или <em>«добавь контроль смывов через 24ч»</em> — я мгновенно обновлю документ на бэкенде.
+            </div>
+          </div>
+
+          <div class="chat-suggestions">
+            <button class="btn-suggestion" onclick="askSuggestion('Подготовь приказ о противоэпидемических мерах при выявлении кори в стационаре по СанПиН 3.3686-21')">📝 Приказ: корь</button>
+            <button class="btn-suggestion" onclick="askSuggestion('Сверстай приказ об усилении дезинфекционного режима с таблицей зон обработки и концентраций')">🛠️ Сверстать с таблицей</button>
+            <button class="btn-suggestion" onclick="askSuggestion('Подготовь СОП по текущей и генеральной дезинфекции по СанПиН 3.3686-21')">📋 СОП дезинфекции</button>
+            <button class="btn-suggestion" onclick="askSuggestion('Составь Акт эпидемиологического расследования очага кори по форме 162/у')">📑 Акт ф. 162/у</button>
+          </div>
+
+          <div class="chat-input-bar">
+            <input type="text" id="chatInput" class="chat-input" placeholder="Команда агенту или правка («замени врача на...», «добавь пункт...»)" onkeydown="if(event.key==='Enter') sendChatMessage()">
+            <button class="btn-send" onclick="sendChatMessage()">Исполнить</button>
           </div>
         </div>
 
-        <div class="chat-suggestions">
-          <button class="btn-suggestion" onclick="askSuggestion('Подготовь приказ о противоэпидемических мерах при выявлении кори в стационаре по СанПиН 3.3686-21')">📝 Приказ: корь в стационаре</button>
-          <button class="btn-suggestion" onclick="askSuggestion('Подготовь СОП по проведению текущей и генеральной дезинфекции по СанПиН 3.3686-21')">📋 СОП: дезинфекция и стерилизация</button>
-          <button class="btn-suggestion" onclick="askSuggestion('Составь Акт эпидемиологического расследования очага кори по форме 162/у')">📑 Акт эпидрасследования (ф. 162/у)</button>
-          <button class="btn-suggestion" onclick="askSuggestion('Порядок проведения текущего контроля и аттестации в ординатуре')">🎓 Аттестация в ординатуре</button>
-          <button class="btn-suggestion" onclick="askSuggestion('Расписание зимней сессии по группам 25ОЭ и 26ОЭ с 25.01 по 25.02')">📅 Зимняя сессия 2026/2027</button>
+        <!-- ПРАВАЯ ПАНЕЛЬ: ЖИВОЙ ПРЕДПРОСМОТР ДОКУМЕНТА (ГОСТ Р 7.0.97-2016) -->
+        <div class="doc-preview-pane">
+          <div class="doc-preview-header">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <span id="previewBadge" class="doc-badge-approved">✓ Утвержденный образец</span>
+              <span id="previewVersion" style="font-size: 0.8rem; color: #94a3b8; font-weight: 600;">v1</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <button id="btnApproveCurrent" class="btn-upload-tpl" style="background: rgba(16,185,129,0.2); border: 1px solid #059669; color: #34d399;" onclick="markCurrentAsApproved()" title="Зафиксировать текущую редакцию как утвержденный эталон">
+                ✓ Утвердить редакцию
+              </button>
+              <a id="btnPreviewDownload" href="#" class="btn-preview-dl" download="Документ_ГОСТ.docx">
+                📥 Скачать .DOCX
+              </a>
+            </div>
+          </div>
+
+          <div class="doc-preview-sheet" id="docPreviewSheet">
+            <!-- Живой рендеринг документа ГОСТ -->
+            <div class="gost-header">
+              ФЕДЕРАЛЬНАЯ СЛУЖБА ПО НАДЗОРУ В СФЕРЕ ЗАЩИТЫ ПРАВ ПОТРЕБИТЕЛЕЙ И БЛАГОПОЛУЧИЯ ЧЕЛОВЕКА<br>
+              ФЕДЕРАЛЬНОЕ БЮДЖЕТНОЕ УЧРЕЖДЕНИЕ НАУКИ «ЦЕНТРАЛЬНЫЙ НАУЧНО-ИССЛЕДОВАТЕЛЬСКИЙ ИНСТИТУТ ЭПИДЕМИОЛОГИИ»
+            </div>
+            <div class="gost-title" id="gostDocType">ПРИКАЗ</div>
+            <div class="gost-meta-row">
+              <span id="gostDate">«15» ноября 2026 г.</span>
+              <span id="gostNumber" style="text-align: right;">№ 14-ЭПИД<br>г. Москва</span>
+            </div>
+            <div class="gost-subject" id="gostSubject">
+              О проведении неотложных противоэпидемических мероприятий при выявлении кори в терапевтическом отделении
+            </div>
+            <div class="gost-preamble" id="gostPreamble">
+              В связи с выявлением случая заболевания с подозрением на корь у пациента, в целях локализации очага и в строгом соответствии с Федеральным законом № 52-ФЗ, разделом XVIII СанПиН 3.3686-21 и СанПиН 2.1.3678-20:
+            </div>
+            <div class="gost-cmd">ПРИКАЗЫВАЮ:</div>
+            <div id="gostItemsContainer">
+              <div class="gost-item">1. Изолировать пациента с симптомами кори в мельцеровский бокс до 4-го дня от появления сыпи.</div>
+              <div class="gost-item">2. Передать телефонное извещение в течение 2 часов, письменное по форме 058/у — в течение 12 часов.</div>
+              <div class="gost-item">3. Провести экстренную вакцинацию контактных лиц в первые 72 часа от момента контакта.</div>
+              <div class="gost-item">4. Установить непрерывное медицинское наблюдение за контактными на срок 21 день.</div>
+            </div>
+            <div id="gostTableContainer"></div>
+            <div class="gost-sig">
+              <span id="gostHeadDoctor">Директор института / Главный врач</span>
+              <span>_________________ / Подпись /</span>
+            </div>
+            <div class="gost-visas" id="gostVisas">
+              СОГЛАСОВАНО: Госпитальный эпидемиолог _________________ / Е.В. Семенова /
+            </div>
+          </div>
         </div>
 
-        <div class="chat-input-bar">
-          <input type="text" id="chatInput" class="chat-input" placeholder="Задайте вопрос по СанПиН или напишите: «Подготовь приказ о...»" onkeydown="if(event.key==='Enter') sendChatMessage()">
-          <button class="btn-send" onclick="sendChatMessage()">Отправить запрос</button>
-        </div>
       </div>
     </section>
 
@@ -273,6 +377,160 @@
       });
     }
 
+    let activeSessionId = null;
+
+    function toggleApprovedStandard() {
+      const isChecked = document.getElementById("approvedCheckbox").checked;
+      if (activeSessionId) {
+        // Уведомляем бэкенд о смене статуса утверждения для текущей сессии
+        fetch(`/api/documents/session/${activeSessionId}/patch`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_approved: isChecked })
+        })
+        .then(r => r.json())
+        .then(updated => {
+          updateDocumentPreview(updated, updated.compiled_doc);
+        });
+      }
+    }
+
+    function selectPredefinedTemplate() {
+      const sel = document.getElementById("quickTemplateSelect");
+      const tplId = sel.value;
+      if (!tplId) return;
+      document.getElementById("chatInput").value = `Примени утвержденный образец ${tplId}`;
+      sendChatMessage();
+      sel.value = "";
+    }
+
+    function updateDocumentPreview(session, docMeta) {
+      if (!session) return;
+      if (session.session_id) activeSessionId = session.session_id;
+
+      // Бейдж статуса
+      const badge = document.getElementById("previewBadge");
+      const ver = document.getElementById("previewVersion");
+      if (session.is_approved) {
+        badge.className = "doc-badge-approved";
+        badge.innerText = "✓ Утвержденный образец";
+      } else {
+        badge.className = "doc-badge-draft";
+        badge.innerText = "Рабочий проект (агентская верстка)";
+      }
+      ver.innerText = `v${session.version || 1}`;
+
+      // Поля документа
+      document.getElementById("gostDocType").innerText = session.doc_type || "ПРИКАЗ";
+      document.getElementById("gostDate").innerText = session.date ? `«${session.date.slice(0,2)}» ${session.date.slice(3)}` : "Дата";
+      document.getElementById("gostNumber").innerHTML = `№ ${session.number || '1-ЭПИД'}<br>г. Москва`;
+      document.getElementById("gostSubject").innerText = session.title || "О противоэпидемических мероприятиях";
+      document.getElementById("gostPreamble").innerText = session.preamble || "";
+      document.getElementById("gostHeadDoctor").innerText = session.head_doctor || "Главный врач";
+
+      // Пункты
+      const itemsContainer = document.getElementById("gostItemsContainer");
+      const actions = session.actions || [];
+      if (actions.length > 0) {
+        itemsContainer.innerHTML = actions.map((act, idx) => {
+          const pref = act.trim().startsWith(`${idx+1}.`) ? "" : `${idx+1}. `;
+          return `<div class="gost-item">${pref}${act}</div>`;
+        }).join("");
+      }
+
+      // Таблицы (если есть)
+      const tblContainer = document.getElementById("gostTableContainer");
+      if (session.doc_model && session.doc_model.sections) {
+        let tablesHtml = "";
+        session.doc_model.sections.forEach(sec => {
+          if (sec.table && sec.table.headers) {
+            tablesHtml += `
+              <div style="font-weight: bold; margin-top: 10px; font-size: 0.85rem;">${sec.heading || 'Таблица регламента'}</div>
+              <table class="gost-table">
+                <thead><tr>${sec.table.headers.map(h => `<th>${h}</th>`).join("")}</tr></thead>
+                <tbody>${(sec.table.rows || []).map(row => `<tr>${row.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody>
+              </table>
+            `;
+          }
+        });
+        tblContainer.innerHTML = tablesHtml;
+      } else {
+        tblContainer.innerHTML = "";
+      }
+
+      // Ссылка на скачивание
+      if (docMeta && docMeta.download_url) {
+        const dlBtn = document.getElementById("btnPreviewDownload");
+        dlBtn.href = docMeta.download_url;
+        dlBtn.download = docMeta.file_name || "Документ_ГОСТ.docx";
+      }
+    }
+
+    function markCurrentAsApproved() {
+      if (!activeSessionId) {
+        alert("Сначала создайте или откройте документ для утверждения.");
+        return;
+      }
+      fetch(`/api/documents/session/${activeSessionId}/patch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_approved: true })
+      })
+      .then(r => r.json())
+      .then(updated => {
+        document.getElementById("approvedCheckbox").checked = true;
+        updateDocumentPreview(updated, updated.compiled_doc);
+        alert("Документ успешно утвержден как эталонный образец учреждения!");
+      });
+    }
+
+    function openUploadModal() {
+      document.getElementById("uploadModal").style.display = "flex";
+    }
+
+    function closeUploadModal() {
+      document.getElementById("uploadModal").style.display = "none";
+    }
+
+    function submitUploadTemplate() {
+      const fileInput = document.getElementById("uploadFileInput");
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert("Пожалуйста, выберите файл .docx");
+        return;
+      }
+      const file = fileInput.files[0];
+      const name = document.getElementById("uploadTplName").value.trim() || file.name.replace(".docx", "");
+      const isApproved = document.getElementById("uploadTplApproved").checked;
+
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("name", name);
+      fd.append("is_approved", isApproved ? "true" : "false");
+
+      fetch("/api/templates/upload", {
+        method: "POST",
+        body: fd
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === "success") {
+          alert(`Образец «${name}» успешно загружен и зарегистрирован в базе!`);
+          closeUploadModal();
+          // Добавляем в выпадающий список
+          const sel = document.getElementById("quickTemplateSelect");
+          const opt = document.createElement("option");
+          opt.value = data.template.id;
+          opt.innerText = (isApproved ? "✓ " : "") + name;
+          sel.appendChild(opt);
+          sel.value = data.template.id;
+          selectPredefinedTemplate();
+        } else {
+          alert("Ошибка загрузки: " + (data.detail || "Неизвестная ошибка"));
+        }
+      })
+      .catch(err => alert("Ошибка отправки: " + err));
+    }
+
     function askSuggestion(text) {
       document.getElementById("chatInput").value = text;
       sendChatMessage();
@@ -293,9 +551,11 @@
 
       const loadingDiv = document.createElement("div");
       loadingDiv.className = "chat-msg assistant";
-      loadingDiv.innerText = "Формирование ответа DeepSeek по нормативной базе института...";
+      loadingDiv.innerText = "Агент выполняет анализ требований и запуск инструментов верстки...";
       container.appendChild(loadingDiv);
       container.scrollTop = container.scrollHeight;
+
+      const isApprovedChecked = document.getElementById("approvedCheckbox").checked;
 
       fetch("/api/chat", {
         method: "POST",
@@ -303,7 +563,11 @@
           "Content-Type": "application/json",
           "X-CRIE-Token": localStorage.getItem("crie_token") || "2026"
         },
-        body: JSON.stringify({ query: text })
+        body: JSON.stringify({
+          query: text,
+          session_id: activeSessionId,
+          use_approved: isApprovedChecked
+        })
       })
       .then(r => r.json())
       .then(data => {
@@ -313,7 +577,9 @@
             <div style="margin-top: 12px; padding: 12px; background: rgba(5,150,105,0.2); border: 1px solid #059669; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
               <div>
                 <strong style="color: #34d399; font-size: 0.95rem;">📄 ${data.generated_document.file_name}</strong>
-                <div style="font-size: 0.75rem; color: #cbd5e1; margin-top: 2px;">Стандарт: ${data.generated_document.standard} • ${(data.generated_document.size_bytes / 1024).toFixed(1)} КБ</div>
+                <div style="font-size: 0.75rem; color: #cbd5e1; margin-top: 2px;">
+                  ${data.generated_document.is_approved ? '✓ Утвержденный эталон • ' : ''}Стандарт: ${data.generated_document.standard} • ${(data.generated_document.size_bytes / 1024).toFixed(1)} КБ
+                </div>
               </div>
               <a href="${data.generated_document.download_url}" style="background: #059669; color: #fff; text-decoration: none; padding: 7px 16px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;" download>
                 📥 Скачать .DOCX
@@ -326,11 +592,19 @@
           citationsHtml = `<div class="chat-citations"><strong>Нормативные источники:</strong><br>` +
             data.citations.map(c => `• ${c.title || c.act}`).join("<br>") + `</div>`;
         }
-        loadingDiv.innerHTML = (data.response || data.answer || "Ответ сформирован.").replace(/\n/g, "<br>") + docHtml + citationsHtml;
+        loadingDiv.innerHTML = (data.response || data.answer || "Команда исполнена.").replace(/\n/g, "<br>") + docHtml + citationsHtml;
         container.scrollTop = container.scrollHeight;
+
+        // Обновляем сессию и предпросмотр на правой панели
+        if (data.session_id) {
+          activeSessionId = data.session_id;
+        }
+        if (data.document_session) {
+          updateDocumentPreview(data.document_session, data.generated_document);
+        }
       })
       .catch(err => {
-        loadingDiv.innerText = "Ошибка обращения к сервису: " + err;
+        loadingDiv.innerText = "Ошибка обращения к агенту: " + err;
       });
     }
 
@@ -404,5 +678,37 @@
       recalculateWorkload();
     };
   </script>
+
+  <!-- MODAL: ЗАГРУЗКА НОВОГО ОБРАЗЦА -->
+  <div class="modal-overlay" id="uploadModal" style="display: none;">
+    <div class="modal-box" style="text-align: left; max-width: 480px;">
+      <h3 style="margin-bottom: 0.5rem; color: #fff;">Загрузить новый образец документа</h3>
+      <p style="margin-bottom: 1rem; font-size: 0.8rem; color: #94a3b8;">
+        Загрузите шаблон в формате Microsoft Word (.docx). Система автоматически проанализирует структуру документа и зарегистрирует его в реестре шаблонов.
+      </p>
+      
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.3rem; color: #cbd5e1;">Файл шаблона (.docx):</label>
+        <input type="file" id="uploadFileInput" accept=".docx" style="width: 100%; font-size: 0.85rem; color: #fff;">
+      </div>
+
+      <div style="margin-bottom: 1rem;">
+        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.3rem; color: #cbd5e1;">Название образца:</label>
+        <input type="text" id="uploadTplName" placeholder="Например: Приказ об очаговой дезинфекции" style="width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; color: #fff; font-size: 0.85rem; outline: none;">
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: #34d399; font-weight: 600; cursor: pointer;">
+          <input type="checkbox" id="uploadTplApproved" checked style="accent-color: #059669; width: 16px; height: 16px;">
+          <span>✓ Зарегистрировать как Утвержденный эталонный образец</span>
+        </label>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button class="btn-download-docx" style="background: transparent; border-color: var(--border); color: #cbd5e1;" onclick="closeUploadModal()">Отмена</button>
+        <button class="btn-send" style="padding: 0.5rem 1.25rem;" onclick="submitUploadTemplate()">Загрузить и утвердить</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

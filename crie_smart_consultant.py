@@ -19,6 +19,12 @@ from typing import Dict, List, Any, Optional
 
 from crie_normative_knowledge import retrieve_normative_clauses, build_grounded_citations_text
 from crie_document_engine import generate_document_by_request
+from crie_template_manager import (
+    create_document_session,
+    patch_document_session,
+    get_document_session,
+    load_template_registry
+)
 
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_API_URL = os.environ.get("DEEPSEEK_API_URL", "https://api.deepseek.com/chat/completions")
@@ -106,14 +112,99 @@ def call_deepseek(system_prompt: str, user_prompt: str) -> Optional[str]:
         return None
 
 
-def ask_crie_consultant(query: str, mode: str = "auto") -> Dict[str, Any]:
+def parse_patch_from_query(query: str, session: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """
+    Распознает команды правок документа на естественном языке.
+    """
+    q_low = query.lower()
+    patches: Dict[str, Any] = {}
+
+    # 1. Галочка «Утвержденный образец»
+    if any(k in q_low for k in ["утверди", "сделай утвержденным", "поставь галочку", "утвержденный образец", "сделай эталонным"]):
+        patches["is_approved"] = True
+    elif any(k in q_low for k in ["сними утверждение", "не утвержденный", "сними галочку"]):
+        patches["is_approved"] = False
+
+    # 2. Смена ответственных / должностных лиц
+    m_doc = re.search(r"(?:замени|назначь|главврач[а-я]*|руководител[а-я]*|главный врач)\s+(?:на\s+)?([А-Яа-яA-Za-z\s.]+)", query, re.IGNORECASE)
+    if m_doc and any(w in q_low for w in ["главврач", "главного врача", "руководител", "директор"]):
+        raw_val = m_doc.group(1).strip().strip(",.!")
+        if len(raw_val) > 3:
+            patches["head_doctor"] = raw_val
+
+    m_epid = re.search(r"(?:эпидемиолог[а-я]*)\s+(?:на\s+)?([А-Яа-яA-Za-z\s.]+)", query, re.IGNORECASE)
+    if m_epid:
+        raw_val = m_epid.group(1).strip().strip(",.!")
+        if len(raw_val) > 3:
+            patches["hospital_epidemiologist"] = raw_val
+
+    # 3. Добавление пункта
+    m_add = re.search(r"(?:добавь|включи|вставь)\s+(?:пункт|требование)?\s*[:\-]?\s*(.+)", query, re.IGNORECASE)
+    if m_add and not any(k in q_low for k in ["удали", "убери"]):
+        act_text = m_add.group(1).strip().strip("\"'")
+        if len(act_text) > 8:
+            patches["add_action"] = act_text
+
+    # 4. Удаление пункта
+    m_del = re.search(r"(?:удали|убери|исключи)\s+пункт\s+(\d+)", q_low)
+    if m_del:
+        idx = int(m_del.group(1)) - 1
+        patches["remove_action_index"] = idx
+
+    # 5. Смена даты или номера
+    m_num = re.search(r"(?:номер|№)\s*[:\-]?\s*([0-9a-zA-Zа-яА-Я\-/]+)", query)
+    if m_num:
+        patches["number"] = m_num.group(1).strip()
+
+    m_date = re.search(r"(\d{2}\.\d{2}\.\d{4})", query)
+    if m_date:
+        patches["date"] = m_date.group(1).strip()
+
+    return patches if patches else None
+
+
+def ask_crie_consultant(query: str, mode: str = "auto", session_id: Optional[str] = None) -> Dict[str, Any]:
     """
     Основной метод консультанта: формирует строгий ответ и при необходимости
     автоматически генерирует файл Word (.docx) по ГОСТ Р 7.0.97-2016.
+    Поддерживает непрерывное интерактивное редактирование активной сессии документа.
     """
     clean_query = query.strip()
     if not clean_query:
         return {"error": "Пустой запрос"}
+
+    # Проверяем наличие активной сессии документа
+    active_session = get_document_session(session_id) if session_id else None
+    
+    # Если есть активная сессия и пользователь просит правку
+    patch_data = parse_patch_from_query(clean_query, active_session) if active_session else None
+    if active_session and patch_data:
+        updated_session = patch_document_session(session_id, patch_data, reason=clean_query)
+        compiled = updated_session["compiled_doc"]
+        approved_badge = "✓ [Утвержденный образец]" if updated_session["is_approved"] else "[Черновик]"
+        
+        reply = (
+            f"✅ **Правки успешно внесены в документ (версия v{updated_session['version']})** {approved_badge}:\n\n"
+            f"• **Документ:** {updated_session['title']}\n"
+            f"• **Приказ №:** {updated_session['number']} от {updated_session['date']}\n"
+            f"• **Главный врач:** {updated_session['head_doctor']}\n"
+            f"• **Госпитальный эпидемиолог:** {updated_session['hospital_epidemiologist']}\n"
+            f"• **Количество пунктов распоряжения:** {len(updated_session['actions'])}\n\n"
+            f"Бэкенд пересобрал файл Word по стандарту ГОСТ Р 7.0.97-2016. Обновленный файл доступен для загрузки ниже."
+        )
+
+        return {
+            "id": f"crie-patch-{session_id}-v{updated_session['version']}",
+            "session_id": session_id,
+            "version": updated_session["version"],
+            "query": clean_query,
+            "response": reply,
+            "answer": reply,
+            "text": reply,
+            "citations": [],
+            "generated_document": compiled,
+            "document_session": updated_session
+        }
 
     # 1. Извлечение верифицированных нормативных статей
     clauses = retrieve_normative_clauses(clean_query, max_clauses=4)
@@ -122,14 +213,19 @@ def ask_crie_consultant(query: str, mode: str = "auto") -> Dict[str, Any]:
     # 2. Проверка интента на подготовку официального документа
     doc_intent = detect_document_intent(clean_query)
     generated_doc_meta = None
+    created_session = None
+
     if doc_intent:
         try:
-            generated_doc_meta = generate_document_by_request(
-                doc_type=doc_intent["doc_type"],
-                params=doc_intent
+            # Создаем управляемую сессию на бэкенде с флагом Утвержденного образца
+            created_session = create_document_session(
+                template_id="TPL-APPROVED-MEASLES" if doc_intent["doc_type"] == "order" else "TPL-APPROVED-SOP-DISINFECTION",
+                params=doc_intent,
+                is_approved_flag=True
             )
+            generated_doc_meta = created_session["compiled_doc"]
         except Exception as e:
-            print(f"[ERROR] Document generation failed: {e}")
+            print(f"[ERROR] Document session creation failed: {e}")
 
     # 3. Формирование системного промпта со строгим Grounding
     system_prompt = f"""Вы — ведущий эксперт-эпидемиолог и консультант ФБУН ЦНИИ Эпидемиологии Роспотребнадзора.

@@ -3,7 +3,7 @@ import time
 from typing import Any, Dict, List, Optional
 from pathlib import Path
 from urllib.parse import quote
-from fastapi import FastAPI, HTTPException, Query, Body
+from fastapi import FastAPI, HTTPException, Query, Body, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -11,6 +11,13 @@ from pydantic import BaseModel, Field
 from crie_assistant_index import NormativeInvertedIndex, get_normative_index
 from crie_smart_consultant import ask_crie_consultant
 from crie_document_engine import generate_document_by_request, DOCS_DIR
+from crie_autonomous_agent import CrieDocumentAgent
+from crie_template_manager import (
+    load_template_registry,
+    register_uploaded_template,
+    get_document_session,
+    patch_document_session
+)
 
 app = FastAPI(
     title="CRIE Assistant API",
@@ -359,14 +366,66 @@ class DocumentGenerateRequest(BaseModel):
     title: Optional[str] = None
 
 
+crie_agent = CrieDocumentAgent()
+
+
 @app.post("/api/chat")
 @app.post("/crie/api/chat")
 def chat_endpoint(payload: Dict[str, Any] = Body(...)):
     user_q = payload.get("query") or payload.get("message") or payload.get("question") or ""
     if not user_q.strip():
         raise HTTPException(status_code=400, detail="Запрос не может быть пустым")
-    mode = payload.get("mode", "auto")
-    return ask_crie_consultant(user_q, mode=mode)
+    session_id = payload.get("session_id")
+    use_approved = bool(payload.get("use_approved") or payload.get("is_approved"))
+    return crie_agent.process_request(user_q, session_id=session_id, use_approved_template_only=use_approved)
+
+
+@app.get("/api/templates")
+@app.get("/crie/api/templates")
+@app.get("/api/documents/templates")
+@app.get("/crie/api/documents/templates")
+def list_templates_endpoint():
+    return {"templates": load_template_registry()}
+
+
+@app.post("/api/templates/upload")
+@app.post("/crie/api/templates/upload")
+async def upload_template_endpoint(
+    file: UploadFile = File(...),
+    name: Optional[str] = Form(None),
+    category: Optional[str] = Form("Пользовательские образцы"),
+    is_approved: Optional[bool] = Form(False),
+    authority: Optional[str] = Form("Локальная медицинская организация")
+):
+    contents = await file.read()
+    if not file.filename.endswith((".docx", ".doc")):
+        raise HTTPException(status_code=400, detail="Поддерживаются только файлы Microsoft Word (.docx)")
+    
+    registered = register_uploaded_template(
+        file_bytes=contents,
+        original_filename=file.filename,
+        name=name or file.filename.replace(".docx", ""),
+        category=category,
+        is_approved=bool(is_approved),
+        authority=authority
+    )
+    return {"status": "success", "template": registered}
+
+
+@app.get("/api/documents/session/{session_id}")
+@app.get("/crie/api/documents/session/{session_id}")
+def get_session_endpoint(session_id: str):
+    sess = get_document_session(session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="Сессия документа не найдена")
+    return sess
+
+
+@app.post("/api/documents/session/{session_id}/patch")
+@app.post("/crie/api/documents/session/{session_id}/patch")
+def patch_session_endpoint(session_id: str, patches: Dict[str, Any] = Body(...)):
+    patched = patch_document_session(session_id, patches, reason="Прямое редактирование через интерфейс")
+    return patched
 
 
 @app.post("/api/documents/generate")
@@ -374,45 +433,6 @@ def chat_endpoint(payload: Dict[str, Any] = Body(...)):
 def generate_document_endpoint(payload: DocumentGenerateRequest):
     params = payload.model_dump()
     return generate_document_by_request(doc_type=payload.doc_type, params=params)
-
-
-@app.get("/api/documents/templates")
-@app.get("/crie/api/documents/templates")
-def list_document_templates():
-    return {
-        "templates": [
-            {
-                "id": "order_infection_measles",
-                "doc_type": "order",
-                "infection": "корь",
-                "title": "Приказ о противоэпидемических мероприятиях при выявлении кори в стационаре",
-                "standard": "ГОСТ Р 7.0.97-2016",
-                "sanpin": "СанПиН 3.3686-21, разд. XVIII"
-            },
-            {
-                "id": "order_infection_salmonella",
-                "doc_type": "order",
-                "infection": "сальмонеллез",
-                "title": "Приказ о локализации очага острой кишечной инфекции / сальмонеллеза",
-                "standard": "ГОСТ Р 7.0.97-2016",
-                "sanpin": "СанПиН 3.3686-21, разд. III"
-            },
-            {
-                "id": "sop_disinfection_regime",
-                "doc_type": "sop",
-                "title": "СОП: Проведение текущей и генеральной дезинфекции в отделениях высокого риска",
-                "standard": "ГОСТ Р 7.0.97-2016",
-                "sanpin": "СанПиН 3.3686-21, разд. II"
-            },
-            {
-                "id": "act_outbreak_investigation",
-                "doc_type": "act",
-                "title": "Акт эпидемиологического расследования очага инфекционного заболевания (ф. 162/у)",
-                "standard": "ГОСТ Р 7.0.97-2016",
-                "sanpin": "СанПиН 3.3686-21, ф. 162/у"
-            }
-        ]
-    }
 
 
 @app.get("/api/catalog/download/{filename}")

@@ -555,3 +555,238 @@ def generate_document_by_request(
         "format": "docx",
         "standard": "ГОСТ Р 7.0.97-2016"
     }
+
+
+def compile_agent_composed_document(doc_model: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Инструмент верстки Агента: компилирует произвольную структуру документа,
+    сформированную агентом (включая многоуровневые секции, произвольные таблицы,
+    списки требований, визы и гриф «Утвержденный образец»).
+    """
+    doc = create_base_document()
+    add_gost_header(doc, doc_model.get("organization"))
+
+    # Гриф утверждения / признак «Утвержденный образец»
+    if doc_model.get("is_approved"):
+        p_app = doc.add_paragraph()
+        p_app.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        p_app.paragraph_format.space_after = Pt(8)
+        p_app.paragraph_format.line_spacing = 1.0
+        r_app = p_app.add_run(
+            f"✓ УТВЕРЖДЕННЫЙ ЭТАЛОННЫЙ ОБРАЗЕЦ\n"
+            f"{doc_model.get('authority', 'ФБУН ЦНИИЭ Роспотребнадзора')}\n"
+            f"Стандарт: {doc_model.get('standard', 'ГОСТ Р 7.0.97-2016')} | {doc_model.get('sanpin', 'СанПиН 3.3686-21')}\n"
+        )
+        r_app.font.name = 'Times New Roman'
+        r_app.font.size = Pt(9)
+        r_app.font.bold = True
+        r_app.font.color.rgb = RGBColor(0, 100, 0)
+
+    # Вид документа
+    doc_type_str = str(doc_model.get("doc_type", "ПРИКАЗ")).upper()
+    p_t = doc.add_paragraph()
+    p_t.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_t.paragraph_format.space_before = Pt(6)
+    p_t.paragraph_format.space_after = Pt(10)
+    rt = p_t.add_run(doc_type_str)
+    rt.font.name = 'Times New Roman'
+    rt.font.size = Pt(16)
+    rt.font.bold = True
+
+    # Реквизиты документа (Дата / Номер / Город)
+    tbl_m = doc.add_table(rows=1, cols=2)
+    tbl_m.alignment = WD_TABLE_ALIGNMENT.CENTER
+    tbl_m.columns[0].width = Mm(80)
+    tbl_m.columns[1].width = Mm(85)
+    
+    cl = tbl_m.cell(0, 0)
+    pl = cl.paragraphs[0]
+    pl.paragraph_format.space_after = Pt(0)
+    d_val = doc_model.get("date") or datetime.now().strftime("%d.%m.%Y")
+    rl = pl.add_run(f"Дата: {d_val}")
+    rl.font.name = 'Times New Roman'
+    rl.font.size = Pt(12)
+
+    cr = tbl_m.cell(0, 1)
+    pr = cr.paragraphs[0]
+    pr.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    pr.paragraph_format.space_after = Pt(0)
+    n_val = doc_model.get("number") or "1-ЭПИД"
+    c_val = doc_model.get("city") or "г. Москва"
+    rr = pr.add_run(f"№ {n_val}\n{c_val}")
+    rr.font.name = 'Times New Roman'
+    rr.font.size = Pt(12)
+
+    # Заголовок документа
+    title = doc_model.get("title")
+    if title:
+        p_subj = doc.add_paragraph()
+        p_subj.paragraph_format.space_before = Pt(16)
+        p_subj.paragraph_format.space_after = Pt(10)
+        p_subj.paragraph_format.first_line_indent = Mm(12.5)
+        p_subj.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        r_subj = p_subj.add_run(title)
+        r_subj.font.name = 'Times New Roman'
+        r_subj.font.size = Pt(13)
+        r_subj.font.bold = True
+
+    # Преамбула
+    preamble = doc_model.get("preamble")
+    if preamble:
+        p_pre = doc.add_paragraph()
+        p_pre.paragraph_format.first_line_indent = Mm(12.5)
+        p_pre.paragraph_format.space_after = Pt(10)
+        p_pre.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        r_pre = p_pre.add_run(preamble)
+        r_pre.font.name = 'Times New Roman'
+        r_pre.font.size = Pt(12)
+
+    # Распорядительное слово (если это приказ)
+    if "ПРИКАЗ" in doc_type_str:
+        p_cmd = doc.add_paragraph()
+        p_cmd.paragraph_format.space_before = Pt(4)
+        p_cmd.paragraph_format.space_after = Pt(6)
+        p_cmd.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        rcmd = p_cmd.add_run("ПРИКАЗЫВАЮ:")
+        rcmd.font.name = 'Times New Roman'
+        rcmd.font.size = Pt(13)
+        rcmd.font.bold = True
+
+    # Секции документа, сверстанные агентом
+    sections = doc_model.get("sections", [])
+    for sec in sections:
+        sec_h = sec.get("heading")
+        if sec_h:
+            p_sh = doc.add_paragraph()
+            p_sh.paragraph_format.space_before = Pt(12)
+            p_sh.paragraph_format.space_after = Pt(4)
+            rsh = p_sh.add_run(sec_h)
+            rsh.font.name = 'Times New Roman'
+            rsh.font.size = Pt(12)
+            rsh.font.bold = True
+
+        sec_t = sec.get("text")
+        if sec_t:
+            p_st = doc.add_paragraph()
+            p_st.paragraph_format.first_line_indent = Mm(12.5)
+            p_st.paragraph_format.space_after = Pt(6)
+            p_st.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            rst = p_st.add_run(sec_t)
+            rst.font.name = 'Times New Roman'
+            rst.font.size = Pt(12)
+
+        # Списки пунктов
+        sec_items = sec.get("items", [])
+        for idx, item in enumerate(sec_items, 1):
+            p_it = doc.add_paragraph()
+            p_it.paragraph_format.first_line_indent = Mm(12.5)
+            p_it.paragraph_format.space_after = Pt(4)
+            p_it.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            prefix = f"{idx}. " if not item.strip().startswith(f"{idx}.") else ""
+            rit = p_it.add_run(f"{prefix}{item}")
+            rit.font.name = 'Times New Roman'
+            rit.font.size = Pt(12)
+
+        # Таблицы, сверстанные агентом
+        sec_table = sec.get("table")
+        if sec_table and isinstance(sec_table, dict):
+            headers = sec_table.get("headers", [])
+            rows = sec_table.get("rows", [])
+            if headers:
+                num_cols = len(headers)
+                t_elem = doc.add_table(rows=len(rows) + 1, cols=num_cols)
+                t_elem.alignment = WD_TABLE_ALIGNMENT.CENTER
+                t_elem.autofit = True
+
+                # Оформление шапки таблицы
+                for c_idx, h_text in enumerate(headers):
+                    hdr_cell = t_elem.cell(0, c_idx)
+                    set_cell_background(hdr_cell, "F0F4F8")
+                    set_cell_margins(hdr_cell)
+                    hp = hdr_cell.paragraphs[0]
+                    hp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    hr = hp.add_run(str(h_text))
+                    hr.font.name = 'Times New Roman'
+                    hr.font.size = Pt(10)
+                    hr.font.bold = True
+
+                # Оформление строк
+                for r_idx, row_data in enumerate(rows, 1):
+                    for c_idx, cell_value in enumerate(row_data[:num_cols]):
+                        d_cell = t_elem.cell(r_idx, c_idx)
+                        set_cell_margins(d_cell)
+                        dp = d_cell.paragraphs[0]
+                        dr = dp.add_run(str(cell_value))
+                        dr.font.name = 'Times New Roman'
+                        dr.font.size = Pt(10)
+
+    # Если разделов нет, но есть список действий actions
+    actions = doc_model.get("actions", [])
+    if actions and not sections:
+        for idx, act in enumerate(actions, 1):
+            p_act = doc.add_paragraph()
+            p_act.paragraph_format.first_line_indent = Mm(12.5)
+            p_act.paragraph_format.space_after = Pt(5)
+            p_act.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            prefix = f"{idx}. " if not act.strip().startswith(f"{idx}.") else ""
+            ract = p_act.add_run(f"{prefix}{act}")
+            ract.font.name = 'Times New Roman'
+            ract.font.size = Pt(12)
+
+    # Подписи
+    signatures = doc_model.get("signatures", [])
+    if not signatures:
+        signatures = [
+            {"position": doc_model.get("head_doctor", "Директор института / Главный врач"), "name": "Подпись"}
+        ]
+    
+    for sig in signatures:
+        p_sig = doc.add_paragraph()
+        p_sig.paragraph_format.space_before = Pt(18)
+        p_sig.paragraph_format.space_after = Pt(10)
+        p_sig.paragraph_format.line_spacing = 1.0
+        rs1 = p_sig.add_run(f"{sig.get('position', 'Руководитель')}\t\t\t\t\t")
+        rs1.font.name = 'Times New Roman'
+        rs1.font.size = Pt(12)
+        rs1.font.bold = True
+        rs2 = p_sig.add_run(f"___________________ / {sig.get('name', 'Подпись')} /")
+        rs2.font.name = 'Times New Roman'
+        rs2.font.size = Pt(12)
+
+    # Визы
+    visas = doc_model.get("visas", [])
+    if not visas and doc_model.get("hospital_epidemiologist"):
+        visas = [f"Госпитальный эпидемиолог: ___________________ / {doc_model.get('hospital_epidemiologist')} /"]
+
+    if visas:
+        p_visa = doc.add_paragraph()
+        p_visa.paragraph_format.space_before = Pt(10)
+        p_visa.paragraph_format.space_after = Pt(2)
+        rv1 = p_visa.add_run("СОГЛАСОВАНО:\n")
+        rv1.font.name = 'Times New Roman'
+        rv1.font.size = Pt(10)
+        rv1.font.bold = True
+        for v in visas:
+            p_vl = doc.add_paragraph()
+            p_vl.paragraph_format.space_after = Pt(2)
+            rv2 = p_vl.add_run(v)
+            rv2.font.name = 'Times New Roman'
+            rv2.font.size = Pt(10)
+
+    # Сохранение файла
+    now_ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    tag = re.sub(r'[^a-zA-Zа-яА-Я0-9]', '_', doc_model.get("tag", "custom_doc"))
+    filename = f"{tag}_{now_ts}.docx"
+    file_path = DOCS_DIR / filename
+    doc.save(str(file_path))
+
+    return {
+        "status": "success",
+        "file_name": filename,
+        "relative_path": f"generated_documents/{filename}",
+        "download_url": f"/api/catalog/download/{quote(filename)}",
+        "size_bytes": file_path.stat().st_size,
+        "format": "docx",
+        "standard": doc_model.get("standard", "ГОСТ Р 7.0.97-2016"),
+        "is_approved": doc_model.get("is_approved", False)
+    }
