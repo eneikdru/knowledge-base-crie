@@ -416,9 +416,13 @@ def list_document_templates():
 
 
 @app.get("/api/catalog/download/{filename}")
+@app.head("/api/catalog/download/{filename}")
 @app.get("/crie/api/catalog/download/{filename}")
+@app.head("/crie/api/catalog/download/{filename}")
 @app.get("/api/download/{filename}")
+@app.head("/api/download/{filename}")
 @app.get("/crie/api/download/{filename}")
+@app.head("/crie/api/download/{filename}")
 def download_document_endpoint(filename: str):
     # Поиск файла в generated_documents
     target_path = DOCS_DIR / filename

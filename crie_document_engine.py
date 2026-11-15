@@ -11,6 +11,7 @@ crie_document_engine.py: Движок динамической генераци�
 
 import os
 import uuid
+from urllib.parse import quote
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
@@ -549,7 +550,7 @@ def generate_document_by_request(
         "status": "success",
         "file_name": file_name,
         "relative_path": f"generated_documents/{file_name}",
-        "download_url": f"/api/catalog/download/{file_name}",
+        "download_url": f"/api/catalog/download/{quote(file_name)}",
         "size_bytes": fp.stat().st_size,
         "format": "docx",
         "standard": "ГОСТ Р 7.0.97-2016"
