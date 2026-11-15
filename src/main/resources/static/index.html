@@ -135,15 +135,16 @@
         </div>
 
         <div class="chat-suggestions">
-          <button class="btn-suggestion" onclick="askSuggestion('Порядок проведения текущего контроля и аттестации в ординатуре')">Текущий контроль и ПА в ординатуре</button>
-          <button class="btn-suggestion" onclick="askSuggestion('Формирование комиссий ГЭК и кандидатских на 2027 год')">Комиссии ГЭК и кандидатские на 2027</button>
-          <button class="btn-suggestion" onclick="askSuggestion('Расписание зимней сессии по группам 25ОЭ и 26ОЭ с 25.01 по 25.02')">Расписание зимней сессии (25.01-25.02)</button>
-          <button class="btn-suggestion" onclick="askSuggestion('Кадровое обеспечение и норматив остепененности ППС не менее 70%')">Остепененность ППС (не менее 70%)</button>
+          <button class="btn-suggestion" onclick="askSuggestion('Подготовь приказ о противоэпидемических мерах при выявлении кори в стационаре по СанПиН 3.3686-21')">📝 Приказ: корь в стационаре</button>
+          <button class="btn-suggestion" onclick="askSuggestion('Подготовь СОП по проведению текущей и генеральной дезинфекции по СанПиН 3.3686-21')">📋 СОП: дезинфекция и стерилизация</button>
+          <button class="btn-suggestion" onclick="askSuggestion('Составь Акт эпидемиологического расследования очага кори по форме 162/у')">📑 Акт эпидрасследования (ф. 162/у)</button>
+          <button class="btn-suggestion" onclick="askSuggestion('Порядок проведения текущего контроля и аттестации в ординатуре')">🎓 Аттестация в ординатуре</button>
+          <button class="btn-suggestion" onclick="askSuggestion('Расписание зимней сессии по группам 25ОЭ и 26ОЭ с 25.01 по 25.02')">📅 Зимняя сессия 2026/2027</button>
         </div>
 
         <div class="chat-input-bar">
-          <input type="text" id="chatInput" class="chat-input" placeholder="Введите нормативный или методический вопрос института..." onkeydown="if(event.key==='Enter') sendChatMessage()">
-          <button class="btn-send" onclick="sendChatMessage()">Спросить DeepSeek</button>
+          <input type="text" id="chatInput" class="chat-input" placeholder="Задайте вопрос по СанПиН или напишите: «Подготовь приказ о...»" onkeydown="if(event.key==='Enter') sendChatMessage()">
+          <button class="btn-send" onclick="sendChatMessage()">Отправить запрос</button>
         </div>
       </div>
     </section>
@@ -306,12 +307,26 @@
       })
       .then(r => r.json())
       .then(data => {
+        let docHtml = "";
+        if (data.generated_document) {
+          docHtml = `
+            <div style="margin-top: 12px; padding: 12px; background: rgba(5,150,105,0.2); border: 1px solid #059669; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <strong style="color: #34d399; font-size: 0.95rem;">📄 ${data.generated_document.file_name}</strong>
+                <div style="font-size: 0.75rem; color: #cbd5e1; margin-top: 2px;">Стандарт: ${data.generated_document.standard} • ${(data.generated_document.size_bytes / 1024).toFixed(1)} КБ</div>
+              </div>
+              <a href="${data.generated_document.download_url}" style="background: #059669; color: #fff; text-decoration: none; padding: 7px 16px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;" download>
+                📥 Скачать .DOCX
+              </a>
+            </div>
+          `;
+        }
         let citationsHtml = "";
         if (data.citations && data.citations.length > 0) {
           citationsHtml = `<div class="chat-citations"><strong>Нормативные источники:</strong><br>` +
-            data.citations.map(c => `• ${c.title}`).join("<br>") + `</div>`;
+            data.citations.map(c => `• ${c.title || c.act}`).join("<br>") + `</div>`;
         }
-        loadingDiv.innerHTML = (data.response || data.answer || "Ответ сформирован.").replace(/\n/g, "<br>") + citationsHtml;
+        loadingDiv.innerHTML = (data.response || data.answer || "Ответ сформирован.").replace(/\n/g, "<br>") + docHtml + citationsHtml;
         container.scrollTop = container.scrollHeight;
       })
       .catch(err => {

@@ -200,6 +200,7 @@
         sender: 'assistant',
         text: data.response || data.text || data.message || '',
         citations: Array.isArray(data.citations) ? data.citations : [],
+        generated_document: data.generated_document || null,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
@@ -235,63 +236,45 @@
     if (isGeneratingDoc) return;
 
     isGeneratingDoc = true;
-    docGenerationProgress = 15;
+    docGenerationProgress = 20;
     generationSuccess = false;
 
-    const progressTimer = setInterval(() => {
-      docGenerationProgress += 25;
-      if (docGenerationProgress >= 100) {
-        clearInterval(progressTimer);
-        finishDocDownload();
+    try {
+      docGenerationProgress = 50;
+      const resp = await fetch('/api/documents/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          doc_type: selectedDocCategory === 'director_order' ? 'order' : (selectedDocCategory === 'sop' ? 'sop' : 'order'),
+          infection: specialtyCode === '31.08.36' ? 'корь' : 'инфекционные заболевания',
+          department: deptName || 'Отделение стационара',
+          title: docNumber ? `Приказ № ${docNumber}` : 'Официальный приказ по ГОСТ Р 7.0.97-2016'
+        })
+      });
+
+      docGenerationProgress = 85;
+      if (!resp.ok) {
+        throw new Error(`Ошибка сервера: ${resp.status}`);
       }
-    }, 200);
-  }
 
-  function finishDocDownload() {
-    isGeneratingDoc = false;
-    generationSuccess = true;
+      const docData = await resp.json();
+      docGenerationProgress = 100;
+      isGeneratingDoc = false;
+      generationSuccess = true;
+      generatedDocFilename = docData.file_name;
 
-    const headerText = `ФЕДЕРАЛЬНОЕ БЮДЖЕТНОЕ УЧРЕЖДЕНИЕ НАУКИ\nЦЕНТРАЛЬНЫЙ НАУЧНО-ИССЛЕДОВАТЕЛЬСКИЙ ИНСТИТУТ ЭПИДЕМИОЛОГИИ\nФЕДЕРАЛЬНОЙ СЛУЖБЫ ПО НАДЗОРУ В СФЕРЕ ЗАЩИТЫ ПРАВ ПОТРЕБИТЕЛЕЙ И БЛАГОПОЛУЧИЯ ЧЕЛОВЕКА\nОБРАЗОВАТЕЛЬНЫЙ ЦЕНТР\n(соответствие ГОСТ Р 7.0.97-2016, шрифт Times New Roman 14pt, поля: левое 30 мм, правое 15 мм)\n`;
-
-    let bodyText = '';
-    let downloadFilename = `GOST_Document_${selectedDocCategory}.docx`;
-
-    if (selectedDocCategory === 'ums_protocol') {
-      downloadFilename = `Protokol_UMS_${umsProtocolNum.replace(/\//g, '-')}.docx`;
-      bodyText = `\nПРОТОКОЛ ЗАСЕДАНИЯ УЧЕБНО-МЕТОДИЧЕСКОГО СОВЕТА\n№ ${umsProtocolNum} от ${docDate}\nг. Москва\n\nПредседатель: академик РАН, д.м.н., проф. ${umsChair}\nСекретарь: ${umsSecretary}\nПрисутствовали: ${umsQuorumPresent} из ${umsQuorumTotal} членов УМС (Кворум соблюден).\n\nПОВЕСТКА ДНЯ:\n${umsAgenda}\n\nПОСТАНОВИЛИ:\n${umsResolution}\n\nПредседатель УМС: ___________________ / ${umsChair} /\nСекретарь УМС: ___________________ / ${umsSecretary} /`;
-    } else if (selectedDocCategory === 'director_order') {
-      const subtypeObj = orderSubtypes.find(o => o.id === orderSubtype);
-      const specObj = specialties.find(s => s.code === specialtyCode);
-      downloadFilename = `Prikaz_${orderSubtype}_${specialtyCode}.docx`;
-      bodyText = `\nПРИКАЗ ДИРЕКТОРА ИНСТИТУТА\n${docNumber} от ${docDate}\nг. Москва\n\n${subtypeObj ? subtypeObj.label.toUpperCase() : 'ОФИЦИАЛЬНЫЙ ПРИКАЗ'}\n\nВ соответствии с Федеральным законом «Об образовании в РФ» № 273-ФЗ, ГОСТ Р 7.0.97-2016 и программами подготовки по направлению ${specialtyCode} (${specObj ? specObj.name : ''}):\n1. Кандидат / Обучающийся: ${recipientName}\n2. Назначить ответственных за исполнение руководителей профильных структурных подразделений.\n\nДиректор института, академик РАН ___________________ / В.Г. Акимкин /`;
-    } else if (selectedDocCategory === 'exam_schedule') {
-      const groupObj = examGroupOptions.find(g => g.id === selectedExamGroup);
-      downloadFilename = `Raspisanie_Sessii_${selectedExamGroup}_2026.docx`;
-      bodyText = `\nРАСПИСАНИЕ ЗИМНЕЙ ЭКЗАМЕНАЦИОННОЙ СЕССИИ\nПериод: с ${examStartDate} по ${examEndDate}\nУчебная группа: ${groupObj ? groupObj.label : selectedExamGroup}\nДисциплина: ${examDiscipline}\nФорма контроля: Промежуточная аттестация (компьютерное тестирование + практические навыки + устное собеседование)\n\nУтверждено Директором ОЦ: ___________________`;
-    } else if (selectedDocCategory === 'curriculum') {
-      downloadFilename = `Uchebniy_Plan_${curriculumTrack}_${totalCredits}ze.docx`;
-      bodyText = `\nСВОДНЫЙ УЧЕБНЫЙ ПЛАН\nУровень образования: ${curriculumTrack === 'residency' ? 'Ординатура' : 'Аспирантура'}\nТрудоемкость: ${totalCredits} з.е. (${totalAcademicHours} академических часов)\nСрок освоения: 2 года (очная форма)\nСтруктура: Блок 1 (Дисциплины) - 42 з.е., Блок 2 (Практика) - 72 з.е., Блок 3 (ГИА) - 6 з.е.\nНормативный базис: ФГОС ВО 31.08.36 / ГОСТ Р 7.0.97-2016.`;
-    } else if (selectedDocCategory === 'staffing_cert') {
-      downloadFilename = `Spravka_Kadrovoe_Obespechenie_${facultyDegreePercent}pct.docx`;
-      bodyText = `\nСПРАВКА О КАДРОВОМ ОБЕСПЕЧЕНИИ И УЧЕБНОЙ НАГРУЗКЕ ППС\nПодразделение: ${deptName}\nОбщее число научно-педагогических работников: ${totalFacultyStaff}\nЧисло преподавателей с учеными степенями (д.м.н., к.м.н., доценты, профессора): ${docentOrDoctorStaff}\nОстепененность кафедры: ${facultyDegreePercent}% (Норматив ФГОС ВО: >=70% - ${degreeRequirementMet ? 'СОБЛЮДЕН' : 'НЕ СОБЛЮДЕН'})\nСредняя годовая нагрузка на 1.0 ставку ППС: 800 часов.`;
-    } else if (selectedDocCategory === 'local_act') {
-      const actObj = localActTemplates.find(a => a.id === selectedLocalAct);
-      downloadFilename = `LNA_${selectedLocalAct}.docx`;
-      bodyText = `\nЛОКАЛЬНЫЙ НОРМАТИВНЫЙ АКТ ОБРАЗОВАТЕЛЬНОГО ЦЕНТРА\nРег. № ${docNumber} от ${docDate}\n\n${actObj ? actObj.label.toUpperCase() : 'ЛОКАЛЬНЫЙ АКТ'}\n\n1. ОБЩИЕ ПОЛОЖЕНИЯ\n1.1. Настоящий локальный нормативный акт разработан в соответствии с Федеральным законом от 29.12.2012 № 273-ФЗ «Об образовании в Российской Федерации», приказами Роспотребнадзора и ГОСТ Р 7.0.97-2016.\n1.2. Действие настоящего документа распространяется на всех работников, профессорско-преподавательский состав, ординаторов и аспирантов института.`;
+      // Автоматический старт скачивания подлинного Word-файла
+      const a = document.createElement('a');
+      a.href = docData.download_url;
+      a.download = docData.file_name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      isGeneratingDoc = false;
+      docGenerationProgress = 0;
+      alert('Ошибка при генерации документа: ' + err.message);
     }
-
-    const fullContent = `${headerText}\n${bodyText}\n\nДокумент сгенерирован автоматически системой ЦНИИ Эпидемиологии: ${new Date().toLocaleString('ru-RU')}`;
-
-    generatedDocFilename = downloadFilename;
-    const blob = new Blob([fullContent], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = downloadFilename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   }
 </script>
 
@@ -314,8 +297,27 @@
                 <span class="timestamp">{msg.timestamp}</span>
               </div>
               <div class="bubble-content">
-                <p>{msg.text}</p>
+                <p style="white-space: pre-line;">{msg.text}</p>
               </div>
+
+              {#if msg.generated_document}
+                <div class="generated-doc-box" style="margin: 12px 0; padding: 12px; background: #eef7ee; border: 1px solid #b7e1cd; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 24px;">📄</span>
+                    <div>
+                      <div style="font-weight: 600; color: #137333; font-size: 13px;">{msg.generated_document.file_name}</div>
+                      <div style="font-size: 11px; color: #5f6368;">Стандарт: {msg.generated_document.standard} • {(msg.generated_document.size_bytes / 1024).toFixed(1)} КБ</div>
+                    </div>
+                  </div>
+                  <a
+                    href="{msg.generated_document.download_url}"
+                    style="padding: 6px 14px; background: #137333; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;"
+                    download="{msg.generated_document.file_name}"
+                  >
+                    📥 Скачать .DOCX
+                  </a>
+                </div>
+              {/if}
 
               {#if msg.citations && msg.citations.length > 0}
                 <div class="citations-block">
