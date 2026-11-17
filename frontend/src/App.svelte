@@ -192,17 +192,17 @@
 
             <!-- Telemetry summary cards -->
             <div class="telemetry-cards" aria-label="Метрики базы знаний">
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card">
                 <span class="telemetry-label">Документов</span>
                 <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
                 <span class="telemetry-trend positive">↑ 100% верифицировано</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card">
                 <span class="telemetry-label">Стандарт</span>
                 <span class="telemetry-value">ФГОС ВО</span>
                 <span class="telemetry-trend">31.08 Специалитет</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card">
                 <span class="telemetry-label">Статус РПД</span>
                 <span class="telemetry-value active-status">Актуально</span>
                 <span class="telemetry-trend">Синхронизировано</span>
@@ -217,13 +217,19 @@
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input
                 id="catalog-search-input"
+                data-testid="search-input"
                 type="search"
                 bind:value={query}
                 placeholder="Поиск по названию, автору или ключевому слову..."
                 aria-label="Поиск материалов"
               />
             </div>
-            <button type="submit" class="btn-search" disabled={status === 'loading'}>
+            <button
+              type="submit"
+              class="btn-search"
+              data-testid="search-button"
+              disabled={status === 'loading'}
+            >
               {status === 'loading' ? 'Поиск...' : 'Найти'}
             </button>
           </form>
@@ -307,7 +313,7 @@
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
-                  <article class="document-card" role="listitem">
+                  <article class="document-card" data-testid="document-card" role="listitem">
                     <div class="card-header-meta">
                       {#if doc.category || doc.type}
                         <span class="badge-doc-type">{doc.category || doc.type}</span>
@@ -331,6 +337,7 @@
                       <a
                         href={getDocxDownloadUrl(doc)}
                         class="btn-download btn-download-docx"
+                        data-testid="btn-download-docx"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -342,6 +349,7 @@
                       <a
                         href={getPdfDownloadUrl(doc)}
                         class="btn-download btn-download-pdf"
+                        data-testid="btn-download-pdf"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -387,8 +395,10 @@
     --bg-secondary: #0c1527;
     --surface: #132238;
     --surface-elevated: #1e3352;
+    --surface-hover: #253e63;
     --border-subtle: #243b5e;
     --border-strong: #3b5f94;
+    --border-focus: #38bdf8;
     --text-primary: #ffffff;
     --text-secondary: #cbd5e1;
     --text-muted: #94a3b8;
@@ -396,8 +406,13 @@
     --accent-hover: #7dd3fc;
     --accent-active: #0284c7;
     --success-accent: #34d399;
+    --success-surface: #064e3b;
     --danger: #f87171;
     --danger-surface: #450a0a;
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-full: 9999px;
   }
 
   :global(html) {
@@ -479,8 +494,8 @@
     font-weight: 700;
     color: #ffffff;
     background: #0f766e;
-    padding: 0.1rem 0.4rem;
-    border-radius: 4px;
+    padding: 0.15rem 0.45rem;
+    border-radius: var(--radius-sm);
     letter-spacing: 0.05em;
   }
 
@@ -510,13 +525,14 @@
     gap: 0.4rem;
     background: transparent;
     border: 1px solid transparent;
-    border-radius: 0.375rem;
+    border-radius: var(--radius-sm);
     padding: 0.5rem 0.85rem;
     color: var(--text-secondary);
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    min-height: 44px;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   }
 
   .desktop-nav-link:hover,
@@ -587,11 +603,16 @@
   .telemetry-card {
     background: var(--surface);
     border: 1px solid var(--border-subtle);
-    border-radius: 0.5rem;
+    border-radius: var(--radius-md);
     padding: 0.85rem 1rem;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    transition: border-color 0.15s ease;
+  }
+
+  .telemetry-card:hover {
+    border-color: var(--border-strong);
   }
 
   .telemetry-label {
@@ -644,8 +665,9 @@
     align-items: center;
     background: var(--surface);
     border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
+    border-radius: var(--radius-sm);
     padding: 0 0.85rem;
+    min-height: 44px;
     transition: border-color 0.2s;
     min-width: 0;
   }
@@ -681,7 +703,7 @@
     background-color: var(--accent-primary);
     color: #050b14;
     border: none;
-    border-radius: 0.375rem;
+    border-radius: var(--radius-sm);
     padding: 0.75rem 1.35rem;
     font-size: 0.9375rem;
     font-weight: 700;
@@ -690,6 +712,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    min-height: 44px;
     transition: background-color 0.2s;
     flex-shrink: 0;
   }
@@ -717,7 +740,7 @@
     gap: 0.85rem;
     background: var(--surface);
     padding: 1.15rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-md);
     border: 1px solid var(--border-subtle);
     width: 100%;
   }
@@ -753,11 +776,12 @@
     background: var(--bg-secondary);
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
-    border-radius: 9999px;
-    padding: 0.35rem 0.85rem;
+    border-radius: var(--radius-full);
+    padding: 0.45rem 0.9rem;
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
+    min-height: 44px;
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
@@ -790,7 +814,7 @@
   /* Status and Empty States */
   .state-view {
     padding: 3rem 1.5rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-md);
     text-align: center;
     background-color: var(--surface);
     border: 1px solid var(--border-subtle);
@@ -873,7 +897,7 @@
 
   .document-card {
     border: 1px solid var(--border-subtle);
-    border-radius: 0.625rem;
+    border-radius: var(--radius-lg);
     padding: 1.25rem;
     background-color: var(--surface);
     display: flex;
@@ -903,8 +927,8 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 0.2rem 0.55rem;
-    border-radius: 0.25rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-sm);
     background: var(--surface-elevated);
     color: var(--accent-primary);
     border: 1px solid var(--border-subtle);
@@ -949,7 +973,8 @@
   .btn-download {
     flex: 1 1 calc(50% - 0.35rem);
     min-width: 120px;
-    border-radius: 0.375rem;
+    min-height: 44px;
+    border-radius: var(--radius-sm);
     padding: 0.55rem 0.75rem;
     font-size: 0.8125rem;
     font-weight: 700;
@@ -1022,6 +1047,8 @@
     align-items: center;
     justify-content: center;
     height: 100%;
+    min-height: 48px;
+    min-width: 48px;
     background: transparent;
     border: none;
     color: var(--text-secondary);
