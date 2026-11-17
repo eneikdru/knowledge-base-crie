@@ -1,0 +1,36 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "e59b167a-75af-4f81-b7cc-01c00c7b02fd",
+      "title": "Standalone Responsive Knowledge Base & Fast Search Tool",
+      "jtbd": "When an educational resident, researcher, or faculty member accesses the CRIE knowledge base on desktop or mobile, I want a fast, thoughtful, self-contained search and document exploration interface without third-party integration friction, so that I can immediately find and inspect clinical, academic, and normative resources in seconds.",
+      "kanoClass": "Performance",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "Visual regression error rate <= 0.1% against approved mockup",
+      "tocConstraintRef": "frontend/src/App.svelte layout and stylesheet styling fidelity",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Implement pixel-perfect layout and visual styling updates according to approved design mockup design/approved/20261117054021-mockup/mockup.html",
+        "R2: Ensure full responsiveness, accessible color contrast (WCAG AAA >= 7.0:1), and mobile viewport support in the existing web client"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Apply approved design mockup styling and layout to web interface",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing design updates for this epic, I want to apply the approved mockup layout and WCAG AAA color scheme to the existing frontend, so that the knowledge base interface matches the design specification with zero visual regressions.",
+          "acceptanceCriteria": "Given the approved design reference design/approved/20261117054021-mockup/mockup.html,\nWhen the frontend web interface is rendered on desktop and mobile viewports,\nThen all typography, spacing, control parameters, and telemetry cards match the approved reference exactly.\nGiven an accessibility audit using WCAG 2.1 AAA contrast rules,\nWhen assessing text elements and interactive controls against backgrounds,\nThen contrast ratios achieve at least 7.0:1 across all updated views.",
+          "leanValue": "valuable",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "frontend/src/App.svelte styling compliance",
+          "sixSigmaMetric": "Layout pixel-delta variance < 2px across standard viewports",
+          "hasUi": true,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        }
+      ]
+    }
+  ]
+}
