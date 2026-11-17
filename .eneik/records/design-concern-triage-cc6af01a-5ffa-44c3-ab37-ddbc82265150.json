@@ -1,0 +1,20 @@
+[
+  {
+    "concern": "(low) Navigation anchor references (#section-0, #section-1, #section-2) use generic placeholder fragment identifiers that should link to concrete route landmarks in final integration.",
+    "jtbd": "When navigating the interface via the header menu, I want anchor links to point to semantic, meaningful landmarks on the page, so that I can reliably orient myself and jump to relevant sections without encountering dead ends or cryptic IDs.",
+    "acceptanceCriteria": "Given the header navigation element, When inspecting the href attributes of all anchor links, Then they reference existing semantic section IDs (e.g. #hero-heading / #overview, #telemetry-heading / #telemetry, #form-heading / #control-parameters) matching landmark sections in the DOM rather than generic #section-N placeholders.",
+    "editInstruction": "In the header navigation (<nav role=\"navigation\">), replace href=\"#section-0\" with href=\"#hero-heading\" (or add id=\"overview\" to the hero section and link to #overview), replace href=\"#section-1\" with href=\"#telemetry-heading\" (or link to #telemetry with matching section id), and replace href=\"#section-2\" with href=\"#form-heading\" (or matching id on control parameters section).",
+    "kanoClass": "performance",
+    "cynefinDomain": "clear",
+    "leanValue": "valuable"
+  },
+  {
+    "concern": "(low) Control parameter form inputs could provide aria-describedby helper annotations to further optimize cognitive ease for screen reader users.",
+    "jtbd": "When filling out the control parameter form using assistive technologies, I want form fields to explicitly reference helper explanations via aria-describedby, so that I understand expected formats and parameter constraints without cognitive friction or trial-and-error.",
+    "acceptanceCriteria": "Given the control parameters form inputs (#user-email and #project-archetype-select), When a screen reader focuses on each field, Then it announces associated description text referenced via aria-describedby pointing to visible helper text elements with unique matching IDs.",
+    "editInstruction": "Under the #user-email input, add a helper paragraph `<p id=\"user-email-help\" class=\"text-xs text-slate-400 mt-1\">Enter the notification endpoint address for operator alerts.</p>` and append `aria-describedby=\"user-email-help\"` to the input element. Under the #project-archetype-select element, add `<p id=\"project-archetype-help\" class=\"text-xs text-slate-400 mt-1\">Select target domain configuration archetype.</p>` and append `aria-describedby=\"project-archetype-help\"` to the select element.",
+    "kanoClass": "attractive",
+    "cynefinDomain": "clear",
+    "leanValue": "valuable"
+  }
+]
