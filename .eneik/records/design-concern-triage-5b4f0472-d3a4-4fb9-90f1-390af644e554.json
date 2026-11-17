@@ -1,0 +1,20 @@
+[
+  {
+    "concern": "(low) Media hero container references placeholder graphic assets that should be linked to the live SVG pipeline.",
+    "jtbd": "When inspecting the media hero container, I want it to reference the live vector SVG pipeline rather than placeholder graphic assets, so that the visual presentation renders crisply across display densities without artifacting or broken asset dependencies.",
+    "acceptanceCriteria": "Given the media hero section in the mockup, When checking the graphic asset source in the media container, Then the placeholder raster image reference is replaced with vector SVG markup or pipeline-integrated SVG assets aligned with the dark theme token palette.",
+    "editInstruction": "In section[aria-labelledby=\"media-heading\"], replace the placeholder img tag (`src=\"assets/images/knowledge-base-crie-hero.webp\"`) inside the media hero container with a scalable SVG vector element maintaining aspect ratio and dark theme styling.",
+    "kanoClass": "indifferent",
+    "cynefinDomain": "clear",
+    "leanValue": "waste"
+  },
+  {
+    "concern": "(low) Parameter controls could include aria-describedby hints for enhanced screen-reader assistive context.",
+    "jtbd": "When navigating parameter controls using assistive technologies, I want form controls to provide descriptive contextual guidance via aria-describedby hints, so that I can understand expected input formats and constraints without cognitive friction.",
+    "acceptanceCriteria": "Given the form parameter controls in section[aria-labelledby=\"form-heading\"], When an assistive technology focuses on the input and select fields, Then each control references descriptive helper text elements via an aria-describedby attribute explaining the field constraints.",
+    "editInstruction": "In section[aria-labelledby=\"form-heading\"], add helper text elements with unique IDs (e.g., id=\"user-email-hint\" and id=\"project-archetype-hint\") beneath `#user-email` and `#project-archetype-select`, and link each control to its respective helper text using aria-describedby.",
+    "kanoClass": "attractive",
+    "cynefinDomain": "clear",
+    "leanValue": "valuable"
+  }
+]
