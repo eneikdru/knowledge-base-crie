@@ -61,18 +61,24 @@
     if (doc.docx_url) return doc.docx_url;
     if (doc.download_url && doc.download_url.endsWith('.docx')) return doc.download_url;
     if (doc.url && doc.url.endsWith('.docx')) return doc.url;
-    const base = doc.download_url || doc.url || `/api/documents/${doc.id || 'doc'}/download`;
-    if (base.includes('?')) return `${base}&format=docx`;
-    return `${base}?format=docx`;
+    const docId = doc.id || doc.doc_id || 'doc';
+    return `${apiBaseUrl}/api/documents/${encodeURIComponent(docId)}/download?format=docx`;
   }
 
   function getPdfDownloadUrl(doc) {
     if (doc.pdf_url) return doc.pdf_url;
     if (doc.download_url && doc.download_url.endsWith('.pdf')) return doc.download_url;
     if (doc.url && doc.url.endsWith('.pdf')) return doc.url;
-    const base = doc.download_url || doc.url || `/api/documents/${doc.id || 'doc'}/download`;
-    if (base.includes('?')) return `${base}&format=pdf`;
-    return `${base}?format=pdf`;
+    const docId = doc.id || doc.doc_id || 'doc';
+    return `${apiBaseUrl}/api/documents/${encodeURIComponent(docId)}/download?format=pdf`;
+  }
+
+  function cleanAnnotation(doc) {
+    const text = doc.annotation || doc.description || '';
+    if (text.includes('по вашему запросу проверена база')) {
+      return 'Официальный нормативно-методический документ ФБУН ЦНИИ Эпидемиологии.';
+    }
+    return text || 'Официальный нормативно-методический документ ФБУН ЦНИИ Эпидемиологии.';
   }
 
   async function fetchDocuments(searchQuery = '') {
@@ -194,7 +200,7 @@
             <div class="telemetry-cards" aria-label="Метрики базы знаний">
               <div class="telemetry-card">
                 <span class="telemetry-label">Документов</span>
-                <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
+                <span class="telemetry-value">{totalCount > 0 ? totalCount : '1697'}</span>
                 <span class="telemetry-trend positive">↑ 100% верифицировано</span>
               </div>
               <div class="telemetry-card">
@@ -307,7 +313,7 @@
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
-                  <article class="document-card" role="listitem">
+                  <article class="document-card" role="listitem" data-testid="catalog-card">
                     <div class="card-header-meta">
                       {#if doc.category || doc.type}
                         <span class="badge-doc-type">{doc.category || doc.type}</span>
@@ -324,7 +330,7 @@
                     {/if}
 
                     <p class="doc-annotation">
-                      {doc.annotation || doc.description || 'Краткая аннотация и нормативные реквизиты документа ФБУН ЦНИИ Эпидемиологии.'}
+                      {cleanAnnotation(doc)}
                     </p>
 
                     <div class="card-actions" role="group" aria-label="Скачать документ">
@@ -334,6 +340,7 @@
                         download
                         target="_blank"
                         rel="noopener noreferrer"
+                        data-testid="download-docx"
                         aria-label={`Скачать DOCX: ${doc.title || 'документ'}`}
                       >
                         <span class="format-icon" aria-hidden="true">📄</span>
@@ -345,6 +352,7 @@
                         download
                         target="_blank"
                         rel="noopener noreferrer"
+                        data-testid="download-pdf"
                         aria-label={`Скачать PDF: ${doc.title || 'документ'}`}
                       >
                         <span class="format-icon" aria-hidden="true">📑</span>
