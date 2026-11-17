@@ -1,0 +1,48 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "87d85378-01b9-44cf-a0b4-76d81047eb95",
+      "title": "Personal AI Regulatory Assistant & GOST Order Generator",
+      "jtbd": "When an educational administrator, instructor, or resident needs regulatory guidance or administrative drafts, I want an AI assistant grounded in institutional knowledge and a one-click GOST R 7.0.97-2016 .docx order generator, so that official administrative tasks are executed accurately in seconds.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "Document generation error rate < 0.1% and 100% elimination of external brand leaks",
+      "tocConstraintRef": "crie_assistant_api.py document export & session continuity pipeline",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Eliminate UI abstraction leaks by purging DeepSeek branding, replacing hardcoded 1713 document counters with dynamic index counts, and enforcing institutional FBUN CRIE branding",
+        "R2: Ensure temporal chat continuity by binding conversation sessions to browser localStorage and synchronizing with backend session state",
+        "R3: Implement dynamic multi-format document generator endpoints for Word, Excel, and PDF (/api/generate/docx, /api/generate/xlsx, /api/generate/pdf)",
+        "R4: Replace static 15-document mock download with dynamic targeted bundle packaging archive generation based on user query/selection",
+        "R5: Automated regression and integration test coverage across multi-format export, session persistence, and branding sanitization"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Direct patch for autopoietic continuity, multi-format export, and institutional branding",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing autopoietic evolution for this epic, I want to purge branding leaks, persist chat sessions, expose multi-format generation endpoints, and generate dynamic archives, so that the assistant operates as an autonomous institutional tool without static mock bottlenecks.",
+          "acceptanceCriteria": "Given the existing web interface and API, When the user inspects headers and counters, Then no DeepSeek branding is displayed and document counts reflect real indexed catalog totals.\nGiven an active chat conversation, When the page is reloaded or session restored, Then messages and document drafts persist across localStorage and backend session state.\nGiven requests to /api/generate/docx, /api/generate/xlsx, and /api/generate/pdf, When valid academic/regulatory parameters are supplied, Then standard-compliant DOCX, XLSX, and PDF binaries are dynamically compiled and returned.\nGiven a download request for a targeted bundle, When filtered parameters are submitted, Then a dynamically assembled ZIP package containing only matching documents is produced.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "crie_assistant_api.py document routing and generation handlers",
+          "sixSigmaMetric": "Zero brand leakage incidents and 100% valid multi-format HTTP status 200 responses",
+          "hasUi": true,
+          "requirementRefs": ["R1", "R2", "R3", "R4"]
+        },
+        {
+          "title": "Pyramid verification for multi-format document endpoints, chat continuity, and archive bundling",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When implementing verification for this epic, I want comprehensive unit, integration, and journey test suites, so that branding compliance, session durability, and document generation integrity are guaranteed.",
+          "acceptanceCriteria": "Given unit tests for document generation, When DOCX, XLSX, and PDF builders execute, Then files are structurally valid and contain zero third-party branding leaks.\nGiven integration tests for /api/generate/* and archive bundle endpoints, When concurrent client requests execute, Then valid MIME types and Content-Disposition headers are returned with sub-second latency.\nGiven an E2E journey test on chat continuity, When a session is initiated, messages sent, and browser context reloaded, Then the session state is faithfully reconstructed from localStorage and backend cache.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "QA verification test harness in tests/test_autopoietic_continuity.py",
+          "sixSigmaMetric": "100% test pass rate across unit, integration, and E2E pyramid layers",
+          "hasUi": false,
+          "requirementRefs": ["R5"]
+        }
+      ]
+    }
+  ]
+}
