@@ -445,9 +445,9 @@
   }
 
   .top-bar-inner {
-    max-width: 1040px;
+    max-width: 1280px;
     margin: 0 auto;
-    padding: 0.85rem 1rem;
+    padding: 0.85rem 1.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -543,10 +543,10 @@
 
   /* Catalog Container */
   .catalog-container {
-    max-width: 1040px;
+    max-width: 1280px;
     width: 100%;
     margin: 0 auto;
-    padding: 1.5rem 1rem;
+    padding: 1.5rem 1.25rem;
     box-sizing: border-box;
     overflow-x: hidden;
   }
@@ -563,23 +563,40 @@
     margin-bottom: 1.5rem;
   }
 
+  @media (min-width: 1024px) {
+    .hero-section {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .hero-text {
+      flex: 1;
+      max-width: 600px;
+    }
+    .telemetry-cards {
+      flex: 1;
+      max-width: 540px;
+    }
+  }
+
   .hero-text h2 {
     margin: 0 0 0.35rem;
-    font-size: 1.625rem;
+    font-size: 1.75rem;
     font-weight: 700;
     color: var(--text-primary);
+    letter-spacing: -0.02em;
   }
 
   .subtitle {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 0.9375rem;
-    line-height: 1.4;
+    font-size: 0.95rem;
+    line-height: 1.5;
   }
 
   .telemetry-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 0.75rem;
     width: 100%;
   }
@@ -587,11 +604,12 @@
   .telemetry-card {
     background: var(--surface);
     border: 1px solid var(--border-subtle);
-    border-radius: 0.5rem;
+    border-radius: 0.625rem;
     padding: 0.85rem 1rem;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
   .telemetry-label {
@@ -603,7 +621,7 @@
   }
 
   .telemetry-value {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     font-weight: 800;
     color: var(--text-primary);
     line-height: 1.2;
@@ -644,8 +662,8 @@
     align-items: center;
     background: var(--surface);
     border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
-    padding: 0 0.85rem;
+    border-radius: 0.5rem;
+    padding: 0 1rem;
     transition: border-color 0.2s;
     min-width: 0;
   }
@@ -664,7 +682,7 @@
 
   .search-input-wrapper input[type='search'] {
     width: 100%;
-    padding: 0.75rem 0;
+    padding: 0.85rem 0;
     border: none;
     outline: none;
     font-size: 0.95rem;
@@ -681,8 +699,8 @@
     background-color: var(--accent-primary);
     color: #050b14;
     border: none;
-    border-radius: 0.375rem;
-    padding: 0.75rem 1.35rem;
+    border-radius: 0.5rem;
+    padding: 0.85rem 1.5rem;
     font-size: 0.9375rem;
     font-weight: 700;
     cursor: pointer;
@@ -717,7 +735,7 @@
     gap: 0.85rem;
     background: var(--surface);
     padding: 1.15rem;
-    border-radius: 0.5rem;
+    border-radius: 0.625rem;
     border: 1px solid var(--border-subtle);
     width: 100%;
   }
@@ -746,7 +764,7 @@
   .chip-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.45rem;
+    gap: 0.5rem;
   }
 
   .chip {
@@ -790,7 +808,7 @@
   /* Status and Empty States */
   .state-view {
     padding: 3rem 1.5rem;
-    border-radius: 0.5rem;
+    border-radius: 0.625rem;
     text-align: center;
     background-color: var(--surface);
     border: 1px solid var(--border-subtle);
@@ -867,7 +885,7 @@
 
   .document-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 1.25rem;
   }
 
@@ -886,7 +904,7 @@
   .document-card:hover {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
     border-color: var(--border-strong);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
   }
 
   .card-header-meta {
@@ -917,7 +935,7 @@
 
   .doc-title {
     margin: 0 0 0.5rem;
-    font-size: 1.05rem;
+    font-size: 1.1rem;
     line-height: 1.4;
     font-weight: 700;
     color: var(--text-primary);
@@ -950,7 +968,7 @@
     flex: 1 1 calc(50% - 0.35rem);
     min-width: 120px;
     border-radius: 0.375rem;
-    padding: 0.55rem 0.75rem;
+    padding: 0.6rem 0.75rem;
     font-size: 0.8125rem;
     font-weight: 700;
     cursor: pointer;
