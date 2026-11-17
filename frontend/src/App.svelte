@@ -303,7 +303,7 @@
           {:else if status === 'success' && filteredDocuments.length > 0}
             <div class="state-view present-state" data-testid="present-state">
               <div class="results-meta">
-                <span>Показано 1-{filteredDocuments.length} из {totalCount} материалов</span>
+                <span>Показано 1-{filteredDocuments.length} из {Math.max(totalCount, filteredDocuments.length)} материалов</span>
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
@@ -445,7 +445,7 @@
   }
 
   .top-bar-inner {
-    max-width: 1040px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 0.85rem 1rem;
     display: flex;
@@ -517,6 +517,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    min-height: 40px;
   }
 
   .desktop-nav-link:hover,
@@ -543,7 +544,7 @@
 
   /* Catalog Container */
   .catalog-container {
-    max-width: 1040px;
+    max-width: 1200px;
     width: 100%;
     margin: 0 auto;
     padding: 1.5rem 1rem;
@@ -592,6 +593,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
   .telemetry-label {
@@ -648,6 +650,7 @@
     padding: 0 0.85rem;
     transition: border-color 0.2s;
     min-width: 0;
+    min-height: 44px;
   }
 
   .search-input-wrapper:focus-within {
@@ -692,6 +695,7 @@
     justify-content: center;
     transition: background-color 0.2s;
     flex-shrink: 0;
+    min-height: 44px;
   }
 
   .btn-search:hover:not(:disabled),
@@ -754,13 +758,14 @@
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
     border-radius: 9999px;
-    padding: 0.35rem 0.85rem;
+    padding: 0.4rem 0.85rem;
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
+    min-height: 38px;
   }
 
   .chip:hover {
@@ -949,6 +954,7 @@
   .btn-download {
     flex: 1 1 calc(50% - 0.35rem);
     min-width: 120px;
+    min-height: 44px;
     border-radius: 0.375rem;
     padding: 0.55rem 0.75rem;
     font-size: 0.8125rem;
@@ -1022,6 +1028,7 @@
     align-items: center;
     justify-content: center;
     height: 100%;
+    min-height: 48px;
     background: transparent;
     border: none;
     color: var(--text-secondary);
@@ -1061,5 +1068,28 @@
     overflow: hidden;
     clip: rect(0, 0, 0, 0);
     border: 0;
+  }
+
+  /* Responsive tweaks for 375px mobile */
+  @media (max-width: 480px) {
+    .hero-text h2 {
+      font-size: 1.35rem;
+    }
+    .catalog-container {
+      padding: 1rem 0.75rem;
+    }
+    .telemetry-cards {
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 0.5rem;
+    }
+    .telemetry-card {
+      padding: 0.65rem 0.75rem;
+    }
+    .telemetry-value {
+      font-size: 1.1rem;
+    }
+    .facet-filters-container {
+      padding: 0.85rem;
+    }
   }
 </style>
