@@ -1,1 +1,0 @@
-{"verdicts": [{"sourceIndex": 0, "verdict": "approve", "criticalReason": "", "concerns": [{"text": "Ensure continuous visual regression checks across varied mobile viewports", "severity": "low"}]}]}
