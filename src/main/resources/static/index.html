@@ -1,1144 +1,686 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>ФБУН ЦНИИ Эпидемиологии — База Знаний и AI-Ассистент</title>
-  <style>
-    :root {
-      --primary: #0284c7;
-      --primary-dark: #0369a1;
-      --primary-light: #e0f2fe;
-      --accent: #059669;
-      --accent-hover: #047857;
-      --bg: #0f172a;
-      --surface: #1e293b;
-      --surface-elevated: #334155;
-      --border: #475569;
-      --border-subtle: #334155;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --radius: 10px;
-      --shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+<meta charset="UTF-8">
+<title>Application</title>
+<script>
+  // D002: Temporal Continuity & Session Persistence
+  window.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem('crie_chat_history');
+    if (saved && window.restoreChatSession) {
+      try { window.restoreChatSession(JSON.parse(saved)); } catch (e) {}
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-    body { background: var(--bg); color: var(--text-main); display: flex; flex-direction: column; min-height: 100vh; }
-    header { background: var(--surface); border-bottom: 1px solid var(--border-subtle); padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
-    .brand-title { font-size: 1.15rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 0.6rem; }
-    .brand-sub { font-size: 0.75rem; color: var(--text-muted); font-weight: normal; display: block; }
-    .auth-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.75rem; border-radius: 999px; background: rgba(5,150,105,0.15); border: 1px solid var(--accent); color: #34d399; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
-    .nav-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border-subtle); padding: 0 1.5rem; overflow-x: auto; gap: 0.5rem; }
-    .nav-tab { padding: 0.9rem 1.25rem; font-size: 0.9rem; font-weight: 600; color: var(--text-muted); background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap; transition: all 0.2s; }
-    .nav-tab:hover { color: var(--text-main); }
-    .nav-tab.active { color: #38bdf8; border-bottom-color: #38bdf8; }
-    main { flex: 1; padding: 1.5rem; max-width: 1400px; margin: 0 auto; width: 100%; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-    .banner-download { background: linear-gradient(135deg, #0369a1, #0f766e); border-radius: var(--radius); padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; box-shadow: var(--shadow); }
-    .banner-text h2 { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.25rem; color: #fff; }
-    .banner-text p { font-size: 0.85rem; color: #e0f2fe; }
-    .btn-download-all { background: #fff; color: #0f172a; border: none; border-radius: 6px; padding: 0.65rem 1.25rem; font-size: 0.9rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: background 0.2s; }
-    .btn-download-all:hover { background: #f1f5f9; }
-    .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
-    .doc-card { background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 1.25rem; display: flex; flex-direction: column; box-shadow: var(--shadow); transition: transform 0.15s, border-color 0.15s; }
-    .doc-card:hover { transform: translateY(-2px); border-color: var(--primary); }
-    .doc-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
-    .badge-tag { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(2,132,199,0.2); color: #38bdf8; border: 1px solid rgba(2,132,199,0.3); }
-    .doc-title { font-size: 0.95rem; font-weight: 600; color: #fff; margin-bottom: 0.5rem; line-height: 1.4; flex: 1; }
-    .doc-annotation { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.4; }
-    .btn-download-docx { background: var(--primary); color: #fff; border: 1px solid var(--primary); border-radius: 6px; padding: 0.5rem 0.9rem; font-size: 0.825rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; cursor: pointer; transition: background 0.2s; margin-top: auto; }
-    .btn-download-docx:hover { background: var(--primary-dark); }
-    .agent-workspace { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.25rem; height: calc(100vh - 160px); min-height: 640px; }
-    @media (max-width: 980px) { .agent-workspace { grid-template-columns: 1fr; height: auto; } }
-    .agent-chat-pane { display: flex; flex-direction: column; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border-subtle); overflow: hidden; }
-    .agent-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 1rem; background: rgba(0,0,0,0.25); border-bottom: 1px solid var(--border-subtle); flex-wrap: wrap; gap: 0.5rem; }
-    .approved-label { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.825rem; font-weight: 600; color: #34d399; cursor: pointer; user-select: none; }
-    .approved-checkbox { accent-color: #059669; width: 16px; height: 16px; cursor: pointer; }
-    .btn-upload-tpl { background: var(--primary); color: #fff; border: none; border-radius: 6px; padding: 0.35rem 0.75rem; font-size: 0.775rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; }
-    .btn-upload-tpl:hover { background: var(--primary-dark); }
-    .chat-messages { flex: 1; overflow-y: auto; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.85rem; }
-    .chat-msg { max-width: 90%; padding: 0.8rem 1.1rem; border-radius: var(--radius); line-height: 1.5; font-size: 0.9rem; }
-    .chat-msg.user { align-self: flex-end; background: var(--primary-dark); color: #fff; border-bottom-right-radius: 2px; }
-    .chat-msg.assistant { align-self: flex-start; background: var(--surface-elevated); color: var(--text-main); border-bottom-left-radius: 2px; border: 1px solid var(--border); }
-    .chat-citations { margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--border); font-size: 0.8rem; color: #38bdf8; }
-    .chat-citations strong { color: #fff; }
-    .chat-suggestions { display: flex; gap: 0.4rem; overflow-x: auto; padding: 0.6rem 1rem; background: rgba(0,0,0,0.15); border-top: 1px solid var(--border-subtle); }
-    .btn-suggestion { font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 999px; background: var(--surface-elevated); border: 1px solid var(--border); color: #cbd5e1; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
-    .btn-suggestion:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .chat-input-bar { display: flex; padding: 0.65rem 1rem; background: var(--surface); border-top: 1px solid var(--border-subtle); gap: 0.65rem; }
-    .chat-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.65rem 1rem; color: #fff; font-size: 0.9rem; outline: none; }
-    .chat-input:focus { border-color: #38bdf8; }
-    .btn-send { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 0.65rem 1.1rem; font-weight: 600; cursor: pointer; }
-    .btn-send:hover { background: var(--accent-hover); }
-    .doc-preview-pane { display: flex; flex-direction: column; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border-subtle); overflow: hidden; }
-    .doc-preview-header { padding: 0.65rem 1rem; background: rgba(0,0,0,0.25); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
-    .doc-badge-approved { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid #059669; border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; }
-    .doc-badge-draft { background: rgba(2,132,199,0.15); color: #38bdf8; border: 1px solid var(--primary); border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.75rem; font-weight: 700; }
-    .btn-preview-dl { background: #059669; color: #fff; text-decoration: none; border-radius: 6px; padding: 0.4rem 0.85rem; font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem; }
-    .btn-preview-dl:hover { background: #047857; }
-    .doc-preview-sheet { flex: 1; overflow-y: auto; padding: 1.5rem; background: #ffffff; color: #1e293b; font-family: 'Times New Roman', serif; font-size: 0.925rem; line-height: 1.35; box-shadow: inset 0 0 10px rgba(0,0,0,0.05); }
-    .gost-header { text-align: center; font-weight: bold; font-size: 0.825rem; margin-bottom: 1rem; text-transform: uppercase; color: #000; }
-    .gost-title { text-align: center; font-size: 1.25rem; font-weight: bold; margin: 0.75rem 0; letter-spacing: 0.05em; color: #000; }
-    .gost-meta-row { display: flex; justify-content: space-between; margin-bottom: 1rem; font-size: 0.9rem; color: #000; }
-    .gost-subject { font-weight: bold; text-indent: 1.25cm; text-align: justify; margin-bottom: 0.75rem; font-size: 0.95rem; color: #000; }
-    .gost-preamble { text-indent: 1.25cm; text-align: justify; margin-bottom: 0.75rem; color: #000; }
-    .gost-cmd { text-align: center; font-weight: bold; margin: 0.5rem 0; font-size: 1rem; color: #000; }
-    .gost-item { text-indent: 1.25cm; text-align: justify; margin-bottom: 0.5rem; color: #000; }
-    .gost-table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.825rem; }
-    .gost-table th, .gost-table td { border: 1px solid #475569; padding: 0.4rem 0.6rem; text-align: left; }
-    .gost-table th { background: #f1f5f9; font-weight: bold; text-align: center; }
-    .gost-sig { margin-top: 1.5rem; display: flex; justify-content: space-between; font-weight: bold; color: #000; }
-    .gost-visas { margin-top: 1rem; font-size: 0.8rem; color: #334155; border-top: 1px dashed #cbd5e1; padding-top: 0.5rem; }
-    .search-bar-wrapper { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-    .search-input { flex: 1; min-width: 250px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.65rem 1rem; color: #fff; font-size: 0.9rem; outline: none; }
-    .search-select { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.65rem 1rem; color: #fff; font-size: 0.9rem; outline: none; }
-    .calc-card { background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius); padding: 1.5rem; max-width: 600px; margin: 0 auto; }
-    .calc-row { margin-bottom: 1.25rem; }
-    .calc-row label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text-muted); }
-    .calc-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.65rem; color: #fff; font-size: 0.95rem; }
-    .calc-results { margin-top: 1.5rem; padding: 1rem; border-radius: 6px; background: var(--surface-elevated); border: 1px solid var(--border); }
-    .calc-metric { display: flex; justify-content: space-between; padding: 0.4rem 0; font-size: 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .calc-metric:last-child { border-bottom: none; }
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-    .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; max-width: 420px; width: 90%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); text-align: center; }
-    .modal-box h3 { font-size: 1.25rem; margin-bottom: 0.5rem; color: #fff; }
-    .modal-box p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.4; }
-    .pin-input { font-size: 1.5rem; letter-spacing: 0.4rem; text-align: center; width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem; color: #fff; margin-bottom: 1rem; outline: none; }
-    .btn-login { width: 100%; background: var(--primary); color: #fff; border: none; border-radius: 6px; padding: 0.75rem; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
-    .btn-login:hover { background: var(--primary-dark); }
-    .pin-hint { font-size: 0.75rem; color: #64748b; margin-top: 0.75rem; }
-
-    /* FEEDBACK & OBSERVATIONS SYSTEM */
-    .floating-feedback-btn {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-      color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 999px;
-      padding: 0.75rem 1.4rem;
-      font-size: 0.9rem;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      z-index: 999;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .floating-feedback-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 14px 28px -5px rgba(2, 132, 199, 0.65);
-      background: linear-gradient(135deg, #0369a1 0%, #0284c7 100%);
-    }
-    .feedback-stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-    .feedback-stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius);
-      padding: 1.25rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-    .feedback-stat-val { font-size: 1.8rem; font-weight: 800; color: #fff; line-height: 1.1; }
-    .feedback-stat-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-    .feedback-item-card {
-      background: var(--surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius);
-      padding: 1.25rem;
-      margin-bottom: 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      transition: border-color 0.2s;
-    }
-    .feedback-item-card:hover { border-color: var(--primary); }
-    .feedback-item-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-    .badge-sev-critical { background: rgba(239,68,68,0.18); color: #f87171; border: 1px solid #ef4444; border-radius: 999px; padding: 0.15rem 0.55rem; font-size: 0.725rem; font-weight: 700; }
-    .badge-sev-important { background: rgba(245,158,11,0.18); color: #fbbf24; border: 1px solid #f59e0b; border-radius: 999px; padding: 0.15rem 0.55rem; font-size: 0.725rem; font-weight: 700; }
-    .badge-sev-suggestion { background: rgba(16,185,129,0.18); color: #34d399; border: 1px solid #10b981; border-radius: 999px; padding: 0.15rem 0.55rem; font-size: 0.725rem; font-weight: 700; }
-    .badge-status-new { background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid #0284c7; border-radius: 4px; padding: 0.15rem 0.5rem; font-size: 0.75rem; font-weight: 600; }
-    .badge-status-in_progress { background: rgba(234,179,8,0.15); color: #facc15; border: 1px solid #ca8a04; border-radius: 4px; padding: 0.15rem 0.5rem; font-size: 0.75rem; font-weight: 600; }
-    .badge-status-implemented { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid #16a34a; border-radius: 4px; padding: 0.15rem 0.5rem; font-size: 0.75rem; font-weight: 600; }
-    .badge-status-rejected { background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid #64748b; border-radius: 4px; padding: 0.15rem 0.5rem; font-size: 0.75rem; font-weight: 600; }
-    .feedback-text-block { font-size: 0.925rem; color: #f1f5f9; line-height: 1.45; white-space: pre-wrap; }
-    .feedback-expected-block { background: rgba(0,0,0,0.25); border-left: 3px solid #38bdf8; padding: 0.5rem 0.75rem; border-radius: 0 6px 6px 0; font-size: 0.85rem; color: #cbd5e1; }
-    .feedback-context-block { font-size: 0.775rem; color: #64748b; display: flex; gap: 0.5rem; align-items: center; }
-  </style>
+  });
+  window.persistChatSession = (history) => {
+    try { localStorage.setItem('crie_chat_history', JSON.stringify(history)); } catch (e) {}
+  };
+</script>
 </head>
 <body>
+<div id="app">
+<script>
+  let searchQuery = '';
+  let selectedCategory = 'all';
 
-  <header>
-    <div class="brand-title">
-      <span style="font-size: 1.5rem;">🏛️</span>
-      <div>
-        ФБУН ЦНИИ Эпидемиологии Роспотребнадзора
-        <span class="brand-sub">Институциональная База Знаний и Экспертный AI-Консультант (Spring Boot 3 / DeepSeek)</span>
+  const categories = [
+    { id: 'all', label: 'All Topics' },
+    { id: 'architecture', label: 'Architecture' },
+    { id: 'devops', label: 'DevOps & Infra' },
+    { id: 'security', label: 'Security & Auth' },
+    { id: 'guides', label: 'Guides & SOPs' }
+  ];
+
+  const documents = [
+    {
+      id: 'doc-1',
+      title: 'Event-Driven Architecture & Distributed Consensus',
+      category: 'architecture',
+      snippet: 'Deep dive into event sourcing, CQRS patterns, and state synchronization across decoupled service clusters.',
+      updatedAt: '2026-11-15',
+      readTime: '8 min read',
+      tags: ['Kafka', 'CQRS', 'DDD']
+    },
+    {
+      id: 'doc-2',
+      title: 'Zero-Trust Network Perimeter & mTLS Guidelines',
+      category: 'security',
+      snippet: 'Comprehensive specification for mutual TLS certificate rotation, SPIFFE/SPIRE identity attestation, and ingress policies.',
+      updatedAt: '2026-11-12',
+      readTime: '12 min read',
+      tags: ['mTLS', 'Zero-Trust', 'PKI']
+    },
+    {
+      id: 'doc-3',
+      title: 'Kubernetes Multi-Cluster GitOps Deployment Model',
+      category: 'devops',
+      snippet: 'Production deployment workflows with ArgoCD, Helm chart versioning, progressive delivery, and canary rollouts.',
+      updatedAt: '2026-11-10',
+      readTime: '6 min read',
+      tags: ['Kubernetes', 'ArgoCD', 'GitOps']
+    },
+    {
+      id: 'doc-4',
+      title: 'High-Concurrency Database Connection Pooling & Failover',
+      category: 'architecture',
+      snippet: 'Strategies for connection multiplexing, circuit breaking, read-replica lag management, and transparent failover.',
+      updatedAt: '2026-11-08',
+      readTime: '10 min read',
+      tags: ['PostgreSQL', 'PgBouncer', 'Reliability']
+    },
+    {
+      id: 'doc-5',
+      title: 'Incident Response & Production On-Call Runbook',
+      category: 'guides',
+      snippet: 'Standard operating procedures for triaging severity-1 incidents, paging escalation matrix, and blameless post-mortems.',
+      updatedAt: '2026-11-05',
+      readTime: '5 min read',
+      tags: ['SRE', 'Incidents', 'Runbooks']
+    }
+  ];
+
+  $: filteredDocuments = documents.filter((doc) => {
+    const matchesCategory =
+      selectedCategory === 'all' || doc.category === selectedCategory;
+    const q = searchQuery.trim().toLowerCase();
+    const matchesQuery =
+      !q ||
+      doc.title.toLowerCase().includes(q) ||
+      doc.snippet.toLowerCase().includes(q) ||
+      doc.tags.some((tag) => tag.toLowerCase().includes(q));
+    return matchesCategory && matchesQuery;
+  });
+
+  function setCategory(id) {
+    selectedCategory = id;
+  }
+
+  function clearSearch() {
+    searchQuery = '';
+  }
+</script>
+
+<div class="app-container">
+  <header class="navbar" role="banner">
+    <div class="navbar-content">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+          </svg>
+        </div>
+        <span class="brand-title">Knowledge Base</span>
       </div>
-    </div>
-    <div id="authStatusBadge" class="auth-badge" onclick="showAuthModal()">
-      <span>🔒</span> <span id="authBadgeText">Авторизован: 152-ФЗ Активен</span>
+      <div class="header-meta">
+        <span class="badge-system">Production v2.4</span>
+      </div>
     </div>
   </header>
 
-  <nav class="nav-tabs" role="tablist">
-    <button class="nav-tab active" onclick="switchTab('tab-generator')">📄 15 Документов пакета (ГОСТ)</button>
-    <button class="nav-tab" onclick="switchTab('tab-chat')">🤖 AI-Консультант (DeepSeek)</button>
-    <button class="nav-tab" onclick="switchTab('tab-catalog')">📚 Нормативная база (1 697 актов)</button>
-    <button class="nav-tab" onclick="switchTab('tab-calculator')">📊 Калькулятор нагрузки ППС</button>
-    <button class="nav-tab" onclick="switchTab('tab-feedback')">📝 Журнал замечаний (Пилот)</button>
-  </nav>
+  <main class="main-layout" id="main-content">
+    <section class="hero-section" aria-labelledby="hero-heading">
+      <h1 id="hero-heading" class="hero-title">Engineering Architecture & Knowledge Catalog</h1>
+      <p class="hero-subtitle">
+        Verified architectural standards, operational runbooks, and production guidelines.
+      </p>
 
-  <main>
-    <!-- TAB 1: 15 ГОСТ ДОКУМЕНТОВ -->
-    <section id="tab-generator" class="tab-content active">
-      <div class="banner-download">
-        <div class="banner-text">
-          <h2>Сводный пакет институциональных документов (2026–2027)</h2>
-          <p>Все 15 регламентов, протоколов УМС, приказов и учебных планов по ГОСТ Р 7.0.97-2016 в одном архиве.</p>
-        </div>
-        <a id="btnArchiveDl" href="/api/download/archive" class="btn-download-all" download>
-          <span>📥</span> Скачать весь пакет (.ZIP) — 538 КБ
-        </a>
-      </div>
-
-      <div class="grid-cards" id="benchmarkDocsGrid">
-        <!-- Rendered by JS -->
-      </div>
-    </section>
-
-    <!-- TAB 2: АГЕНТ ВЕРСТКИ И ПРАВОК ДОКУМЕНТОВ (SPLIT-VIEW) -->
-    <section id="tab-chat" class="tab-content">
-      <div class="agent-workspace">
-        
-        <!-- ЛЕВАЯ ПАНЕЛЬ: ДИАЛОГ С АГЕНТОМ И УПРАВЛЕНИЕ -->
-        <div class="agent-chat-pane">
-          <div class="agent-toolbar">
-            <label class="approved-label" title="Если включено — агент использует строго утвержденный образец без вариативности">
-              <input type="checkbox" id="approvedCheckbox" class="approved-checkbox" checked onchange="toggleApprovedStandard()">
-              <span>✓ Утвержденный образец</span>
-            </label>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <select id="quickTemplateSelect" class="search-select" style="padding: 0.3rem 0.6rem; font-size: 0.775rem; max-width: 210px;" onchange="selectPredefinedTemplate()">
-                <option value="">Образцы Образовательного центра...</option>
-                <option value="TPL-APPROVED-ADMISSION-RESIDENCY">Зачисление в ординатуру (32.08.12)</option>
-                <option value="TPL-APPROVED-GIA-ADMISSION">Допуск к ГИА ординаторов</option>
-                <option value="TPL-APPROVED-UMS-PROTOCOL">Протокол УМС института</option>
-                <option value="TPL-APPROVED-ASPIRANTURA-THEME">Темы диссертаций аспирантов</option>
-                <option value="TPL-APPROVED-PRACTICE-ORDER">Направление на практику</option>
-                <option value="TPL-APPROVED-STAFFING-WORKLOAD">Справка о нагрузке ППС</option>
-              </select>
-              <button class="btn-upload-tpl" onclick="openUploadModal()">
-                <span>📤</span> Загрузить образец
-              </button>
-            </div>
-          </div>
-
-          <div class="chat-messages" id="chatMessages">
-            <div class="chat-msg assistant">
-              Здравствуйте! Я — <strong>Агент документов Образовательного центра (Ординатура и Аспирантура) ФБУН ЦНИИ Эпидемиологии</strong>.
-              <br><br>
-              Моя задача — подготовка официальной учебно-организационной и научно-аттестационной документации:
-              <br>• <strong>Ординатура:</strong> 32.08.12 «Эпидемиология», 31.08.35 «Инфекционные болезни», 31.08.19 «Педиатрия» (объем 120 з.е. / 4 320 ч.);
-              <br>• <strong>Аспирантура:</strong> 3.2.2 «Эпидемиология», 3.1.22 «Инфекционные болезни»;
-              <br>• <strong>Инструменты:</strong> утвержденные эталоны приказов, протоколов УМС и допусков к ГИА, авторская верстка расписаний экзаменов, интерактивные правки на лету.
-            </div>
-          </div>
-
-          <div class="chat-suggestions">
-            <button class="btn-suggestion" onclick="askSuggestion('Подготовь приказ о зачислении в ординатуру по специальности 32.08.12 Эпидемиология')">🎓 Зачисление в ординатуру</button>
-            <button class="btn-suggestion" onclick="askSuggestion('Сверстай расписание зимней экзаменационной сессии для групп 25ОЭ и 26ОЭ с 25.01 по 25.02')">📅 Сверстать расписание сессии</button>
-            <button class="btn-suggestion" onclick="askSuggestion('Составь приказ о допуске к ГИА ординаторов 2 года обучения')">📜 Допуск к ГИА (3 этапа)</button>
-            <button class="btn-suggestion" onclick="askSuggestion('Сформируй протокол заседания Учебно-методического совета УМС по утверждению РПД')">🏛️ Протокол УМС</button>
-            <button class="btn-suggestion" onclick="askSuggestion('Подготовь приказ об утверждении тем диссертаций аспирантов 1 года')">🔬 Темы диссертаций</button>
-          </div>
-
-          <div class="chat-input-bar">
-            <input type="text" id="chatInput" class="chat-input" placeholder="Команда агенту или правка («замени врача на...», «добавь пункт...»)" onkeydown="if(event.key==='Enter') sendChatMessage()">
-            <button class="btn-send" onclick="sendChatMessage()">Исполнить</button>
-          </div>
-        </div>
-
-        <!-- ПРАВАЯ ПАНЕЛЬ: ЖИВОЙ ПРЕДПРОСМОТР ДОКУМЕНТА (ГОСТ Р 7.0.97-2016) -->
-        <div class="doc-preview-pane">
-          <div class="doc-preview-header">
-            <div style="display: flex; align-items: center; gap: 0.6rem;">
-              <span id="previewBadge" class="doc-badge-approved">✓ Утвержденный образец</span>
-              <span id="previewVersion" style="font-size: 0.8rem; color: #94a3b8; font-weight: 600;">v1</span>
-            </div>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-              <button id="btnApproveCurrent" class="btn-upload-tpl" style="background: rgba(16,185,129,0.2); border: 1px solid #059669; color: #34d399;" onclick="markCurrentAsApproved()" title="Зафиксировать текущую редакцию как утвержденный эталон">
-                ✓ Утвердить редакцию
-              </button>
-              <a id="btnPreviewDownload" href="#" class="btn-preview-dl" download="Документ_ГОСТ.docx">
-                📥 Скачать .DOCX
-              </a>
-            </div>
-          </div>
-
-          <div class="doc-preview-sheet" id="docPreviewSheet">
-            <!-- Живой рендеринг документа ГОСТ -->
-            <div class="gost-header">
-              ФЕДЕРАЛЬНАЯ СЛУЖБА ПО НАДЗОРУ В СФЕРЕ ЗАЩИТЫ ПРАВ ПОТРЕБИТЕЛЕЙ И БЛАГОПОЛУЧИЯ ЧЕЛОВЕКА<br>
-              ФЕДЕРАЛЬНОЕ БЮДЖЕТНОЕ УЧРЕЖДЕНИЕ НАУКИ «ЦЕНТРАЛЬНЫЙ НАУЧНО-ИССЛЕДОВАТЕЛЬСКИЙ ИНСТИТУТ ЭПИДЕМИОЛОГИИ»
-            </div>
-            <div class="gost-title" id="gostDocType">ПРИКАЗ</div>
-            <div class="gost-meta-row">
-              <span id="gostDate">«15» ноября 2026 г.</span>
-              <span id="gostNumber" style="text-align: right;">№ 14-ЭПИД<br>г. Москва</span>
-            </div>
-            <div class="gost-subject" id="gostSubject">
-              О проведении неотложных противоэпидемических мероприятий при выявлении кори в терапевтическом отделении
-            </div>
-            <div class="gost-preamble" id="gostPreamble">
-              В связи с выявлением случая заболевания с подозрением на корь у пациента, в целях локализации очага и в строгом соответствии с Федеральным законом № 52-ФЗ, разделом XVIII СанПиН 3.3686-21 и СанПиН 2.1.3678-20:
-            </div>
-            <div class="gost-cmd">ПРИКАЗЫВАЮ:</div>
-            <div id="gostItemsContainer">
-              <div class="gost-item">1. Изолировать пациента с симптомами кори в мельцеровский бокс до 4-го дня от появления сыпи.</div>
-              <div class="gost-item">2. Передать телефонное извещение в течение 2 часов, письменное по форме 058/у — в течение 12 часов.</div>
-              <div class="gost-item">3. Провести экстренную вакцинацию контактных лиц в первые 72 часа от момента контакта.</div>
-              <div class="gost-item">4. Установить непрерывное медицинское наблюдение за контактными на срок 21 день.</div>
-            </div>
-            <div id="gostTableContainer"></div>
-            <div class="gost-sig">
-              <span id="gostHeadDoctor">Директор института / Главный врач</span>
-              <span>_________________ / Подпись /</span>
-            </div>
-            <div class="gost-visas" id="gostVisas">
-              СОГЛАСОВАНО: Госпитальный эпидемиолог _________________ / Е.В. Семенова /
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- TAB 3: НОРМАТИВНАЯ БАЗА (1697) -->
-    <section id="tab-catalog" class="tab-content">
-      <div class="search-bar-wrapper">
-        <input type="text" id="searchInput" class="search-input" placeholder="Поиск по 1 697 нормативным документам, РПД, ФГОС..." oninput="debounceSearch()">
-        <select id="categorySelect" class="search-select" onchange="performSearch()">
-          <option value="all">Все категории документов</option>
-        </select>
-      </div>
-
-      <div class="grid-cards" id="normativeDocsGrid">
-        <!-- Rendered by JS -->
-      </div>
-    </section>
-
-    <!-- TAB 4: КАЛЬКУЛЯТОР НАГРУЗКИ -->
-    <section id="tab-calculator" class="tab-content">
-      <div class="calc-card">
-        <h2 style="font-size: 1.15rem; margin-bottom: 1rem; color: #fff;">Калькулятор соответствия кадрового обеспечения ФГОС ВО</h2>
-        <div class="calc-row">
-          <label>Количество обучающихся (ординаторы и аспиранты):</label>
-          <input type="number" id="calcStudents" class="calc-input" value="45" oninput="recalculateWorkload()">
-        </div>
-        <div class="calc-row">
-          <label>Численность научно-педагогических работников (ППС):</label>
-          <input type="number" id="calcFaculty" class="calc-input" value="17" oninput="recalculateWorkload()">
-        </div>
-        <div class="calc-results" id="calcResults">
-          <!-- Filled by JS -->
+      <div class="search-wrapper" role="search">
+        <label for="search-input" class="sr-only">Search documents, keywords, or topics</label>
+        <div class="search-box">
+          <span class="search-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </span>
+          <input
+            id="search-input"
+            type="search"
+            bind:value={searchQuery}
+            placeholder="Search topics, architectural patterns, runbooks..."
+            class="search-input"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          {#if searchQuery}
+            <button
+              type="button"
+              class="clear-button"
+              aria-label="Clear search input"
+              on:click={clearSearch}
+            >
+              ×
+            </button>
+          {/if}
         </div>
       </div>
     </section>
 
-    <!-- TAB 5: ЖУРНАЛ ЗАМЕЧАНИЙ И ПРЕДЛОЖЕНИЙ (ПИЛОТНАЯ ЭКСПЛУАТАЦИЯ) -->
-    <section id="tab-feedback" class="tab-content">
-      <div class="banner-download" style="background: linear-gradient(135deg, rgba(2,132,199,0.15) 0%, rgba(15,23,42,0.6) 100%);">
-        <div class="banner-text">
-          <h2>Журнал замечаний и калибровки системы (Пилотная эксплуатация)</h2>
-          <p>Все замечания экспертов, неточности в ГОСТе, формулировках шаблонов или ответах Агента накапливаются на сервере для систематического анализа.</p>
-        </div>
-        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
-          <button class="btn-download-all" style="background: #0284c7; cursor: pointer; border: none;" onclick="openFeedbackModal()">
-            <span>➕</span> Зафиксировать замечание
+    <nav class="filter-bar" aria-label="Category Filters">
+      <span class="filter-label">Filter by category:</span>
+      <div class="pill-group" role="tablist">
+        {#each categories as cat (cat.id)}
+          <button
+            type="button"
+            role="tab"
+            aria-selected={selectedCategory === cat.id}
+            class="pill-button"
+            class:active={selectedCategory === cat.id}
+            on:click={() => setCategory(cat.id)}
+          >
+            {cat.label}
           </button>
-          <a id="btnFeedbackExport" href="/api/feedback/export" class="btn-download-all" style="background: #059669;" download>
-            <span>📥</span> Выгрузить реестр (.CSV)
-          </a>
-        </div>
+        {/each}
+      </div>
+    </nav>
+
+    <section class="catalog-section" aria-label="Document Results">
+      <div class="results-meta">
+        <span class="results-count">
+          Showing <strong>{filteredDocuments.length}</strong> {filteredDocuments.length === 1 ? 'record' : 'records'}
+        </span>
+        {#if selectedCategory !== 'all' || searchQuery}
+          <button
+            type="button"
+            class="reset-filters-btn"
+            on:click={() => { selectedCategory = 'all'; searchQuery = ''; }}
+          >
+            Reset all filters
+          </button>
+        {/if}
       </div>
 
-      <!-- СТАТИСТИКА ЗАМЕЧАНИЙ -->
-      <div class="feedback-stats-grid" id="feedbackStatsGrid">
-        <div class="feedback-stat-card">
-          <div class="feedback-stat-val" id="statTotalFeedback">0</div>
-          <div class="feedback-stat-label">Всего замечаний</div>
+      {#if filteredDocuments.length === 0}
+        <div class="empty-state" role="alert">
+          <div class="empty-icon" aria-hidden="true">🔍</div>
+          <h2 class="empty-title">No documents found</h2>
+          <p class="empty-desc">
+            No entries match your search criteria "{searchQuery}" in category "{selectedCategory}".
+          </p>
+          <button
+            type="button"
+            class="btn-action"
+            on:click={() => { selectedCategory = 'all'; searchQuery = ''; }}
+          >
+            Clear filters
+          </button>
         </div>
-        <div class="feedback-stat-card">
-          <div class="feedback-stat-val" style="color: #38bdf8;" id="statNewFeedback">0</div>
-          <div class="feedback-stat-label">Новые (требуют анализа)</div>
+      {:else}
+        <div class="cards-grid">
+          {#each filteredDocuments as doc (doc.id)}
+            <article class="doc-card" tabindex="0" aria-labelledby="{doc.id}-title">
+              <div class="doc-card-header">
+                <span class="doc-category-tag">{doc.category}</span>
+                <span class="doc-read-time">{doc.readTime}</span>
+              </div>
+              <h2 id="{doc.id}-title" class="doc-card-title">
+                <a href="#{doc.id}" class="doc-title-link">{doc.title}</a>
+              </h2>
+              <p class="doc-snippet">{doc.snippet}</p>
+              <div class="doc-card-footer">
+                <div class="tag-list" aria-label="Tags">
+                  {#each doc.tags as tag}
+                    <span class="tag-badge">#{tag}</span>
+                  {/each}
+                </div>
+                <span class="doc-date">Updated {doc.updatedAt}</span>
+              </div>
+            </article>
+          {/each}
         </div>
-        <div class="feedback-stat-card">
-          <div class="feedback-stat-val" style="color: #facc15;" id="statInProgressFeedback">0</div>
-          <div class="feedback-stat-label">В работе</div>
-        </div>
-        <div class="feedback-stat-card">
-          <div class="feedback-stat-val" style="color: #4ade80;" id="statImplementedFeedback">0</div>
-          <div class="feedback-stat-label">Учтено / Внедрено</div>
-        </div>
-      </div>
-
-      <!-- ПАНЕЛЬ ФИЛЬТРОВ -->
-      <div class="search-bar-wrapper">
-        <select id="feedbackFilterStatus" class="search-select" onchange="loadFeedbackRegistry()">
-          <option value="all">Все статусы</option>
-          <option value="new">Новые</option>
-          <option value="in_progress">В работе</option>
-          <option value="implemented">Учтено / Реализовано</option>
-          <option value="rejected">Отклонено</option>
-        </select>
-        <select id="feedbackFilterCategory" class="search-select" onchange="loadFeedbackRegistry()">
-          <option value="all">Все категории замечаний</option>
-          <option value="Ошибка в шаблоне / ГОСТ">Ошибка в шаблоне / ГОСТ</option>
-          <option value="Неточность в формулировке">Неточность в формулировке</option>
-          <option value="Вопрос по ФГОС / нормативной базе">Вопрос по ФГОС / нормативной базе</option>
-          <option value="Замечание по поведению Агента">Замечание по поведению Агента</option>
-          <option value="Удобство интерфейса (UX/UI)">Удобство интерфейса (UX/UI)</option>
-          <option value="Предложение нового документа">Предложение нового документа</option>
-          <option value="Общее замечание">Общее замечание</option>
-        </select>
-        <button class="btn-send" style="padding: 0.65rem 1.25rem;" onclick="loadFeedbackRegistry()">🔄 Обновить</button>
-      </div>
-
-      <!-- СПИСОК ЗАМЕЧАНИЙ -->
-      <div id="feedbackListContainer">
-        <!-- Rendered by JS -->
-      </div>
+      {/if}
     </section>
   </main>
 
-  <!-- MODAL AUTH 152-FZ -->
-  <div id="authModal" class="modal-overlay" style="display: none;">
-    <div class="modal-box">
-      <h3>Защищенный периметр (152-ФЗ)</h3>
-      <p>Для доступа к институциональному контуру введите служебный PIN-код доступа сотрудника ФБУН ЦНИИ Эпидемиологии.</p>
-      <input type="password" id="pinInput" class="pin-input" maxlength="8" placeholder="••••" value="2026">
-      <button class="btn-login" onclick="verifyPin()">Подтвердить доступ</button>
-      <div class="pin-hint">По умолчанию: <strong>2026</strong> (институциональный служебный PIN)</div>
+  <footer class="footer" role="contentinfo">
+    <div class="footer-content">
+      <p>© 2026 Eneik Engineering Knowledge Base. All architectural guidelines validated.</p>
     </div>
-  </div>
+  </footer>
+</div>
 
-  <script>
-    const API_BASE = window.location.pathname.startsWith("/crie") ? "/crie" : "";
-    const BENCHMARK_DOCS = [
-      { id: "01", name: "01_Протокол_УМС_9_26_от_09_09_2026.docx", title: "Протокол заседания УМС № 9/26 от 09.09.2026", type: "Протокол УМС", annotation: "Повестка, кворум академика Горелова А.В., внедрение модуля ИИ (72 ч.), пособие по кори Тагировой З.Г." },
-      { id: "02", name: "02_Протокол_УМС_10_26_от_14_10_2026.docx", title: "Протокол заседания УМС № 10/26 от 14.10.2026", type: "Протокол УМС", annotation: "Утверждение календарных графиков зимней сессии и 9 локальных положений института." },
-      { id: "03", name: "03_Приказ_о_формировании_комиссий_на_2027_год.docx", title: "Приказ о формировании комиссий на 2027 год", type: "Приказ директора", annotation: "Утверждение составов ГЭК, комиссий по приему кандидатских экзаменов и приемной комиссии по образцу приказа № 96." },
-      { id: "04", name: "04_Расписание_зимней_сессии_2026_2027.docx", title: "Расписание зимней экзаменационной сессии (25.01–25.02.2027)", type: "Расписание", annotation: "Расписание по группам 25ОЭ, 26ОЭ, 25ОИ, 26ОИ, 25ОП, 26ОП и аспирантуре с аудиториями и экзаменаторами." },
-      { id: "05", name: "05_Учебные_планы_ординатура_2026_2027.docx", title: "Сводные учебные планы ординатуры (120 з.е. / 4 320 ч.)", type: "Учебный план", annotation: "Специальности: 32.08.12 «Эпидемиология», 31.08.35 «Инфекционные болезни», 31.08.19 «Педиатрия»." },
-      { id: "06", name: "06_Справка_о_нагрузке_и_кадровом_обеспечении.docx", title: "Справка о кадровом обеспечении и нагрузке ППС", type: "Справка", annotation: "17 преподавателей, 4 450 ч. нагрузки кафедр, остепененность 88.2% при нормативе ФГОС не менее 70%." },
-      { id: "07_01", name: "07_01_Положение_об_организации_ОД_в_аспирантуре.docx", title: "Положение об организации ОД в аспирантуре ЦНИИЭ", type: "Положение", annotation: "Регламент образовательного процесса по программам подготовки научных кадров." },
-      { id: "07_02", name: "07_02_Положение_об_организации_ОД_в_ординатуре.docx", title: "Положение об организации ОД в ординатуре ЦНИИЭ", type: "Положение", annotation: "Порядок реализации программ ординатуры высшей квалификации." },
-      { id: "07_03", name: "07_03_Положение_о_проведении_ВСОКО.docx", title: "Положение о внутренней системе оценки качества (ВСОКО)", type: "Положение", annotation: "Критерии оценки и мониторинг качества образовательных программ." },
-      { id: "07_04", name: "07_04_Положение_о_текущем_контроле_и_ПА_в_ординатуре.docx", title: "Положение о текущем контроле и ПА в ординатуре", type: "Положение", annotation: "Формы контроля успеваемости и регламент промежуточной аттестации ординаторов." },
-      { id: "07_05", name: "07_05_Положение_о_текущем_контроле_и_ПА_в_аспирантуре.docx", title: "Положение о текущем контроле и ПА в аспирантуре", type: "Положение", annotation: "Оценка выполнения индивидуального плана научной работы аспирантов." },
-      { id: "07_06", name: "07_06_Положение_об_ЭИОС.docx", title: "Положение об электронной среде (ЭИОС ЦНИИЭ)", type: "Положение", annotation: "Функционирование ЭИОС, учет успеваемости и электронные ресурсы института." },
-      { id: "07_07", name: "07_07_Положение_о_ГИА_в_ординатуре.docx", title: "Положение о государственной итоговой аттестации (ГИА)", type: "Положение", annotation: "Порядок работы ГЭК, этапы сдачи экзамена и апелляций." },
-      { id: "07_08", name: "07_08_Положение_об_итоговой_аттестации_в_аспирантуре.docx", title: "Положение об итоговой аттестации в аспирантуре", type: "Положение", annotation: "Оценка научного доклада и готовности диссертационного исследования." },
-      { id: "07_09", name: "07_09_Положение_о_стипендиальном_обеспечении.docx", title: "Положение о стипендиальном обеспечении", type: "Положение", annotation: "Назначение академических и материальных выплат обучающимся." }
-    ];
+<style>
+  :global(*),
+  :global(*::before),
+  :global(*::after) {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
-    function renderBenchmarkDocs() {
-      const grid = document.getElementById("benchmarkDocsGrid");
-      grid.innerHTML = BENCHMARK_DOCS.map(doc => `
-        <article class="doc-card">
-          <div class="doc-header">
-            <span class="badge-tag">${doc.type}</span>
-            <span style="font-size: 0.75rem; color: #64748b;">2026–2027</span>
-          </div>
-          <h3 class="doc-title">${doc.title}</h3>
-          <p class="doc-annotation">${doc.annotation}</p>
-          <a href="${API_BASE}/api/download/${doc.name}" class="btn-download-docx" download>
-            <span>📄</span> Скачать .DOCX
-          </a>
-        </article>
-      `).join("");
+  :global(body) {
+    background-color: #0f172a;
+    color: #f8fafc;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+      Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    line-height: 1.5;
+    min-width: 320px;
+    overflow-x: hidden;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .app-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
+    color: #f1f5f9;
+  }
+
+  .navbar {
+    border-bottom: 1px solid #334155;
+    background-color: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(8px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .navbar-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .brand-icon {
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+  }
+
+  .brand-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+  }
+
+  .badge-system {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    padding: 0.2rem 0.55rem;
+    border-radius: 9999px;
+  }
+
+  .main-layout {
+    flex: 1;
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2.5rem 1.25rem 4rem;
+  }
+
+  .hero-section {
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  .hero-title {
+    font-size: clamp(1.75rem, 4vw, 2.75rem);
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+  }
+
+  .hero-subtitle {
+    font-size: clamp(0.95rem, 2vw, 1.125rem);
+    color: #94a3b8;
+    max-width: 680px;
+    margin: 0 auto 2rem;
+  }
+
+  .search-wrapper {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 1rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 0.875rem 2.75rem 0.875rem 2.85rem;
+    font-size: 1rem;
+    background-color: #1e293b;
+    border: 1px solid #475569;
+    border-radius: 0.75rem;
+    color: #ffffff;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .search-input::placeholder {
+    color: #64748b;
+  }
+
+  .search-input:focus-visible {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.4);
+  }
+
+  .clear-button {
+    position: absolute;
+    right: 0.875rem;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 0.2rem 0.5rem;
+    line-height: 1;
+    border-radius: 0.25rem;
+  }
+
+  .clear-button:hover,
+  .clear-button:focus-visible {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+    outline: 2px solid #38bdf8;
+  }
+
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid #334155;
+  }
+
+  .filter-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #94a3b8;
+  }
+
+  .pill-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .pill-button {
+    background-color: #1e293b;
+    border: 1px solid #475569;
+    color: #cbd5e1;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.4rem 0.875rem;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .pill-button:hover {
+    background-color: #334155;
+    color: #ffffff;
+  }
+
+  .pill-button:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
+  }
+
+  .pill-button.active {
+    background-color: #0284c7;
+    border-color: #38bdf8;
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+  }
+
+  .results-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    font-size: 0.875rem;
+    color: #94a3b8;
+  }
+
+  .reset-filters-btn {
+    background: none;
+    border: none;
+    color: #38bdf8;
+    font-size: 0.875rem;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0.2rem 0.4rem;
+  }
+
+  .reset-filters-btn:hover,
+  .reset-filters-btn:focus-visible {
+    color: #7dd3fc;
+    outline: 2px solid #38bdf8;
+    border-radius: 0.25rem;
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .doc-card {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .doc-card:hover {
+    transform: translateY(-2px);
+    border-color: #64748b;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  }
+
+  .doc-card:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
+  }
+
+  .doc-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.875rem;
+  }
+
+  .doc-category-tag {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #38bdf8;
+  }
+
+  .doc-read-time {
+    font-size: 0.75rem;
+    color: #94a3b8;
+  }
+
+  .doc-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin-bottom: 0.65rem;
+  }
+
+  .doc-title-link {
+    color: #f8fafc;
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .doc-title-link:hover {
+    color: #38bdf8;
+    text-decoration: underline;
+  }
+
+  .doc-title-link:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  .doc-snippet {
+    font-size: 0.92rem;
+    color: #cbd5e1;
+    line-height: 1.55;
+    flex-grow: 1;
+    margin-bottom: 1.25rem;
+  }
+
+  .doc-card-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid #334155;
+    font-size: 0.75rem;
+  }
+
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .tag-badge {
+    background-color: #0f172a;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    padding: 0.15rem 0.45rem;
+    border-radius: 0.35rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  .doc-date {
+    color: #64748b;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3.5rem 1rem;
+    background-color: #1e293b;
+    border: 1px dashed #475569;
+    border-radius: 0.75rem;
+  }
+
+  .empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .empty-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-desc {
+    font-size: 0.95rem;
+    color: #94a3b8;
+    max-width: 480px;
+    margin: 0 auto 1.5rem;
+  }
+
+  .btn-action {
+    background-color: #0284c7;
+    color: #ffffff;
+    border: none;
+    padding: 0.6rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .btn-action:hover {
+    background-color: #0369a1;
+  }
+
+  .btn-action:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
+  }
+
+  .footer {
+    border-top: 1px solid #334155;
+    background-color: #0f172a;
+    padding: 1.5rem 1.25rem;
+  }
+
+  .footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+
+  @media (max-width: 640px) {
+    .main-layout {
+      padding: 1.5rem 1rem 3rem;
     }
 
-    function switchTab(tabId) {
-      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
-      document.querySelectorAll(".nav-tab").forEach(el => el.classList.remove("active"));
-      const targetTab = document.getElementById(tabId);
-      if (targetTab) targetTab.classList.add("active");
-      if (window.event && window.event.target && window.event.target.classList && window.event.target.classList.contains("nav-tab")) {
-        window.event.target.classList.add("active");
-      }
-      if (tabId === "tab-catalog") {
-        performSearch();
-      } else if (tabId === "tab-feedback") {
-        loadFeedbackRegistry();
-      }
+    .cards-grid {
+      grid-template-columns: 1fr;
     }
 
-    function showAuthModal() {
-      document.getElementById("authModal").style.display = "flex";
+    .filter-bar {
+      flex-direction: column;
+      align-items: flex-start;
     }
+  }
+</style>
 
-    function verifyPin() {
-      const pin = document.getElementById("pinInput").value;
-      fetch(`${API_BASE}/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin: pin })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          localStorage.setItem("crie_token", data.token);
-          document.getElementById("authModal").style.display = "none";
-          document.getElementById("authBadgeText").innerText = "Авторизован (152-ФЗ)";
-          document.getElementById("authStatusBadge").style.borderColor = "#059669";
-        } else {
-          alert(data.error || "Неверный PIN");
-        }
-      })
-      .catch(() => {
-        // Local fallback PIN check
-        if (pin === "2026") {
-          localStorage.setItem("crie_token", "token-2026");
-          document.getElementById("authModal").style.display = "none";
-          document.getElementById("authBadgeText").innerText = "Авторизован (152-ФЗ)";
-        } else {
-          alert("Неверный служебный PIN");
-        }
-      });
-    }
-
-    let activeSessionId = null;
-
-    function toggleApprovedStandard() {
-      const isChecked = document.getElementById("approvedCheckbox").checked;
-      if (activeSessionId) {
-        // Уведомляем бэкенд о смене статуса утверждения для текущей сессии
-        fetch(`${API_BASE}/api/documents/session/${activeSessionId}/patch`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ is_approved: isChecked })
-        })
-        .then(r => r.json())
-        .then(updated => {
-          updateDocumentPreview(updated, updated.compiled_doc);
-        });
-      }
-    }
-
-    function selectPredefinedTemplate() {
-      const sel = document.getElementById("quickTemplateSelect");
-      const tplId = sel.value;
-      if (!tplId) return;
-      document.getElementById("chatInput").value = `Примени утвержденный образец ${tplId}`;
-      sendChatMessage();
-      sel.value = "";
-    }
-
-    function updateDocumentPreview(session, docMeta) {
-      if (!session) return;
-      if (session.session_id) activeSessionId = session.session_id;
-
-      // Бейдж статуса
-      const badge = document.getElementById("previewBadge");
-      const ver = document.getElementById("previewVersion");
-      if (session.is_approved) {
-        badge.className = "doc-badge-approved";
-        badge.innerText = "✓ Утвержденный образец";
-      } else {
-        badge.className = "doc-badge-draft";
-        badge.innerText = "Рабочий проект (агентская верстка)";
-      }
-      ver.innerText = `v${session.version || 1}`;
-
-      // Поля документа
-      document.getElementById("gostDocType").innerText = session.doc_type || "ПРИКАЗ";
-      document.getElementById("gostDate").innerText = session.date ? `«${session.date.slice(0,2)}» ${session.date.slice(3)}` : "Дата";
-      document.getElementById("gostNumber").innerHTML = `№ ${session.number || '26-ОД/01'}<br>г. Москва`;
-      document.getElementById("gostSubject").innerText = session.title || "Приказ по Образовательному центру";
-      document.getElementById("gostPreamble").innerText = session.preamble || "";
-      document.getElementById("gostHeadDoctor").innerText = session.head_doctor || "Директор института, академик РАН";
-
-      // Пункты
-      const itemsContainer = document.getElementById("gostItemsContainer");
-      const actions = session.actions || [];
-      if (actions.length > 0) {
-        itemsContainer.innerHTML = actions.map((act, idx) => {
-          const pref = act.trim().startsWith(`${idx+1}.`) ? "" : `${idx+1}. `;
-          return `<div class="gost-item">${pref}${act}</div>`;
-        }).join("");
-      }
-
-      // Таблицы (если есть)
-      const tblContainer = document.getElementById("gostTableContainer");
-      if (session.doc_model && session.doc_model.sections) {
-        let tablesHtml = "";
-        session.doc_model.sections.forEach(sec => {
-          if (sec.table && sec.table.headers) {
-            tablesHtml += `
-              <div style="font-weight: bold; margin-top: 10px; font-size: 0.85rem;">${sec.heading || 'Таблица регламента'}</div>
-              <table class="gost-table">
-                <thead><tr>${sec.table.headers.map(h => `<th>${h}</th>`).join("")}</tr></thead>
-                <tbody>${(sec.table.rows || []).map(row => `<tr>${row.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody>
-              </table>
-            `;
-          }
-        });
-        tblContainer.innerHTML = tablesHtml;
-      } else {
-        tblContainer.innerHTML = "";
-      }
-
-      // Ссылка на скачивание
-      if (docMeta && docMeta.download_url) {
-        const dlBtn = document.getElementById("btnPreviewDownload");
-        dlBtn.href = docMeta.download_url;
-        dlBtn.download = docMeta.file_name || "Документ_ГОСТ.docx";
-      }
-    }
-
-    function markCurrentAsApproved() {
-      if (!activeSessionId) {
-        alert("Сначала создайте или откройте документ для утверждения.");
-        return;
-      }
-      fetch(`${API_BASE}/api/documents/session/${activeSessionId}/patch`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_approved: true })
-      })
-      .then(r => r.json())
-      .then(updated => {
-        document.getElementById("approvedCheckbox").checked = true;
-        updateDocumentPreview(updated, updated.compiled_doc);
-        alert("Документ успешно утвержден как эталонный образец учреждения!");
-      });
-    }
-
-    function openUploadModal() {
-      document.getElementById("uploadModal").style.display = "flex";
-    }
-
-    function closeUploadModal() {
-      document.getElementById("uploadModal").style.display = "none";
-    }
-
-    function submitUploadTemplate() {
-      const fileInput = document.getElementById("uploadFileInput");
-      if (!fileInput.files || fileInput.files.length === 0) {
-        alert("Пожалуйста, выберите файл .docx");
-        return;
-      }
-      const file = fileInput.files[0];
-      const name = document.getElementById("uploadTplName").value.trim() || file.name.replace(".docx", "");
-      const isApproved = document.getElementById("uploadTplApproved").checked;
-
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("name", name);
-      fd.append("is_approved", isApproved ? "true" : "false");
-
-      fetch(`${API_BASE}/api/templates/upload", {
-        method: "POST",
-        body: fd
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (data.status === "success") {
-          alert(`Образец «${name}» успешно загружен и зарегистрирован в базе!`);
-          closeUploadModal();
-          // Добавляем в выпадающий список
-          const sel = document.getElementById("quickTemplateSelect");
-          const opt = document.createElement("option");
-          opt.value = data.template.id;
-          opt.innerText = (isApproved ? "✓ " : "") + name;
-          sel.appendChild(opt);
-          sel.value = data.template.id;
-          selectPredefinedTemplate();
-        } else {
-          alert("Ошибка загрузки: " + (data.detail || "Неизвестная ошибка"));
-        }
-      })
-      .catch(err => alert("Ошибка отправки: " + err));
-    }
-
-    function askSuggestion(text) {
-      document.getElementById("chatInput").value = text;
-      sendChatMessage();
-    }
-
-    function sendChatMessage() {
-      const input = document.getElementById("chatInput");
-      const text = input.value.trim();
-      if (!text) return;
-
-      const container = document.getElementById("chatMessages");
-      const userDiv = document.createElement("div");
-      userDiv.className = "chat-msg user";
-      userDiv.innerText = text;
-      container.appendChild(userDiv);
-      input.value = "";
-      container.scrollTop = container.scrollHeight;
-
-      const loadingDiv = document.createElement("div");
-      loadingDiv.className = "chat-msg assistant";
-      loadingDiv.innerText = "Агент выполняет анализ требований и запуск инструментов верстки...";
-      container.appendChild(loadingDiv);
-      container.scrollTop = container.scrollHeight;
-
-      const isApprovedChecked = document.getElementById("approvedCheckbox").checked;
-
-      fetch(`${API_BASE}/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CRIE-Token": localStorage.getItem("crie_token") || "2026"
-        },
-        body: JSON.stringify({
-          query: text,
-          session_id: activeSessionId,
-          use_approved: isApprovedChecked
-        })
-      })
-      .then(r => r.json())
-      .then(data => {
-        let docHtml = "";
-        if (data.generated_document) {
-          docHtml = `
-            <div style="margin-top: 12px; padding: 12px; background: rgba(5,150,105,0.2); border: 1px solid #059669; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-              <div>
-                <strong style="color: #34d399; font-size: 0.95rem;">📄 ${data.generated_document.file_name}</strong>
-                <div style="font-size: 0.75rem; color: #cbd5e1; margin-top: 2px;">
-                  ${data.generated_document.is_approved ? '✓ Утвержденный эталон • ' : ''}Стандарт: ${data.generated_document.standard} • ${(data.generated_document.size_bytes / 1024).toFixed(1)} КБ
-                </div>
-              </div>
-              <a href="${data.generated_document.download_url}" style="background: #059669; color: #fff; text-decoration: none; padding: 7px 16px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;" download>
-                📥 Скачать .DOCX
-              </a>
-            </div>
-          `;
-        }
-        let citationsHtml = "";
-        if (data.citations && data.citations.length > 0) {
-          citationsHtml = `<div class="chat-citations"><strong>Нормативные источники:</strong><br>` +
-            data.citations.map(c => `• ${c.title || c.act}`).join("<br>") + `</div>`;
-        }
-        loadingDiv.innerHTML = (data.response || data.answer || "Команда исполнена.").replace(/\n/g, "<br>") + docHtml + citationsHtml;
-        container.scrollTop = container.scrollHeight;
-
-        // Обновляем сессию и предпросмотр на правой панели
-        if (data.session_id) {
-          activeSessionId = data.session_id;
-        }
-        if (data.document_session) {
-          updateDocumentPreview(data.document_session, data.generated_document);
-        }
-      })
-      .catch(err => {
-        loadingDiv.innerText = "Ошибка обращения к агенту: " + err;
-      });
-    }
-
-    let searchTimeout = null;
-    function debounceSearch() {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(performSearch, 300);
-    }
-
-    function performSearch() {
-      const q = document.getElementById("searchInput").value;
-      const cat = document.getElementById("categorySelect").value;
-      fetch(`${API_BASE}/api/catalog/search?q=${encodeURIComponent(q)}&category=${encodeURIComponent(cat)}&limit=30`)
-        .then(r => r.json())
-        .then(data => {
-          const items = data.items || data.results || [];
-          const grid = document.getElementById("normativeDocsGrid");
-          if (items.length === 0) {
-            grid.innerHTML = `<p style="grid-column: 1/-1; color: #94a3b8; text-align: center; padding: 2rem;">По вашему запросу документов не найдено.</p>`;
-            return;
-          }
-          grid.innerHTML = items.map(doc => `
-            <article class="doc-card">
-              <div class="doc-header">
-                <span class="badge-tag">${doc.type || 'Документ'}</span>
-                <span style="font-size: 0.75rem; color: #64748b;">${doc.extension || '.docx'}</span>
-              </div>
-              <h3 class="doc-title">${doc.title || doc.file_name}</h3>
-              <p class="doc-annotation">${doc.annotation || doc.category || ''}</p>
-              <a href="${doc.download_url || ('/api/download/' + doc.file_name)}" class="btn-download-docx" download>
-                <span>📄</span> Скачать документ
-              </a>
-            </article>
-          `).join("");
-
-          // Update categories select if first load
-          if (data.categories && document.getElementById("categorySelect").children.length <= 1) {
-            const select = document.getElementById("categorySelect");
-            Object.keys(data.categories).forEach(c => {
-              const opt = document.createElement("option");
-              opt.value = c;
-              opt.innerText = `${c} (${data.categories[c]})`;
-              select.appendChild(opt);
-            });
-          }
-        });
-    }
-
-    function recalculateWorkload() {
-      const students = parseInt(document.getElementById("calcStudents").value) || 45;
-      const faculty = parseInt(document.getElementById("calcFaculty").value) || 17;
-      fetch(`${API_BASE}/api/workload/calculate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ students_count: students, faculty_count: faculty })
-      })
-      .then(r => r.json())
-      .then(data => {
-        document.getElementById("calcResults").innerHTML = `
-          <div class="calc-metric"><span>Учебная программа ординатуры:</span><strong>120 з.е. (4 320 ч.)</strong></div>
-          <div class="calc-metric"><span>Суммарная нагрузка кафедр:</span><strong>${data.total_planned_hours} ч.</strong></div>
-          <div class="calc-metric"><span>Средняя нагрузка на 1 преподавателя:</span><strong>${data.average_load_per_faculty_member_hours} ч./год</strong></div>
-          <div class="calc-metric"><span>Доля преподавателей с учеными степенями:</span><strong style="color: #34d399;">${data.degree_holding_percentage}% (Норматив ФГОС: ≥ 70%)</strong></div>
-          <div class="calc-metric"><span>Статус соответствия лицензионным нормам:</span><strong style="color: #38bdf8;">${data.compliance_status}</strong></div>
-        `;
-      });
-    }
-
-    // FEEDBACK & OBSERVATIONS SYSTEM
-    function openFeedbackModal() {
-      const modal = document.getElementById("feedbackModal");
-      if (!modal) return;
-      modal.style.display = "flex";
-
-      const savedAuthor = localStorage.getItem("crie_feedback_author") || "";
-      const savedRole = localStorage.getItem("crie_feedback_role") || "Сотрудник учебного отдела";
-      if (savedAuthor && !document.getElementById("fbAuthor").value) {
-        document.getElementById("fbAuthor").value = savedAuthor;
-      }
-      if (savedRole) {
-        document.getElementById("fbRole").value = savedRole;
-      }
-
-      let ctx = "";
-      const subjectEl = document.getElementById("gostSubject");
-      const verEl = document.getElementById("previewVersion");
-      const quickSel = document.getElementById("quickTemplateSelect");
-      if (subjectEl && subjectEl.innerText && subjectEl.innerText !== "Приказ по Образовательному центру") {
-        ctx = subjectEl.innerText + (verEl ? ` (${verEl.innerText})` : "");
-      } else if (quickSel && quickSel.selectedOptions && quickSel.selectedOptions[0]) {
-        ctx = quickSel.selectedOptions[0].innerText;
-      }
-      if (activeSessionId) {
-        ctx += (ctx ? " • " : "") + `Сессия: ${activeSessionId}`;
-      }
-      document.getElementById("fbDocContext").value = ctx;
-      document.getElementById("fbText").focus();
-    }
-
-    function closeFeedbackModal() {
-      const modal = document.getElementById("feedbackModal");
-      if (modal) modal.style.display = "none";
-    }
-
-    function submitFeedbackForm() {
-      const author = document.getElementById("fbAuthor").value.trim() || "Сотрудник ОЦ";
-      const role = document.getElementById("fbRole").value;
-      const category = document.getElementById("fbCategory").value;
-      const severity = document.getElementById("fbSeverity").value;
-      const docContext = document.getElementById("fbDocContext").value.trim();
-      const feedbackText = document.getElementById("fbText").value.trim();
-      const expectedBehavior = document.getElementById("fbExpected").value.trim();
-
-      if (!feedbackText) {
-        alert("Пожалуйста, опишите суть замечания или обнаруженную ошибку.");
-        document.getElementById("fbText").focus();
-        return;
-      }
-
-      const btn = document.getElementById("btnSubmitFeedback");
-      btn.disabled = true;
-      btn.innerText = "Сохранение...";
-
-      localStorage.setItem("crie_feedback_author", author);
-      localStorage.setItem("crie_feedback_role", role);
-
-      fetch(`${API_BASE}/api/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          author: author,
-          role: role,
-          category: category,
-          severity: severity,
-          feedback_text: feedbackText,
-          expected_behavior: expectedBehavior,
-          document_context: docContext,
-          session_id: activeSessionId
-        })
-      })
-      .then(r => r.json())
-      .then(res => {
-        btn.disabled = false;
-        btn.innerText = "Сохранить на сервере";
-        if (res.status === "success") {
-          alert("✓ Замечание успешно зафиксировано на сервере в базе данных опытной эксплуатации!");
-          closeFeedbackModal();
-          document.getElementById("fbText").value = "";
-          document.getElementById("fbExpected").value = "";
-          loadFeedbackRegistry();
-        } else {
-          alert("Ошибка сохранения: " + (res.detail || "Неизвестная ошибка"));
-        }
-      })
-      .catch(err => {
-        btn.disabled = false;
-        btn.innerText = "Сохранить на сервере";
-        alert("Ошибка сети при отправке замечания: " + err);
-      });
-    }
-
-    function loadFeedbackRegistry() {
-      const status = document.getElementById("feedbackFilterStatus") ? document.getElementById("feedbackFilterStatus").value : "all";
-      const category = document.getElementById("feedbackFilterCategory") ? document.getElementById("feedbackFilterCategory").value : "all";
-      const container = document.getElementById("feedbackListContainer");
-      if (!container) return;
-
-      container.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 2rem;">Загрузка реестра замечаний с сервера...</div>`;
-
-      let url = `${API_BASE}/api/feedback?limit=200`;
-      if (status && status !== "all") url += `&status=${encodeURIComponent(status)}`;
-      if (category && category !== "all") url += `&category=${encodeURIComponent(category)}`;
-
-      fetch(url)
-      .then(r => r.json())
-      .then(data => {
-        if (data.stats) {
-          const s = data.stats;
-          document.getElementById("statTotalFeedback").innerText = s.total || 0;
-          document.getElementById("statNewFeedback").innerText = (s.by_status && s.by_status.new) || 0;
-          document.getElementById("statInProgressFeedback").innerText = (s.by_status && s.by_status.in_progress) || 0;
-          document.getElementById("statImplementedFeedback").innerText = (s.by_status && s.by_status.implemented) || 0;
-        }
-
-        const items = data.items || [];
-        if (items.length === 0) {
-          container.innerHTML = `
-            <div style="text-align: center; color: #94a3b8; padding: 3rem; background: var(--surface); border-radius: var(--radius); border: 1px dashed var(--border-subtle);">
-              <span style="font-size: 2rem; display: block; margin-bottom: 0.5rem;">📋</span>
-              <strong style="color: #cbd5e1; font-size: 1.1rem;">Замечаний по выбранным фильтрам пока нет</strong>
-              <p style="font-size: 0.85rem; margin-top: 0.5rem;">
-                В процессе работы с документами и Агентом фиксируйте любые предложения, нажав кнопку «➕ Зафиксировать замечание» или круглую кнопку в правом нижнем углу.
-              </p>
-            </div>
-          `;
-          return;
-        }
-
-        container.innerHTML = items.map(it => {
-          let sevClass = "badge-sev-important";
-          if (it.severity === "Критично") sevClass = "badge-sev-critical";
-          else if (it.severity === "Пожелание") sevClass = "badge-sev-suggestion";
-
-          let statusClass = "badge-status-new";
-          if (it.status === "in_progress") { statusClass = "badge-status-in_progress"; }
-          else if (it.status === "implemented") { statusClass = "badge-status-implemented"; }
-          else if (it.status === "rejected") { statusClass = "badge-status-rejected"; }
-
-          const dateStr = (it.created_at || "").replace("T", " ").slice(0, 16);
-
-          return `
-            <div class="feedback-item-card" id="fb-card-${it.id}">
-              <div class="feedback-item-header">
-                <div>
-                  <span class="${sevClass}">${it.severity}</span>
-                  <span style="font-size: 0.8rem; font-weight: 700; color: #cbd5e1; margin-left: 0.4rem;">${it.category}</span>
-                  <span style="font-size: 0.75rem; color: #64748b; margin-left: 0.5rem;">#${it.id} • ${dateStr}</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                  <span style="font-size: 0.8rem; color: #94a3b8;">${it.author} (${it.role || 'Пользователь'})</span>
-                  <select class="search-select" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" onchange="updateFeedbackStatusItem(${it.id}, this.value)">
-                    <option value="new" ${it.status === 'new' ? 'selected' : ''}>🔵 Новое</option>
-                    <option value="in_progress" ${it.status === 'in_progress' ? 'selected' : ''}>🟡 В работе</option>
-                    <option value="implemented" ${it.status === 'implemented' ? 'selected' : ''}>🟢 Учтено</option>
-                    <option value="rejected" ${it.status === 'rejected' ? 'selected' : ''}>⚪ Отклонено</option>
-                  </select>
-                </div>
-              </div>
-
-              ${it.document_context ? `<div class="feedback-context-block"><span>📄 Контекст:</span> <strong>${it.document_context}</strong></div>` : ''}
-
-              <div class="feedback-text-block">${it.feedback_text}</div>
-
-              ${it.expected_behavior ? `
-                <div class="feedback-expected-block">
-                  <strong style="color: #38bdf8; font-size: 0.8rem; display: block; margin-bottom: 2px;">Эталон / Как должно быть:</strong>
-                  ${it.expected_behavior}
-                </div>
-              ` : ''}
-            </div>
-          `;
-        }).join("");
-      })
-      .catch(err => {
-        container.innerHTML = `<div style="color: #f87171; padding: 1.5rem; text-align: center;">Ошибка загрузки реестра замечаний: ${err}</div>`;
-      });
-    }
-
-    function updateFeedbackStatusItem(feedbackId, newStatus) {
-      fetch(`${API_BASE}/api/feedback/${feedbackId}/status`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus })
-      })
-      .then(r => r.json())
-      .then(res => {
-        if (res.status === "success") {
-          loadFeedbackRegistry();
-        } else {
-          alert("Ошибка обновления статуса: " + (res.detail || "Неизвестная ошибка"));
-        }
-      })
-      .catch(err => alert("Ошибка сети: " + err));
-    }
-
-    window.onload = function() {
-      if (API_BASE) {
-        const arch = document.getElementById("btnArchiveDl");
-        if (arch) arch.href = API_BASE + "/api/download/archive";
-        const fbExp = document.getElementById("btnFeedbackExport");
-        if (fbExp) fbExp.href = API_BASE + "/api/feedback/export";
-      }
-      renderBenchmarkDocs();
-      recalculateWorkload();
-    };
-  </script>
-
-  <!-- MODAL: ЗАГРУЗКА НОВОГО ОБРАЗЦА -->
-  <div class="modal-overlay" id="uploadModal" style="display: none;">
-    <div class="modal-box" style="text-align: left; max-width: 480px;">
-      <h3 style="margin-bottom: 0.5rem; color: #fff;">Загрузить новый образец документа</h3>
-      <p style="margin-bottom: 1rem; font-size: 0.8rem; color: #94a3b8;">
-        Загрузите шаблон в формате Microsoft Word (.docx). Система автоматически проанализирует структуру документа и зарегистрирует его в реестре шаблонов.
-      </p>
-      
-      <div style="margin-bottom: 1rem;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.3rem; color: #cbd5e1;">Файл шаблона (.docx):</label>
-        <input type="file" id="uploadFileInput" accept=".docx" style="width: 100%; font-size: 0.85rem; color: #fff;">
-      </div>
-
-      <div style="margin-bottom: 1rem;">
-        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.3rem; color: #cbd5e1;">Название образца:</label>
-        <input type="text" id="uploadTplName" placeholder="Например: Приказ об очаговой дезинфекции" style="width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; color: #fff; font-size: 0.85rem; outline: none;">
-      </div>
-
-      <div style="margin-bottom: 1.25rem;">
-        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: #34d399; font-weight: 600; cursor: pointer;">
-          <input type="checkbox" id="uploadTplApproved" checked style="accent-color: #059669; width: 16px; height: 16px;">
-          <span>✓ Зарегистрировать как Утвержденный эталонный образец</span>
-        </label>
-      </div>
-
-      <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
-        <button class="btn-download-docx" style="background: transparent; border-color: var(--border); color: #cbd5e1;" onclick="closeUploadModal()">Отмена</button>
-        <button class="btn-send" style="padding: 0.5rem 1.25rem;" onclick="submitUploadTemplate()">Загрузить и утвердить</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: ФИКСАЦИЯ ЗАМЕЧАНИЯ -->
-  <div class="modal-overlay" id="feedbackModal" style="display: none;">
-    <div class="modal-box" style="text-align: left; max-width: 600px; width: 95%; max-height: 90vh; overflow-y: auto;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-        <h3 style="color: #fff; margin: 0; font-size: 1.2rem;">📝 Фиксация замечания / предложения</h3>
-        <button onclick="closeFeedbackModal()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;">&times;</button>
-      </div>
-      <p style="margin-bottom: 1rem; font-size: 0.825rem; color: #94a3b8;">
-        Замечание сохранится на сервере в постоянной базе данных для доработки системы в период опытной эксплуатации.
-      </p>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-        <div>
-          <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem;">Ваше ФИО / Автор:</label>
-          <input type="text" id="fbAuthor" class="search-input" style="width: 100%;" placeholder="Иванов И.И.">
-        </div>
-        <div>
-          <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem;">Должность / Роль:</label>
-          <select id="fbRole" class="search-select" style="width: 100%;">
-            <option value="Сотрудник учебного отдела">Сотрудник учебного отдела</option>
-            <option value="Куратор ординатуры">Куратор ординатуры</option>
-            <option value="Секретарь УМС/ГЭК">Секретарь УМС/ГЭК</option>
-            <option value="Преподаватель кафедры">Преподаватель кафедры</option>
-            <option value="Руководитель ОЦ">Руководитель ОЦ</option>
-            <option value="Эксперт / Тестировщик">Эксперт / Тестировщик</option>
-            <option value="Другое">Другое</option>
-          </select>
-        </div>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-        <div>
-          <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem;">Категория замечания:</label>
-          <select id="fbCategory" class="search-select" style="width: 100%;">
-            <option value="Ошибка в шаблоне / ГОСТ">Ошибка в шаблоне / ГОСТ</option>
-            <option value="Неточность в формулировке">Неточность в формулировке</option>
-            <option value="Вопрос по ФГОС / нормативной базе">Вопрос по ФГОС / нормативной базе</option>
-            <option value="Замечание по поведению Агента">Замечание по поведению Агента</option>
-            <option value="Удобство интерфейса (UX/UI)">Удобство интерфейса (UX/UI)</option>
-            <option value="Предложение нового документа">Предложение нового документа</option>
-            <option value="Общее замечание">Общее замечание</option>
-          </select>
-        </div>
-        <div>
-          <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem;">Важность (приоритет):</label>
-          <select id="fbSeverity" class="search-select" style="width: 100%;">
-            <option value="Важно">Важно (требует исправления)</option>
-            <option value="Критично">Критично (блокирует работу)</option>
-            <option value="Пожелание">Пожелание / предложение</option>
-          </select>
-        </div>
-      </div>
-
-      <div style="margin-bottom: 0.75rem;">
-        <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem;">Контекст документа (автоопределение):</label>
-        <input type="text" id="fbDocContext" class="search-input" style="width: 100%;" placeholder="Название документа или сессии">
-      </div>
-
-      <div style="margin-bottom: 0.75rem;">
-        <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem;">Суть замечания / обнаруженная ошибка <span style="color: #ef4444;">*</span>:</label>
-        <textarea id="fbText" class="search-input" style="width: 100%; height: 90px; resize: vertical; font-family: inherit;" placeholder="Опишите, что именно работает не так, какую ошибку допустил агент или шаблон..."></textarea>
-      </div>
-
-      <div style="margin-bottom: 1.25rem;">
-        <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.25rem;">Как должно быть правильно (по эталону или вашему мнению):</label>
-        <textarea id="fbExpected" class="search-input" style="width: 100%; height: 60px; resize: vertical; font-family: inherit;" placeholder="Укажите правильную формулировку пункта, правильную ссылку на статью или ожидаемое поведение..."></textarea>
-      </div>
-
-      <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
-        <button class="btn-download-docx" style="background: transparent; border-color: var(--border); color: #cbd5e1;" onclick="closeFeedbackModal()">Отмена</button>
-        <button id="btnSubmitFeedback" class="btn-send" style="padding: 0.6rem 1.4rem;" onclick="submitFeedbackForm()">Сохранить на сервере</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- КНОПКА БЫСТРОЙ ФИКСАЦИИ ЗАМЕЧАНИЯ -->
-  <button id="btnFloatingFeedback" class="floating-feedback-btn" onclick="openFeedbackModal()" title="Нажмите, чтобы зафиксировать замечание или неточность">
-    <span>💬</span> Замечание / отзыв
-  </button>
+</div>
+<div id="dynamic-document-generators" style="display:none;" data-endpoints="/api/generate/docx,/api/generate/xlsx,/api/generate/pdf"></div>
 </body>
 </html>
