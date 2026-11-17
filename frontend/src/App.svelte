@@ -442,12 +442,13 @@
     position: sticky;
     top: 0;
     z-index: 40;
+    backdrop-filter: blur(8px);
   }
 
   .top-bar-inner {
-    max-width: 1040px;
+    max-width: 1440px;
     margin: 0 auto;
-    padding: 0.85rem 1rem;
+    padding: 0.85rem 1.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -479,7 +480,7 @@
     font-weight: 700;
     color: #ffffff;
     background: #0f766e;
-    padding: 0.1rem 0.4rem;
+    padding: 0.15rem 0.45rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
   }
@@ -517,6 +518,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    min-height: 40px;
   }
 
   .desktop-nav-link:hover,
@@ -543,12 +545,18 @@
 
   /* Catalog Container */
   .catalog-container {
-    max-width: 1040px;
+    max-width: 1440px;
     width: 100%;
     margin: 0 auto;
     padding: 1.5rem 1rem;
     box-sizing: border-box;
     overflow-x: hidden;
+  }
+
+  @media (min-width: 1024px) {
+    .catalog-container {
+      padding: 2rem 2rem;
+    }
   }
 
   .catalog-header {
@@ -563,11 +571,25 @@
     margin-bottom: 1.5rem;
   }
 
+  @media (min-width: 1024px) {
+    .hero-section {
+      flex-direction: row;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+  }
+
   .hero-text h2 {
     margin: 0 0 0.35rem;
     font-size: 1.625rem;
     font-weight: 700;
     color: var(--text-primary);
+  }
+
+  @media (min-width: 1024px) {
+    .hero-text h2 {
+      font-size: 1.875rem;
+    }
   }
 
   .subtitle {
@@ -579,9 +601,16 @@
 
   .telemetry-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 0.75rem;
     width: 100%;
+  }
+
+  @media (min-width: 1024px) {
+    .telemetry-cards {
+      max-width: 500px;
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
 
   .telemetry-card {
@@ -648,6 +677,7 @@
     padding: 0 0.85rem;
     transition: border-color 0.2s;
     min-width: 0;
+    min-height: 48px;
   }
 
   .search-input-wrapper:focus-within {
@@ -692,6 +722,7 @@
     justify-content: center;
     transition: background-color 0.2s;
     flex-shrink: 0;
+    min-height: 48px;
   }
 
   .btn-search:hover:not(:disabled),
@@ -754,13 +785,14 @@
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
     border-radius: 9999px;
-    padding: 0.35rem 0.85rem;
+    padding: 0.45rem 0.85rem;
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
+    min-height: 38px;
   }
 
   .chip:hover {
@@ -867,8 +899,26 @@
 
   .document-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: 1fr;
     gap: 1.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .document-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .document-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (min-width: 1400px) {
+    .document-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
   }
 
   .document-card {
@@ -950,7 +1000,7 @@
     flex: 1 1 calc(50% - 0.35rem);
     min-width: 120px;
     border-radius: 0.375rem;
-    padding: 0.55rem 0.75rem;
+    padding: 0.6rem 0.75rem;
     font-size: 0.8125rem;
     font-weight: 700;
     cursor: pointer;
@@ -960,6 +1010,7 @@
     justify-content: center;
     gap: 0.4rem;
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    min-height: 44px;
   }
 
   .btn-download-docx {
