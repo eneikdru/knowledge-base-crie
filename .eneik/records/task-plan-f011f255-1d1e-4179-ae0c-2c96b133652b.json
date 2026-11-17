@@ -1,0 +1,34 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "e59b167a-75af-4f81-b7cc-01c00c7b02fd",
+      "title": "Standalone Responsive Knowledge Base & Fast Search Tool",
+      "jtbd": "When an educational resident, researcher, or faculty member accesses the CRIE knowledge base on desktop or mobile, I want a fast, thoughtful, self-contained search and document exploration interface without third-party integration friction, so that I can immediately find and inspect clinical, academic, and normative resources in seconds.",
+      "kanoClass": "Performance",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "Mockup conformance score >= 99%",
+      "tocConstraintRef": "Frontend component rendering fidelity",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Implement pixel-perfect UI updates matching approved design mockup design/approved/20261117154026-mockup/mockup.html in existing frontend code."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Implement approved design mockup updates into existing frontend interface",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing approved design updates for this epic, I want to patch existing frontend components to match design/approved/20261117154026-mockup/mockup.html pixel-perfect, so that the knowledge base user interface accurately reflects the approved design reference.",
+          "acceptanceCriteria": "Given the approved mockup at design/approved/20261117154026-mockup/mockup.html\nWhen patching existing frontend component styles and markup to match the design reference\nThen the visual presentation matches the approved mockup pixel-perfect across desktop and mobile devices without regressing search functionality.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Frontend template DOM styling alignment",
+          "sixSigmaMetric": "Visual difference defect rate < 0.1%",
+          "hasUi": true,
+          "requirementRefs": [
+            "R1"
+          ]
+        }
+      ]
+    }
+  ]
+}
