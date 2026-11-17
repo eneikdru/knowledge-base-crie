@@ -452,18 +452,21 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
+    width: 100%;
   }
 
   .branding {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .branding-tag-row {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .institute-badge {
@@ -490,12 +493,15 @@
     margin: 0;
     color: var(--text-primary);
     letter-spacing: -0.01em;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   /* Desktop Navigation */
   .desktop-nav {
     display: none;
     gap: 0.5rem;
+    flex-shrink: 0;
   }
 
   @media (min-width: 768px) {
@@ -568,6 +574,7 @@
     font-size: 1.625rem;
     font-weight: 700;
     color: var(--text-primary);
+    word-break: break-word;
   }
 
   .subtitle {
@@ -575,11 +582,12 @@
     color: var(--text-secondary);
     font-size: 0.9375rem;
     line-height: 1.4;
+    word-break: break-word;
   }
 
   .telemetry-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
     gap: 0.75rem;
     width: 100%;
   }
@@ -592,6 +600,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .telemetry-label {
@@ -607,6 +616,7 @@
     font-weight: 800;
     color: var(--text-primary);
     line-height: 1.2;
+    word-break: break-word;
   }
 
   .telemetry-value.active-status {
@@ -692,6 +702,7 @@
     justify-content: center;
     transition: background-color 0.2s;
     flex-shrink: 0;
+    min-height: 44px;
   }
 
   .btn-search:hover:not(:disabled),
@@ -720,6 +731,7 @@
     border-radius: 0.5rem;
     border: 1px solid var(--border-subtle);
     width: 100%;
+    box-sizing: border-box;
   }
 
   .facet-group {
@@ -761,6 +773,7 @@
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
+    min-height: 36px;
   }
 
   .chip:hover {
@@ -795,6 +808,7 @@
     background-color: var(--surface);
     border: 1px solid var(--border-subtle);
     margin-top: 1rem;
+    box-sizing: border-box;
   }
 
   .loading-state {
@@ -867,7 +881,7 @@
 
   .document-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
     gap: 1.25rem;
   }
 
@@ -881,6 +895,8 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s ease-in-out;
     word-break: break-word;
+    overflow-wrap: break-word;
+    min-width: 0;
   }
 
   .document-card:hover {
@@ -895,6 +911,7 @@
     justify-content: space-between;
     gap: 0.5rem;
     margin-bottom: 0.65rem;
+    flex-wrap: wrap;
   }
 
   .badge-doc-type {
@@ -960,6 +977,7 @@
     justify-content: center;
     gap: 0.4rem;
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    min-height: 40px;
   }
 
   .btn-download-docx {
