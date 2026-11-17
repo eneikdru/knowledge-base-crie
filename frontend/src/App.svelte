@@ -402,6 +402,7 @@
 
   :global(html) {
     box-sizing: border-box;
+    -webkit-text-size-adjust: 100%;
   }
 
   :global(*), :global(*::before), :global(*::after) {
@@ -423,7 +424,7 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    padding-bottom: 72px; /* space for mobile bottom nav */
+    padding-bottom: 76px; /* space for mobile bottom nav with safe-area */
     overflow-x: hidden;
     width: 100%;
   }
@@ -458,6 +459,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .branding-tag-row {
@@ -467,11 +469,14 @@
   }
 
   .institute-badge {
-    font-size: 0.75rem;
+    font-size: clamp(0.6875rem, 2vw, 0.75rem);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--accent-primary);
     font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .compliance-pill {
@@ -482,14 +487,16 @@
     padding: 0.1rem 0.4rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
+    flex-shrink: 0;
   }
 
   .app-title {
-    font-size: 1.15rem;
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
     font-weight: 700;
     margin: 0;
     color: var(--text-primary);
     letter-spacing: -0.01em;
+    line-height: 1.3;
   }
 
   /* Desktop Navigation */
@@ -517,6 +524,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    min-height: 44px;
   }
 
   .desktop-nav-link:hover,
@@ -546,7 +554,7 @@
     max-width: 1040px;
     width: 100%;
     margin: 0 auto;
-    padding: 1.5rem 1rem;
+    padding: clamp(1rem, 3vw, 1.5rem) 1rem;
     box-sizing: border-box;
     overflow-x: hidden;
   }
@@ -565,21 +573,22 @@
 
   .hero-text h2 {
     margin: 0 0 0.35rem;
-    font-size: 1.625rem;
+    font-size: clamp(1.25rem, 3.5vw, 1.75rem);
     font-weight: 700;
     color: var(--text-primary);
+    line-height: 1.25;
   }
 
   .subtitle {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 0.9375rem;
+    font-size: clamp(0.875rem, 2vw, 0.9375rem);
     line-height: 1.4;
   }
 
   .telemetry-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
     gap: 0.75rem;
     width: 100%;
   }
@@ -592,6 +601,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .telemetry-label {
@@ -603,7 +613,7 @@
   }
 
   .telemetry-value {
-    font-size: 1.25rem;
+    font-size: clamp(1.1rem, 2.5vw, 1.25rem);
     font-weight: 800;
     color: var(--text-primary);
     line-height: 1.2;
@@ -617,6 +627,9 @@
     font-size: 0.75rem;
     color: var(--text-secondary);
     font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .telemetry-trend.positive {
@@ -648,6 +661,7 @@
     padding: 0 0.85rem;
     transition: border-color 0.2s;
     min-width: 0;
+    min-height: 44px;
   }
 
   .search-input-wrapper:focus-within {
@@ -692,6 +706,7 @@
     justify-content: center;
     transition: background-color 0.2s;
     flex-shrink: 0;
+    min-height: 44px;
   }
 
   .btn-search:hover:not(:disabled),
@@ -716,7 +731,7 @@
     flex-direction: column;
     gap: 0.85rem;
     background: var(--surface);
-    padding: 1.15rem;
+    padding: clamp(0.85rem, 2vw, 1.15rem);
     border-radius: 0.5rem;
     border: 1px solid var(--border-subtle);
     width: 100%;
@@ -754,13 +769,14 @@
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
     border-radius: 9999px;
-    padding: 0.35rem 0.85rem;
+    padding: 0.4rem 0.85rem;
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
+    min-height: 38px;
   }
 
   .chip:hover {
@@ -871,6 +887,12 @@
     gap: 1.25rem;
   }
 
+  @media (max-width: 375px) {
+    .document-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
   .document-card {
     border: 1px solid var(--border-subtle);
     border-radius: 0.625rem;
@@ -881,6 +903,8 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s ease-in-out;
     word-break: break-word;
+    overflow-wrap: anywhere;
+    min-width: 0;
   }
 
   .document-card:hover {
@@ -917,7 +941,7 @@
 
   .doc-title {
     margin: 0 0 0.5rem;
-    font-size: 1.05rem;
+    font-size: clamp(1rem, 2vw, 1.05rem);
     line-height: 1.4;
     font-weight: 700;
     color: var(--text-primary);
@@ -960,6 +984,14 @@
     justify-content: center;
     gap: 0.4rem;
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    min-height: 44px;
+  }
+
+  @media (max-width: 400px) {
+    .btn-download {
+      flex: 1 1 100%;
+      min-width: 100%;
+    }
   }
 
   .btn-download-docx {
@@ -1022,6 +1054,7 @@
     align-items: center;
     justify-content: center;
     height: 100%;
+    min-height: 44px;
     background: transparent;
     border: none;
     color: var(--text-secondary);
