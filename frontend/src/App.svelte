@@ -390,13 +390,13 @@
     --border-subtle: #243b5e;
     --border-strong: #3b5f94;
     --text-primary: #ffffff;
-    --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
+    --text-secondary: #e2e8f0;
+    --text-muted: #cbd5e1;
     --accent-primary: #38bdf8;
     --accent-hover: #7dd3fc;
     --accent-active: #0284c7;
     --success-accent: #34d399;
-    --danger: #f87171;
+    --danger: #fca5a5;
     --danger-surface: #450a0a;
   }
 
@@ -478,10 +478,11 @@
     font-size: 0.65rem;
     font-weight: 700;
     color: #ffffff;
-    background: #0f766e;
-    padding: 0.1rem 0.4rem;
+    background: #134e4a;
+    padding: 0.15rem 0.45rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
+    border: 1px solid #2dd4bf;
   }
 
   .app-title {
@@ -516,14 +517,14 @@
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
   }
 
   .desktop-nav-link:hover,
   .desktop-nav-link:focus-visible {
     background: var(--surface);
     color: var(--text-primary);
-    outline: 2px solid var(--accent-primary);
+    outline: 3px solid var(--accent-primary);
     outline-offset: 2px;
   }
 
@@ -568,6 +569,7 @@
     font-size: 1.625rem;
     font-weight: 700;
     color: var(--text-primary);
+    overflow-wrap: break-word;
   }
 
   .subtitle {
@@ -575,6 +577,7 @@
     color: var(--text-secondary);
     font-size: 0.9375rem;
     line-height: 1.4;
+    overflow-wrap: break-word;
   }
 
   .telemetry-cards {
@@ -592,11 +595,12 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .telemetry-label {
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-muted);
@@ -616,7 +620,7 @@
   .telemetry-trend {
     font-size: 0.75rem;
     color: var(--text-secondary);
-    font-weight: 500;
+    font-weight: 600;
   }
 
   .telemetry-trend.positive {
@@ -651,7 +655,7 @@
   }
 
   .search-input-wrapper:focus-within {
-    outline: 2px solid var(--accent-primary);
+    outline: 3px solid var(--accent-primary);
     border-color: var(--accent-primary);
   }
 
@@ -684,13 +688,13 @@
     border-radius: 0.375rem;
     padding: 0.75rem 1.35rem;
     font-size: 0.9375rem;
-    font-weight: 700;
+    font-weight: 800;
     cursor: pointer;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, transform 0.1s;
     flex-shrink: 0;
   }
 
@@ -699,9 +703,14 @@
     background-color: var(--accent-hover);
   }
 
+  .btn-search:active:not(:disabled),
+  .btn-retry:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
   .btn-search:focus-visible,
   .btn-retry:focus-visible {
-    outline: 2px solid var(--accent-primary);
+    outline: 3px solid var(--accent-primary);
     outline-offset: 2px;
   }
 
@@ -769,9 +778,13 @@
     border-color: var(--border-strong);
   }
 
+  .chip:active {
+    transform: scale(0.96);
+  }
+
   .chip:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 1px;
+    outline: 3px solid var(--accent-primary);
+    outline-offset: 2px;
   }
 
   .chip-active {
@@ -880,7 +893,9 @@
     flex-direction: column;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s ease-in-out;
-    word-break: break-word;
+    overflow-wrap: break-word;
+    word-break: normal;
+    min-width: 0;
   }
 
   .document-card:hover {
@@ -921,12 +936,14 @@
     line-height: 1.4;
     font-weight: 700;
     color: var(--text-primary);
+    overflow-wrap: break-word;
   }
 
   .doc-author {
     margin: 0 0 0.5rem;
     font-size: 0.8125rem;
     color: var(--text-secondary);
+    overflow-wrap: break-word;
   }
 
   .doc-annotation {
@@ -935,6 +952,7 @@
     color: var(--text-secondary);
     flex: 1;
     line-height: 1.5;
+    overflow-wrap: break-word;
   }
 
   .card-actions {
@@ -959,7 +977,11 @@
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+  }
+
+  .btn-download:active {
+    transform: scale(0.97);
   }
 
   .btn-download-docx {
@@ -985,7 +1007,7 @@
   }
 
   .btn-download:focus-visible {
-    outline: 2px solid var(--accent-primary);
+    outline: 3px solid var(--accent-primary);
     outline-offset: 2px;
   }
 
@@ -1031,7 +1053,7 @@
   }
 
   .bottom-nav-item:focus-visible {
-    outline: 2px solid var(--accent-primary);
+    outline: 3px solid var(--accent-primary);
     outline-offset: -2px;
   }
 
