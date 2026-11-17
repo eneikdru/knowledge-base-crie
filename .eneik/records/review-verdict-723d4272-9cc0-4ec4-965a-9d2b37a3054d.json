@@ -1,0 +1,15 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "Ensure direct download button gracefully handles cases where an underlying corpus file is missing or temporarily unavailable by presenting a friendly toast or alert rather than a silent failure.",
+          "severity": "low"
+        }
+      ]
+    }
+  ]
+}
