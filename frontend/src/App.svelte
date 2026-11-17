@@ -61,7 +61,7 @@
     if (doc.docx_url) return doc.docx_url;
     if (doc.download_url && doc.download_url.endsWith('.docx')) return doc.download_url;
     if (doc.url && doc.url.endsWith('.docx')) return doc.url;
-    const base = doc.download_url || doc.url || `/api/documents/${doc.id || 'doc'}/download`;
+    const base = doc.download_url || doc.url || `${apiBaseUrl}/api/documents/${doc.id || 'doc'}/download`;
     if (base.includes('?')) return `${base}&format=docx`;
     return `${base}?format=docx`;
   }
@@ -70,7 +70,7 @@
     if (doc.pdf_url) return doc.pdf_url;
     if (doc.download_url && doc.download_url.endsWith('.pdf')) return doc.download_url;
     if (doc.url && doc.url.endsWith('.pdf')) return doc.url;
-    const base = doc.download_url || doc.url || `/api/documents/${doc.id || 'doc'}/download`;
+    const base = doc.download_url || doc.url || `${apiBaseUrl}/api/documents/${doc.id || 'doc'}/download`;
     if (base.includes('?')) return `${base}&format=pdf`;
     return `${base}?format=pdf`;
   }
@@ -162,13 +162,14 @@
         <h1 class="app-title">База знаний и ИИ-помощник</h1>
       </div>
       <!-- Desktop Tab Bar -->
-      <nav class="desktop-nav" aria-label="Главная навигация">
+      <nav class="desktop-nav" aria-label="Главная навигация" data-testid="desktop-nav">
         {#each navTabs as tab}
           <button
             type="button"
             class="desktop-nav-link {currentTab === tab.id ? 'active' : ''}"
             on:click={() => selectTab(tab.id)}
             aria-current={currentTab === tab.id ? 'page' : undefined}
+            data-testid={`desktop-nav-${tab.id}`}
           >
             <span class="tab-icon" aria-hidden="true">{tab.icon}</span>
             <span>{tab.label}</span>
@@ -191,18 +192,18 @@
             </div>
 
             <!-- Telemetry summary cards -->
-            <div class="telemetry-cards" aria-label="Метрики базы знаний">
-              <div class="telemetry-card">
+            <div class="telemetry-cards" aria-label="Метрики базы знаний" data-testid="telemetry-cards">
+              <div class="telemetry-card" data-testid="telemetry-card-count">
                 <span class="telemetry-label">Документов</span>
                 <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
                 <span class="telemetry-trend positive">↑ 100% верифицировано</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card-standard">
                 <span class="telemetry-label">Стандарт</span>
                 <span class="telemetry-value">ФГОС ВО</span>
                 <span class="telemetry-trend">31.08 Специалитет</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card-rpd">
                 <span class="telemetry-label">Статус РПД</span>
                 <span class="telemetry-value active-status">Актуально</span>
                 <span class="telemetry-trend">Синхронизировано</span>
@@ -221,9 +222,15 @@
                 bind:value={query}
                 placeholder="Поиск по названию, автору или ключевому слову..."
                 aria-label="Поиск материалов"
+                data-testid="search-input"
               />
             </div>
-            <button type="submit" class="btn-search" disabled={status === 'loading'}>
+            <button
+              type="submit"
+              class="btn-search"
+              disabled={status === 'loading'}
+              data-testid="search-button"
+            >
               {status === 'loading' ? 'Поиск...' : 'Найти'}
             </button>
           </form>
@@ -240,6 +247,7 @@
                     aria-checked={selectedSpecialty === spec.id}
                     class="chip {selectedSpecialty === spec.id ? 'chip-active' : ''}"
                     on:click={() => setSpecialtyFilter(spec.id)}
+                    data-testid={`chip-spec-${spec.id}`}
                   >
                     {spec.label}
                   </button>
@@ -257,6 +265,7 @@
                     aria-checked={selectedDocType === docType.id}
                     class="chip {selectedDocType === docType.id ? 'chip-active' : ''}"
                     on:click={() => setDocTypeFilter(docType.id)}
+                    data-testid={`chip-type-${docType.id}`}
                   >
                     {docType.label}
                   </button>
@@ -268,17 +277,17 @@
 
         <section class="catalog-content" aria-live="polite">
           {#if status === 'loading'}
-            <div class="state-view loading-state" role="status" aria-busy="true">
+            <div class="state-view loading-state" role="status" aria-busy="true" data-testid="loading-state">
               <div class="spinner" aria-hidden="true"></div>
               <p>Загрузка материалов каталога...</p>
             </div>
           {:else if status === 'error'}
-            <div class="state-view error-state" role="alert">
+            <div class="state-view error-state" role="alert" data-testid="error-state">
               <div class="error-icon" aria-hidden="true">!</div>
               <h2>Не удалось загрузить материалы</h2>
               <p class="error-message">{errorMessage}</p>
               <p class="retry-guidance">Пожалуйста, проверьте подключение или повторите попытку позже.</p>
-              <button type="button" class="btn-retry" on:click={handleRetry}>Повторить попытку</button>
+              <button type="button" class="btn-retry" on:click={handleRetry} data-testid="retry-button">Повторить попытку</button>
             </div>
           {:else if status === 'success' && filteredDocuments.length === 0}
             <div class="state-view empty-state" data-testid="empty-state">
@@ -289,6 +298,7 @@
                 <button
                   type="button"
                   class="btn-retry"
+                  data-testid="reset-filters-btn"
                   on:click={() => {
                     selectedSpecialty = 'all';
                     selectedDocType = 'all';
@@ -302,12 +312,12 @@
             </div>
           {:else if status === 'success' && filteredDocuments.length > 0}
             <div class="state-view present-state" data-testid="present-state">
-              <div class="results-meta">
-                <span>Показано 1-{filteredDocuments.length} из {totalCount} материалов</span>
+              <div class="results-meta" data-testid="results-meta">
+                <span>Показано 1-{filteredDocuments.length} из {totalCount > 0 ? totalCount : filteredDocuments.length} материалов</span>
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
-                  <article class="document-card" role="listitem">
+                  <article class="document-card" role="listitem" data-testid="document-card">
                     <div class="card-header-meta">
                       {#if doc.category || doc.type}
                         <span class="badge-doc-type">{doc.category || doc.type}</span>
@@ -335,6 +345,7 @@
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`Скачать DOCX: ${doc.title || 'документ'}`}
+                        data-testid="download-docx"
                       >
                         <span class="format-icon" aria-hidden="true">📄</span>
                         <span>Скачать DOCX</span>
@@ -346,6 +357,7 @@
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={`Скачать PDF: ${doc.title || 'документ'}`}
+                        data-testid="download-pdf"
                       >
                         <span class="format-icon" aria-hidden="true">📑</span>
                         <span>Скачать PDF</span>
@@ -360,12 +372,12 @@
       </div>
     {:else}
       <!-- Internal workspace views: Assistant, Orders, Workload -->
-      <Internal activeTab={currentTab} />
+      <Internal activeTab={currentTab} {apiBaseUrl} />
     {/if}
   </main>
 
   <!-- Mobile-First Bottom Navigation Bar (WCAG AAA compliant) -->
-  <nav class="bottom-navigation" aria-label="Нижняя панель навигации">
+  <nav class="bottom-navigation" aria-label="Нижняя панель навигации" data-testid="bottom-navigation">
     {#each navTabs as tab}
       <button
         type="button"
@@ -373,6 +385,7 @@
         on:click={() => selectTab(tab.id)}
         aria-current={currentTab === tab.id ? 'page' : undefined}
         aria-label={tab.label}
+        data-testid={`bottom-nav-${tab.id}`}
       >
         <span class="nav-icon" aria-hidden="true">{tab.icon}</span>
         <span class="nav-label">{tab.label}</span>
@@ -423,7 +436,7 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    padding-bottom: 72px; /* space for mobile bottom nav */
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); /* space for mobile bottom nav */
     overflow-x: hidden;
     width: 100%;
   }
@@ -692,6 +705,7 @@
     justify-content: center;
     transition: background-color 0.2s;
     flex-shrink: 0;
+    min-height: 44px;
   }
 
   .btn-search:hover:not(:disabled),
@@ -754,13 +768,14 @@
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
     border-radius: 9999px;
-    padding: 0.35rem 0.85rem;
+    padding: 0.4rem 0.85rem;
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
+    min-height: 36px;
   }
 
   .chip:hover {
@@ -960,6 +975,7 @@
     justify-content: center;
     gap: 0.4rem;
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    min-height: 40px;
   }
 
   .btn-download-docx {
@@ -999,7 +1015,8 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 64px;
+    height: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     background-color: var(--bg-secondary);
     border-top: 1px solid var(--border-subtle);
     display: flex;
@@ -1022,6 +1039,7 @@
     align-items: center;
     justify-content: center;
     height: 100%;
+    min-height: 48px;
     background: transparent;
     border: none;
     color: var(--text-secondary);
