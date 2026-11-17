@@ -423,7 +423,7 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    padding-bottom: 72px; /* space for mobile bottom nav */
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
     overflow-x: hidden;
     width: 100%;
   }
@@ -445,9 +445,9 @@
   }
 
   .top-bar-inner {
-    max-width: 1040px;
+    max-width: 1280px;
     margin: 0 auto;
-    padding: 0.85rem 1rem;
+    padding: 0.85rem 1.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -517,6 +517,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    min-height: 40px;
   }
 
   .desktop-nav-link:hover,
@@ -543,10 +544,10 @@
 
   /* Catalog Container */
   .catalog-container {
-    max-width: 1040px;
+    max-width: 1280px;
     width: 100%;
     margin: 0 auto;
-    padding: 1.5rem 1rem;
+    padding: 1.5rem 1.25rem;
     box-sizing: border-box;
     overflow-x: hidden;
   }
@@ -565,9 +566,15 @@
 
   .hero-text h2 {
     margin: 0 0 0.35rem;
-    font-size: 1.625rem;
+    font-size: 1.75rem;
     font-weight: 700;
     color: var(--text-primary);
+  }
+
+  @media (max-width: 480px) {
+    .hero-text h2 {
+      font-size: 1.35rem;
+    }
   }
 
   .subtitle {
@@ -579,8 +586,8 @@
 
   .telemetry-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.85rem;
     width: 100%;
   }
 
@@ -648,6 +655,7 @@
     padding: 0 0.85rem;
     transition: border-color 0.2s;
     min-width: 0;
+    min-height: 44px;
   }
 
   .search-input-wrapper:focus-within {
@@ -692,6 +700,7 @@
     justify-content: center;
     transition: background-color 0.2s;
     flex-shrink: 0;
+    min-height: 44px;
   }
 
   .btn-search:hover:not(:disabled),
@@ -761,6 +770,7 @@
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
+    min-height: 36px;
   }
 
   .chip:hover {
@@ -867,8 +877,20 @@
 
   .document-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 1.25rem;
+  }
+
+  @media (max-width: 480px) {
+    .document-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .document-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
 
   .document-card {
@@ -960,6 +982,7 @@
     justify-content: center;
     gap: 0.4rem;
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    min-height: 44px;
   }
 
   .btn-download-docx {
@@ -999,7 +1022,8 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 64px;
+    height: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     background-color: var(--bg-secondary);
     border-top: 1px solid var(--border-subtle);
     display: flex;
@@ -1028,6 +1052,7 @@
     padding: 0.25rem 0;
     cursor: pointer;
     transition: color 0.15s ease;
+    min-height: 48px;
   }
 
   .bottom-nav-item:focus-visible {
