@@ -1,0 +1,20 @@
+[
+  {
+    "concern": "(low) Generic FinTech archetype references and placeholders are present instead of specialized knowledge-base domain terminology.",
+    "jtbd": "When navigating the FBUN CRIE knowledge base interface, I want domain-accurate epidemiology and normative reference terminology instead of generic FinTech archetype placeholders, so that the cognitive model and domain trust of medical and epidemiological researchers are preserved.",
+    "acceptanceCriteria": "Given the mockup `design/approved/20261117221022-mockup/mockup.html`, When the header badge, image metadata, and archetype selector are rendered, Then all occurrences of 'FIN_TECH' and 'FinTech' are replaced with specialized knowledge-base domain terms such as 'EPIDEMIOLOGY_KB' and 'Epidemiology & Normative Registry'.",
+    "editInstruction": "In `design/approved/20261117221022-mockup/mockup.html`, replace 'FIN_TECH' in the hero badge (`<span>FIN_TECH</span>`) with 'EPIDEMIOLOGY_KB', change the alt attribute of the hero image from 'FinTech Main Interface Preview' to 'CRIE Knowledge Base Catalog & Normative Guidelines Preview', and update the option `<option value=\"FIN_TECH\" selected>FinTech</option>` to `<option value=\"EPIDEMIOLOGY_KB\" selected>Epidemiology & Normative Registry</option>`.",
+    "kanoClass": "performance",
+    "cynefinDomain": "clear",
+    "leanValue": "valuable"
+  },
+  {
+    "concern": "(low) Form controls lack explicit visual definitions for interactive validation error states.",
+    "jtbd": "When inputting parameters into the operator control form, I want immediate and unambiguous visual affordance for interactive validation error states, so that I can identify, understand, and correct invalid inputs without perceptual ambiguity.",
+    "acceptanceCriteria": "Given the control parameters form in `design/approved/20261117221022-mockup/mockup.html`, When an input field (such as `#user-email`) is marked invalid via `aria-invalid=\"true\"` or pseudoclasses `:invalid`, Then the input displays explicit error border and focus-ring tokens (e.g. `border-rose-500` / `ring-rose-500`) alongside an accessible error message linked via `aria-describedby`.",
+    "editInstruction": "In `design/approved/20261117221022-mockup/mockup.html`, add explicit error-state styling definitions to the input fields in `#main-content section[aria-labelledby=\"form-heading\"] form` (e.g. support for `aria-invalid:border-rose-500` and `focus-visible:aria-invalid:ring-rose-500`), and attach an accessible error message container `<p id=\"user-email-error\" class=\"mt-1 text-xs text-rose-400 hidden\" role=\"alert\">Please enter a valid operator email address.</p>` with `aria-describedby=\"user-email-error\"` on the email input.",
+    "kanoClass": "must_be",
+    "cynefinDomain": "complicated",
+    "leanValue": "valuable"
+  }
+]
