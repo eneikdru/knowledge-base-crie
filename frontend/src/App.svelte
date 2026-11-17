@@ -157,7 +157,7 @@
       <div class="branding">
         <div class="branding-tag-row">
           <span class="institute-badge">ФБУН ЦНИИ Эпидемиологии</span>
-          <span class="compliance-pill">WCAG AAA</span>
+          <span class="compliance-pill" aria-label="Соответствие стандарту доступности WCAG AAA">WCAG AAA</span>
         </div>
         <h1 class="app-title">База знаний и ИИ-помощник</h1>
       </div>
@@ -217,13 +217,14 @@
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input
                 id="catalog-search-input"
+                data-testid="search-input"
                 type="search"
                 bind:value={query}
                 placeholder="Поиск по названию, автору или ключевому слову..."
                 aria-label="Поиск материалов"
               />
             </div>
-            <button type="submit" class="btn-search" disabled={status === 'loading'}>
+            <button type="submit" data-testid="search-button" class="btn-search" disabled={status === 'loading'}>
               {status === 'loading' ? 'Поиск...' : 'Найти'}
             </button>
           </form>
@@ -307,7 +308,7 @@
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
-                  <article class="document-card" role="listitem">
+                  <article class="document-card" data-testid="document-card" role="listitem">
                     <div class="card-header-meta">
                       {#if doc.category || doc.type}
                         <span class="badge-doc-type">{doc.category || doc.type}</span>
@@ -391,7 +392,7 @@
     --border-strong: #3b5f94;
     --text-primary: #ffffff;
     --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
+    --text-muted: #9bb0cb;
     --accent-primary: #38bdf8;
     --accent-hover: #7dd3fc;
     --accent-active: #0284c7;
@@ -479,7 +480,7 @@
     font-weight: 700;
     color: #ffffff;
     background: #0f766e;
-    padding: 0.1rem 0.4rem;
+    padding: 0.15rem 0.45rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
   }
@@ -517,6 +518,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    min-height: 44px;
   }
 
   .desktop-nav-link:hover,
@@ -592,6 +594,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .telemetry-label {
@@ -648,6 +651,7 @@
     padding: 0 0.85rem;
     transition: border-color 0.2s;
     min-width: 0;
+    min-height: 48px;
   }
 
   .search-input-wrapper:focus-within {
@@ -692,6 +696,7 @@
     justify-content: center;
     transition: background-color 0.2s;
     flex-shrink: 0;
+    min-height: 48px;
   }
 
   .btn-search:hover:not(:disabled),
@@ -754,13 +759,14 @@
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
     border-radius: 9999px;
-    padding: 0.35rem 0.85rem;
+    padding: 0.45rem 0.95rem;
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
+    min-height: 44px;
   }
 
   .chip:hover {
@@ -949,6 +955,7 @@
   .btn-download {
     flex: 1 1 calc(50% - 0.35rem);
     min-width: 120px;
+    min-height: 44px;
     border-radius: 0.375rem;
     padding: 0.55rem 0.75rem;
     font-size: 0.8125rem;
