@@ -391,7 +391,7 @@
     --border-strong: #3b5f94;
     --text-primary: #ffffff;
     --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
+    --text-muted: #a8bcd4;
     --accent-primary: #38bdf8;
     --accent-hover: #7dd3fc;
     --accent-active: #0284c7;
@@ -402,6 +402,8 @@
 
   :global(html) {
     box-sizing: border-box;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
   :global(*), :global(*::before), :global(*::after) {
@@ -417,6 +419,7 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    max-width: 100vw;
   }
 
   .app-viewport {
@@ -426,6 +429,7 @@
     padding-bottom: 72px; /* space for mobile bottom nav */
     overflow-x: hidden;
     width: 100%;
+    max-width: 100vw;
   }
 
   @media (min-width: 768px) {
@@ -475,11 +479,12 @@
   }
 
   .compliance-pill {
-    font-size: 0.65rem;
+    font-size: 0.6875rem;
     font-weight: 700;
-    color: #ffffff;
-    background: #0f766e;
-    padding: 0.1rem 0.4rem;
+    color: #f0fdf4;
+    background: #064e3b;
+    border: 1px solid #059669;
+    padding: 0.15rem 0.5rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
   }
@@ -516,15 +521,24 @@
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background-color 0.2s, color 0.2s, transform 0.1s ease-in-out;
   }
 
-  .desktop-nav-link:hover,
+  .desktop-nav-link:hover {
+    background: var(--surface);
+    color: var(--text-primary);
+  }
+
   .desktop-nav-link:focus-visible {
     background: var(--surface);
     color: var(--text-primary);
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
+  }
+
+  .desktop-nav-link:active {
+    transform: scale(0.97);
   }
 
   .desktop-nav-link.active {
@@ -546,7 +560,7 @@
     max-width: 1040px;
     width: 100%;
     margin: 0 auto;
-    padding: 1.5rem 1rem;
+    padding: 1.25rem 1rem;
     box-sizing: border-box;
     overflow-x: hidden;
   }
@@ -579,7 +593,7 @@
 
   .telemetry-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 0.75rem;
     width: 100%;
   }
@@ -596,7 +610,7 @@
 
   .telemetry-label {
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-muted);
@@ -616,7 +630,7 @@
   .telemetry-trend {
     font-size: 0.75rem;
     color: var(--text-secondary);
-    font-weight: 500;
+    font-weight: 600;
   }
 
   .telemetry-trend.positive {
@@ -646,13 +660,15 @@
     border: 1px solid var(--border-strong);
     border-radius: 0.375rem;
     padding: 0 0.85rem;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
     min-width: 0;
   }
 
   .search-input-wrapper:focus-within {
     outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
     border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
   }
 
   .search-icon {
@@ -690,7 +706,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, transform 0.1s ease-in-out, box-shadow 0.2s;
     flex-shrink: 0;
   }
 
@@ -703,6 +719,13 @@
   .btn-retry:focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
+  }
+
+  .btn-search:active:not(:disabled),
+  .btn-retry:active:not(:disabled) {
+    transform: scale(0.97);
+    background-color: var(--accent-active);
   }
 
   .btn-search:disabled {
@@ -758,7 +781,7 @@
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease-in-out;
+    transition: background-color 0.15s ease-in-out, color 0.15s, border-color 0.15s, transform 0.1s ease-in-out, box-shadow 0.15s;
     display: inline-flex;
     align-items: center;
   }
@@ -771,7 +794,12 @@
 
   .chip:focus-visible {
     outline: 2px solid var(--accent-primary);
-    outline-offset: 1px;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
+  }
+
+  .chip:active {
+    transform: scale(0.96);
   }
 
   .chip-active {
@@ -889,6 +917,11 @@
     transform: translateY(-1px);
   }
 
+  .document-card:focus-within {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px var(--accent-primary), 0 8px 20px -4px rgba(0, 0, 0, 0.5);
+  }
+
   .card-header-meta {
     display: flex;
     align-items: center;
@@ -906,13 +939,14 @@
     padding: 0.2rem 0.55rem;
     border-radius: 0.25rem;
     background: var(--surface-elevated);
-    color: var(--accent-primary);
+    color: #7dd3fc;
     border: 1px solid var(--border-subtle);
   }
 
   .doc-date {
     font-size: 0.75rem;
     color: var(--text-muted);
+    font-weight: 600;
   }
 
   .doc-title {
@@ -959,7 +993,7 @@
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s, transform 0.1s ease-in-out, box-shadow 0.15s;
   }
 
   .btn-download-docx {
@@ -973,6 +1007,11 @@
     border-color: var(--accent-hover);
   }
 
+  .btn-download-docx:active {
+    background-color: var(--accent-active);
+    transform: scale(0.97);
+  }
+
   .btn-download-pdf {
     background-color: var(--surface-elevated);
     color: #ffffff;
@@ -984,9 +1023,15 @@
     color: #ffffff;
   }
 
+  .btn-download-pdf:active {
+    background-color: var(--border-subtle);
+    transform: scale(0.97);
+  }
+
   .btn-download:focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
   }
 
   .format-icon {
@@ -1027,12 +1072,17 @@
     color: var(--text-secondary);
     padding: 0.25rem 0;
     cursor: pointer;
-    transition: color 0.15s ease;
+    transition: color 0.15s ease, transform 0.1s ease;
   }
 
   .bottom-nav-item:focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: -2px;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
+  }
+
+  .bottom-nav-item:active {
+    transform: scale(0.94);
   }
 
   .bottom-nav-item.active {
