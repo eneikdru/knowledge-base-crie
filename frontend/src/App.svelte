@@ -447,27 +447,29 @@
   .top-bar-inner {
     max-width: 1040px;
     margin: 0 auto;
-    padding: 0.85rem 1rem;
+    padding: clamp(0.65rem, 2vw, 0.95rem) clamp(0.75rem, 3vw, 1.25rem);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
+    gap: clamp(0.5rem, 2vw, 1rem);
   }
 
   .branding {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .branding-tag-row {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .institute-badge {
-    font-size: 0.75rem;
+    font-size: clamp(0.6875rem, 1.8vw, 0.75rem);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--accent-primary);
@@ -479,17 +481,20 @@
     font-weight: 700;
     color: #ffffff;
     background: #0f766e;
-    padding: 0.1rem 0.4rem;
+    padding: 0.15rem 0.45rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
   }
 
   .app-title {
-    font-size: 1.15rem;
+    font-size: clamp(1rem, 3vw, 1.25rem);
     font-weight: 700;
     margin: 0;
     color: var(--text-primary);
     letter-spacing: -0.01em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   /* Desktop Navigation */
@@ -512,6 +517,7 @@
     border: 1px solid transparent;
     border-radius: 0.375rem;
     padding: 0.5rem 0.85rem;
+    min-height: 44px;
     color: var(--text-secondary);
     font-size: 0.875rem;
     font-weight: 600;
@@ -546,7 +552,7 @@
     max-width: 1040px;
     width: 100%;
     margin: 0 auto;
-    padding: 1.5rem 1rem;
+    padding: clamp(1rem, 3vw, 1.75rem) clamp(0.75rem, 3vw, 1.25rem);
     box-sizing: border-box;
     overflow-x: hidden;
   }
@@ -559,28 +565,30 @@
   .hero-section {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: clamp(1rem, 2.5vw, 1.5rem);
     margin-bottom: 1.5rem;
   }
 
   .hero-text h2 {
     margin: 0 0 0.35rem;
-    font-size: 1.625rem;
-    font-weight: 700;
+    font-size: clamp(1.35rem, 4.5vw, 1.85rem);
+    font-weight: 800;
     color: var(--text-primary);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
   }
 
   .subtitle {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 0.9375rem;
-    line-height: 1.4;
+    font-size: clamp(0.875rem, 2.2vw, 1rem);
+    line-height: 1.45;
   }
 
   .telemetry-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: clamp(0.5rem, 1.8vw, 0.85rem);
     width: 100%;
   }
 
@@ -588,7 +596,7 @@
     background: var(--surface);
     border: 1px solid var(--border-subtle);
     border-radius: 0.5rem;
-    padding: 0.85rem 1rem;
+    padding: clamp(0.75rem, 2vw, 1rem);
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
@@ -603,7 +611,7 @@
   }
 
   .telemetry-value {
-    font-size: 1.25rem;
+    font-size: clamp(1.15rem, 3vw, 1.45rem);
     font-weight: 800;
     color: var(--text-primary);
     line-height: 1.2;
@@ -646,6 +654,7 @@
     border: 1px solid var(--border-strong);
     border-radius: 0.375rem;
     padding: 0 0.85rem;
+    min-height: 44px;
     transition: border-color 0.2s;
     min-width: 0;
   }
@@ -664,10 +673,10 @@
 
   .search-input-wrapper input[type='search'] {
     width: 100%;
-    padding: 0.75rem 0;
+    padding: 0.65rem 0;
     border: none;
     outline: none;
-    font-size: 0.95rem;
+    font-size: clamp(0.875rem, 2vw, 0.95rem);
     color: var(--text-primary);
     background: transparent;
     min-width: 0;
@@ -682,7 +691,8 @@
     color: #050b14;
     border: none;
     border-radius: 0.375rem;
-    padding: 0.75rem 1.35rem;
+    padding: 0.65rem 1.35rem;
+    min-height: 44px;
     font-size: 0.9375rem;
     font-weight: 700;
     cursor: pointer;
@@ -716,7 +726,7 @@
     flex-direction: column;
     gap: 0.85rem;
     background: var(--surface);
-    padding: 1.15rem;
+    padding: clamp(0.85rem, 2vw, 1.15rem);
     border-radius: 0.5rem;
     border: 1px solid var(--border-subtle);
     width: 100%;
@@ -754,7 +764,8 @@
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
     border-radius: 9999px;
-    padding: 0.35rem 0.85rem;
+    padding: 0.4rem 0.85rem;
+    min-height: 38px;
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
@@ -789,7 +800,7 @@
 
   /* Status and Empty States */
   .state-view {
-    padding: 3rem 1.5rem;
+    padding: clamp(2rem, 5vw, 3rem) clamp(1rem, 3vw, 1.5rem);
     border-radius: 0.5rem;
     text-align: center;
     background-color: var(--surface);
@@ -843,6 +854,7 @@
   .empty-state h2 {
     margin-bottom: 0.5rem;
     color: var(--text-primary);
+    font-size: clamp(1.2rem, 3.5vw, 1.5rem);
   }
 
   .empty-hint {
@@ -868,19 +880,20 @@
   .document-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.25rem;
+    gap: clamp(0.85rem, 2.5vw, 1.25rem);
   }
 
   .document-card {
     border: 1px solid var(--border-subtle);
     border-radius: 0.625rem;
-    padding: 1.25rem;
+    padding: clamp(1rem, 2.5vw, 1.25rem);
     background-color: var(--surface);
     display: flex;
     flex-direction: column;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s ease-in-out;
     word-break: break-word;
+    overflow-wrap: anywhere;
   }
 
   .document-card:hover {
@@ -895,6 +908,7 @@
     justify-content: space-between;
     gap: 0.5rem;
     margin-bottom: 0.65rem;
+    flex-wrap: wrap;
   }
 
   .badge-doc-type {
@@ -917,7 +931,7 @@
 
   .doc-title {
     margin: 0 0 0.5rem;
-    font-size: 1.05rem;
+    font-size: clamp(0.98rem, 2.5vw, 1.15rem);
     line-height: 1.4;
     font-weight: 700;
     color: var(--text-primary);
@@ -931,7 +945,7 @@
 
   .doc-annotation {
     margin: 0.25rem 0 1.25rem;
-    font-size: 0.875rem;
+    font-size: clamp(0.8125rem, 2vw, 0.875rem);
     color: var(--text-secondary);
     flex: 1;
     line-height: 1.5;
@@ -948,9 +962,10 @@
 
   .btn-download {
     flex: 1 1 calc(50% - 0.35rem);
-    min-width: 120px;
+    min-width: 110px;
     border-radius: 0.375rem;
     padding: 0.55rem 0.75rem;
+    min-height: 44px;
     font-size: 0.8125rem;
     font-weight: 700;
     cursor: pointer;
@@ -1022,6 +1037,7 @@
     align-items: center;
     justify-content: center;
     height: 100%;
+    min-height: 44px;
     background: transparent;
     border: none;
     color: var(--text-secondary);
