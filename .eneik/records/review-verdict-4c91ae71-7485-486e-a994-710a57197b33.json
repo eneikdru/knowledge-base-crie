@@ -1,4 +1,0 @@
-{"verdicts": [
-  {"sourceIndex": 0, "verdict": "approve", "criticalReason": "", "concerns": [{"text": "Default examination schedule matrix primarily addresses 25ОЭ and 26ОЭ; ensure dynamic table generation fully expands all cohorts (25ОИ, 26ОИ, 25ОП, 26ОП and postgraduate students) per Section 3.в in follow-up refinements.", "severity": "low"}]},
-  {"sourceIndex": 1, "verdict": "approve", "criticalReason": "", "concerns": [{"text": "Confirm institutional PIN/token session lifecycle and token refreshing across SPA navigation to avoid unexpected re-authentication prompts for active users.", "severity": "low"}]}
-]}
