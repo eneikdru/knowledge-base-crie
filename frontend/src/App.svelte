@@ -402,6 +402,7 @@
 
   :global(html) {
     box-sizing: border-box;
+    overflow-x: hidden;
   }
 
   :global(*), :global(*::before), :global(*::after) {
@@ -426,6 +427,7 @@
     padding-bottom: 72px; /* space for mobile bottom nav */
     overflow-x: hidden;
     width: 100%;
+    box-sizing: border-box;
   }
 
   @media (min-width: 768px) {
@@ -442,6 +444,7 @@
     position: sticky;
     top: 0;
     z-index: 40;
+    width: 100%;
   }
 
   .top-bar-inner {
@@ -452,18 +455,21 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
+    width: 100%;
   }
 
   .branding {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .branding-tag-row {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .institute-badge {
@@ -490,6 +496,9 @@
     margin: 0;
     color: var(--text-primary);
     letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* Desktop Navigation */
@@ -553,6 +562,7 @@
 
   .catalog-header {
     margin-bottom: 1.75rem;
+    width: 100%;
   }
 
   /* Hero & Telemetry Section */
@@ -561,6 +571,7 @@
     flex-direction: column;
     gap: 1.25rem;
     margin-bottom: 1.5rem;
+    width: 100%;
   }
 
   .hero-text h2 {
@@ -592,6 +603,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .telemetry-label {
@@ -607,6 +619,9 @@
     font-weight: 800;
     color: var(--text-primary);
     line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .telemetry-value.active-status {
@@ -617,6 +632,9 @@
     font-size: 0.75rem;
     color: var(--text-secondary);
     font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .telemetry-trend.positive {
@@ -895,6 +913,7 @@
     justify-content: space-between;
     gap: 0.5rem;
     margin-bottom: 0.65rem;
+    flex-wrap: wrap;
   }
 
   .badge-doc-type {
