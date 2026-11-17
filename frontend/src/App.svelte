@@ -167,6 +167,7 @@
           <button
             type="button"
             class="desktop-nav-link {currentTab === tab.id ? 'active' : ''}"
+            data-testid={`desktop-nav-${tab.id}`}
             on:click={() => selectTab(tab.id)}
             aria-current={currentTab === tab.id ? 'page' : undefined}
           >
@@ -191,7 +192,7 @@
             </div>
 
             <!-- Telemetry summary cards -->
-            <div class="telemetry-cards" aria-label="Метрики базы знаний">
+            <div class="telemetry-cards" aria-label="Метрики базы знаний" data-testid="telemetry-cards">
               <div class="telemetry-card">
                 <span class="telemetry-label">Документов</span>
                 <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
@@ -217,13 +218,14 @@
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input
                 id="catalog-search-input"
+                data-testid="catalog-search-input"
                 type="search"
                 bind:value={query}
                 placeholder="Поиск по названию, автору или ключевому слову..."
                 aria-label="Поиск материалов"
               />
             </div>
-            <button type="submit" class="btn-search" disabled={status === 'loading'}>
+            <button type="submit" class="btn-search" data-testid="search-button" disabled={status === 'loading'}>
               {status === 'loading' ? 'Поиск...' : 'Найти'}
             </button>
           </form>
@@ -239,6 +241,7 @@
                     role="radio"
                     aria-checked={selectedSpecialty === spec.id}
                     class="chip {selectedSpecialty === spec.id ? 'chip-active' : ''}"
+                    data-testid={`spec-filter-${spec.id}`}
                     on:click={() => setSpecialtyFilter(spec.id)}
                   >
                     {spec.label}
@@ -256,6 +259,7 @@
                     role="radio"
                     aria-checked={selectedDocType === docType.id}
                     class="chip {selectedDocType === docType.id ? 'chip-active' : ''}"
+                    data-testid={`type-filter-${docType.id}`}
                     on:click={() => setDocTypeFilter(docType.id)}
                   >
                     {docType.label}
@@ -268,12 +272,12 @@
 
         <section class="catalog-content" aria-live="polite">
           {#if status === 'loading'}
-            <div class="state-view loading-state" role="status" aria-busy="true">
+            <div class="state-view loading-state" role="status" aria-busy="true" data-testid="loading-state">
               <div class="spinner" aria-hidden="true"></div>
               <p>Загрузка материалов каталога...</p>
             </div>
           {:else if status === 'error'}
-            <div class="state-view error-state" role="alert">
+            <div class="state-view error-state" role="alert" data-testid="error-state">
               <div class="error-icon" aria-hidden="true">!</div>
               <h2>Не удалось загрузить материалы</h2>
               <p class="error-message">{errorMessage}</p>
@@ -289,6 +293,7 @@
                 <button
                   type="button"
                   class="btn-retry"
+                  data-testid="btn-reset-filters"
                   on:click={() => {
                     selectedSpecialty = 'all';
                     selectedDocType = 'all';
@@ -302,12 +307,12 @@
             </div>
           {:else if status === 'success' && filteredDocuments.length > 0}
             <div class="state-view present-state" data-testid="present-state">
-              <div class="results-meta">
+              <div class="results-meta" data-testid="results-count">
                 <span>Показано 1-{filteredDocuments.length} из {totalCount} материалов</span>
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
-                  <article class="document-card" role="listitem">
+                  <article class="document-card" role="listitem" data-testid="document-card">
                     <div class="card-header-meta">
                       {#if doc.category || doc.type}
                         <span class="badge-doc-type">{doc.category || doc.type}</span>
@@ -331,6 +336,7 @@
                       <a
                         href={getDocxDownloadUrl(doc)}
                         class="btn-download btn-download-docx"
+                        data-testid="download-docx"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -342,6 +348,7 @@
                       <a
                         href={getPdfDownloadUrl(doc)}
                         class="btn-download btn-download-pdf"
+                        data-testid="download-pdf"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -370,6 +377,7 @@
       <button
         type="button"
         class="bottom-nav-item {currentTab === tab.id ? 'active' : ''}"
+        data-testid={`bottom-nav-${tab.id}`}
         on:click={() => selectTab(tab.id)}
         aria-current={currentTab === tab.id ? 'page' : undefined}
         aria-label={tab.label}
