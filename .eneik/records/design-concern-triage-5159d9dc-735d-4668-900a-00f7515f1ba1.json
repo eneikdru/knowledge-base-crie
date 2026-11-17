@@ -1,0 +1,20 @@
+[
+  {
+    "concern": "(low) Generic FinTech archetype references and placeholders are present instead of specialized knowledge-base domain terminology.",
+    "jtbd": "When navigating the CRIE knowledge base interface, I want to see epidemiological, normative, and academic terms rather than generic FinTech terminology, so that I can immediately orient myself within the clinical-epidemiological domain without cognitive friction or confusion.",
+    "acceptanceCriteria": "Given the mockup under review, When inspecting badges, headings, image alt texts, and select options, Then references to 'FinTech' and generic 'FIN_TECH' archetype tags are replaced with FBUN CRIE epidemiological domain terminology (such as 'Эпидемиология / Нормативная база' or 'FBUN CRIE Knowledge Base') and 'FinTech Brand Logo' alt text is updated to reflect the CRIE institutional identity.",
+    "editInstruction": "In design/approved/20261117221022-mockup/mockup.html, replace all occurrences of 'FinTech' and 'FIN_TECH' (specifically in the title, logo alt text, hero badge, and project-archetype-select option) with FBUN CRIE epidemiological knowledge-base terms: change the badge to 'FBUN CRIE • Эпидемиология', the logo alt text to 'FBUN CRIE Logo', and the select option to 'FBUN CRIE Knowledge Base' with value 'CRIE_KB'.",
+    "kanoClass": "performance",
+    "cynefinDomain": "clear",
+    "leanValue": "valuable"
+  },
+  {
+    "concern": "(low) Form controls lack explicit visual definitions for interactive validation error states.",
+    "jtbd": "When inputting parameters into the control form with invalid or missing values, I want distinct and accessible visual error states (such as high-contrast border highlights, error message containers, and aria-invalid attributes), so that I can immediately recognize and rectify input mistakes without ambiguity.",
+    "acceptanceCriteria": "Given the control parameters form in the mockup, When form controls enter an invalid state, Then the inputs display an explicit visual error style (e.g. border-rose-500, ring-rose-500, text-rose-400), an error text message block linked via aria-describedby is rendered below the field, and aria-invalid='true' is present.",
+    "editInstruction": "In design/approved/20261117221022-mockup/mockup.html, add visual styles and markup demonstrating an interactive validation error state for the user-email input field: add an example state with CSS classes 'border-rose-500 focus-visible:ring-rose-400', an 'aria-invalid=\"false\"' default attribute, and an inline sample error message '<p id=\"user-email-error\" class=\"hidden text-xs text-rose-400 mt-1\">Please enter a valid institution email address</p>' referenced by 'aria-describedby=\"user-email-error\"'.",
+    "kanoClass": "must_be",
+    "cynefinDomain": "clear",
+    "leanValue": "essential"
+  }
+]
