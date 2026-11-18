@@ -1,0 +1,15 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "Ensure mobile bottom navigation accounts for iOS safe area inset padding on 375px viewports.",
+          "severity": "low"
+        }
+      ]
+    }
+  ]
+}
