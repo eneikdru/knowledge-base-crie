@@ -1,0 +1,20 @@
+{
+  "violations": [
+    {
+      "roleTag": "BARCAN-TAG-03",
+      "type": "layer_violation",
+      "prNumber": 307,
+      "reason": "Task plan in PR #307 references mockup design/approved/20261118031025-mockup/mockup.html which introduces FinTech archetype templates and operator email control forms that are completely disconnected from the CRIE knowledge base domain, mobile bottom navigation, and resident/researcher workflows specified in the client brief."
+    },
+    {
+      "roleTag": "BARCAN-TAG-09",
+      "type": "methodological",
+      "philosopher": "Donald Davidson",
+      "thesis": "Radical interpretation and holism: a local design refresh or task breakdown must preserve semantic coherence with the surrounding domain web rather than substituting generic boilerplate.",
+      "score": "3",
+      "mustBe": "Task plans and design reviews must ground requirements in the actual CRIE normative domain, mobile assistant, and document registry rather than generic FinTech archetype tokens.",
+      "performance": "PR #307 decomposed a slice for pixel-perfect fidelity against a FinTech-labeled template without verifying alignment with the institutional CRIE client specification.",
+      "attractive": "Automatic cross-checking of generated mockup metadata against the active domain entity graph and client specification constraints."
+    }
+  ]
+}
