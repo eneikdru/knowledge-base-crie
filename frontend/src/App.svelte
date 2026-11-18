@@ -162,7 +162,7 @@
         <h1 class="app-title">База знаний и ИИ-помощник</h1>
       </div>
       <!-- Desktop Tab Bar -->
-      <nav class="desktop-nav" aria-label="Главная навигация">
+      <nav class="desktop-nav" aria-label="Главная навигация" data-testid="desktop-nav">
         {#each navTabs as tab}
           <button
             type="button"
@@ -217,13 +217,14 @@
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input
                 id="catalog-search-input"
+                data-testid="catalog-search-input"
                 type="search"
                 bind:value={query}
                 placeholder="Поиск по названию, автору или ключевому слову..."
                 aria-label="Поиск материалов"
               />
             </div>
-            <button type="submit" class="btn-search" disabled={status === 'loading'}>
+            <button type="submit" class="btn-search" data-testid="search-button" disabled={status === 'loading'}>
               {status === 'loading' ? 'Поиск...' : 'Найти'}
             </button>
           </form>
@@ -240,6 +241,7 @@
                     aria-checked={selectedSpecialty === spec.id}
                     class="chip {selectedSpecialty === spec.id ? 'chip-active' : ''}"
                     on:click={() => setSpecialtyFilter(spec.id)}
+                    data-testid="chip-filter"
                   >
                     {spec.label}
                   </button>
@@ -257,6 +259,7 @@
                     aria-checked={selectedDocType === docType.id}
                     class="chip {selectedDocType === docType.id ? 'chip-active' : ''}"
                     on:click={() => setDocTypeFilter(docType.id)}
+                    data-testid="chip-filter"
                   >
                     {docType.label}
                   </button>
@@ -307,7 +310,7 @@
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
-                  <article class="document-card" role="listitem">
+                  <article class="document-card" role="listitem" data-testid="document-card">
                     <div class="card-header-meta">
                       {#if doc.category || doc.type}
                         <span class="badge-doc-type">{doc.category || doc.type}</span>
@@ -331,6 +334,7 @@
                       <a
                         href={getDocxDownloadUrl(doc)}
                         class="btn-download btn-download-docx"
+                        data-testid="download-docx"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -342,6 +346,7 @@
                       <a
                         href={getPdfDownloadUrl(doc)}
                         class="btn-download btn-download-pdf"
+                        data-testid="download-pdf"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -365,7 +370,7 @@
   </main>
 
   <!-- Mobile-First Bottom Navigation Bar (WCAG AAA compliant) -->
-  <nav class="bottom-navigation" aria-label="Нижняя панель навигации">
+  <nav class="bottom-navigation" aria-label="Нижняя панель навигации" data-testid="bottom-nav">
     {#each navTabs as tab}
       <button
         type="button"
@@ -402,6 +407,8 @@
 
   :global(html) {
     box-sizing: border-box;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
   :global(*), :global(*::before), :global(*::after) {
@@ -417,13 +424,14 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    max-width: 100vw;
   }
 
   .app-viewport {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    padding-bottom: 72px; /* space for mobile bottom nav */
+    padding-bottom: 72px;
     overflow-x: hidden;
     width: 100%;
   }
@@ -442,6 +450,7 @@
     position: sticky;
     top: 0;
     z-index: 40;
+    width: 100%;
   }
 
   .top-bar-inner {
@@ -452,6 +461,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
+    width: 100%;
   }
 
   .branding {
@@ -464,6 +474,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .institute-badge {
@@ -477,9 +488,10 @@
   .compliance-pill {
     font-size: 0.65rem;
     font-weight: 700;
-    color: #ffffff;
-    background: #0f766e;
-    padding: 0.1rem 0.4rem;
+    color: #5eead4;
+    background: #042f2e;
+    border: 1px solid #14b8a6;
+    padding: 0.1rem 0.45rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
   }
@@ -490,6 +502,7 @@
     margin: 0;
     color: var(--text-primary);
     letter-spacing: -0.01em;
+    word-break: break-word;
   }
 
   /* Desktop Navigation */
@@ -568,6 +581,7 @@
     font-size: 1.625rem;
     font-weight: 700;
     color: var(--text-primary);
+    word-break: break-word;
   }
 
   .subtitle {
@@ -575,11 +589,12 @@
     color: var(--text-secondary);
     font-size: 0.9375rem;
     line-height: 1.4;
+    word-break: break-word;
   }
 
   .telemetry-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
     gap: 0.75rem;
     width: 100%;
   }
@@ -592,6 +607,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .telemetry-label {
@@ -867,7 +883,7 @@
 
   .document-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
     gap: 1.25rem;
   }
 
@@ -881,6 +897,7 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s ease-in-out;
     word-break: break-word;
+    overflow-wrap: break-word;
   }
 
   .document-card:hover {
@@ -921,12 +938,14 @@
     line-height: 1.4;
     font-weight: 700;
     color: var(--text-primary);
+    word-break: break-word;
   }
 
   .doc-author {
     margin: 0 0 0.5rem;
     font-size: 0.8125rem;
     color: var(--text-secondary);
+    word-break: break-word;
   }
 
   .doc-annotation {
@@ -935,6 +954,7 @@
     color: var(--text-secondary);
     flex: 1;
     line-height: 1.5;
+    word-break: break-word;
   }
 
   .card-actions {
@@ -948,7 +968,7 @@
 
   .btn-download {
     flex: 1 1 calc(50% - 0.35rem);
-    min-width: 120px;
+    min-width: 0;
     border-radius: 0.375rem;
     padding: 0.55rem 0.75rem;
     font-size: 0.8125rem;
@@ -960,6 +980,7 @@
     justify-content: center;
     gap: 0.4rem;
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    white-space: nowrap;
   }
 
   .btn-download-docx {
