@@ -151,13 +151,15 @@
 </script>
 
 <div class="app-viewport">
+  <a href="#main-content" class="skip-link">Перейти к основному контенту</a>
+
   <!-- Top Banner / App Header -->
   <header class="app-top-bar" role="banner">
     <div class="top-bar-inner">
       <div class="branding">
         <div class="branding-tag-row">
           <span class="institute-badge">ФБУН ЦНИИ Эпидемиологии</span>
-          <span class="compliance-pill">WCAG AAA</span>
+          <span class="compliance-pill" aria-label="Соответствие стандарту доступности WCAG AAA">WCAG AAA</span>
         </div>
         <h1 class="app-title">База знаний и ИИ-помощник</h1>
       </div>
@@ -169,6 +171,7 @@
             class="desktop-nav-link {currentTab === tab.id ? 'active' : ''}"
             on:click={() => selectTab(tab.id)}
             aria-current={currentTab === tab.id ? 'page' : undefined}
+            data-testid={`nav-tab-${tab.id}`}
           >
             <span class="tab-icon" aria-hidden="true">{tab.icon}</span>
             <span>{tab.label}</span>
@@ -192,17 +195,17 @@
 
             <!-- Telemetry summary cards -->
             <div class="telemetry-cards" aria-label="Метрики базы знаний">
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card">
                 <span class="telemetry-label">Документов</span>
                 <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
                 <span class="telemetry-trend positive">↑ 100% верифицировано</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card">
                 <span class="telemetry-label">Стандарт</span>
                 <span class="telemetry-value">ФГОС ВО</span>
                 <span class="telemetry-trend">31.08 Специалитет</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card">
                 <span class="telemetry-label">Статус РПД</span>
                 <span class="telemetry-value active-status">Актуально</span>
                 <span class="telemetry-trend">Синхронизировано</span>
@@ -217,13 +220,19 @@
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input
                 id="catalog-search-input"
+                data-testid="search-input"
                 type="search"
                 bind:value={query}
                 placeholder="Поиск по названию, автору или ключевому слову..."
                 aria-label="Поиск материалов"
               />
             </div>
-            <button type="submit" class="btn-search" disabled={status === 'loading'}>
+            <button
+              type="submit"
+              class="btn-search"
+              data-testid="search-button"
+              disabled={status === 'loading'}
+            >
               {status === 'loading' ? 'Поиск...' : 'Найти'}
             </button>
           </form>
@@ -239,6 +248,7 @@
                     role="radio"
                     aria-checked={selectedSpecialty === spec.id}
                     class="chip {selectedSpecialty === spec.id ? 'chip-active' : ''}"
+                    data-testid={`chip-spec-${spec.id}`}
                     on:click={() => setSpecialtyFilter(spec.id)}
                   >
                     {spec.label}
@@ -256,6 +266,7 @@
                     role="radio"
                     aria-checked={selectedDocType === docType.id}
                     class="chip {selectedDocType === docType.id ? 'chip-active' : ''}"
+                    data-testid={`chip-type-${docType.id}`}
                     on:click={() => setDocTypeFilter(docType.id)}
                   >
                     {docType.label}
@@ -307,7 +318,7 @@
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
-                  <article class="document-card" role="listitem">
+                  <article class="document-card" data-testid="document-card" role="listitem">
                     <div class="card-header-meta">
                       {#if doc.category || doc.type}
                         <span class="badge-doc-type">{doc.category || doc.type}</span>
@@ -373,6 +384,7 @@
         on:click={() => selectTab(tab.id)}
         aria-current={currentTab === tab.id ? 'page' : undefined}
         aria-label={tab.label}
+        data-testid={`mobile-nav-${tab.id}`}
       >
         <span class="nav-icon" aria-hidden="true">{tab.icon}</span>
         <span class="nav-label">{tab.label}</span>
@@ -419,11 +431,30 @@
     overflow-x: hidden;
   }
 
+  .skip-link {
+    position: absolute;
+    top: -60px;
+    left: 1rem;
+    background: var(--accent-primary);
+    color: #050b14;
+    padding: 0.5rem 1rem;
+    z-index: 100;
+    font-weight: 700;
+    border-radius: 0 0 0.375rem 0.375rem;
+    text-decoration: none;
+    transition: top 0.2s ease-in-out;
+  }
+
+  .skip-link:focus {
+    top: 0;
+    outline: 2px solid #ffffff;
+  }
+
   .app-viewport {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    padding-bottom: 72px; /* space for mobile bottom nav */
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
     overflow-x: hidden;
     width: 100%;
   }
@@ -445,7 +476,7 @@
   }
 
   .top-bar-inner {
-    max-width: 1040px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 0.85rem 1rem;
     display: flex;
@@ -477,11 +508,12 @@
   .compliance-pill {
     font-size: 0.65rem;
     font-weight: 700;
-    color: #ffffff;
-    background: #0f766e;
-    padding: 0.1rem 0.4rem;
+    color: #a7f3d0;
+    background: #064e3b;
+    padding: 0.15rem 0.45rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
+    border: 1px solid #059669;
   }
 
   .app-title {
@@ -543,7 +575,7 @@
 
   /* Catalog Container */
   .catalog-container {
-    max-width: 1040px;
+    max-width: 1200px;
     width: 100%;
     margin: 0 auto;
     padding: 1.5rem 1rem;
@@ -948,7 +980,7 @@
 
   .btn-download {
     flex: 1 1 calc(50% - 0.35rem);
-    min-width: 120px;
+    min-width: 110px;
     border-radius: 0.375rem;
     padding: 0.55rem 0.75rem;
     font-size: 0.8125rem;
@@ -999,7 +1031,8 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 64px;
+    height: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     background-color: var(--bg-secondary);
     border-top: 1px solid var(--border-subtle);
     display: flex;
