@@ -4,7 +4,8 @@
   // Active tab state: 'assistant' | 'orders' | 'workload'
   export let activeTab = 'assistant';
 
-  // Chat State
+  // Chat State with localStorage session persistence (D002/D010 compliance)
+  const CHAT_STORAGE_KEY = 'crie_internal_chat_messages_v1';
   let chatQuery = '';
   let isSubmitting = false;
   let chatError = null;
@@ -18,6 +19,29 @@
       timestamp: '09:00'
     }
   ];
+
+  onMount(() => {
+    try {
+      const savedMessages = localStorage.getItem(CHAT_STORAGE_KEY);
+      if (savedMessages) {
+        const parsed = JSON.parse(savedMessages);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          messages = parsed;
+        }
+      }
+    } catch (err) {
+      console.warn('Could not read chat history from localStorage', err);
+    }
+  });
+
+  function persistMessages(nextMessages) {
+    messages = nextMessages;
+    try {
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(nextMessages));
+    } catch (err) {
+      console.warn('Could not persist chat history to localStorage', err);
+    }
+  }
 
   // Document Generator State
   // Document classes according to GOST R 7.0.97-2016 and Brief item 3:
@@ -175,7 +199,7 @@
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    messages = [...messages, userMsg];
+    persistMessages([...messages, userMsg]);
     const queryText = chatQuery;
     chatQuery = '';
     isSubmitting = true;
@@ -204,7 +228,7 @@
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
-      messages = [...messages, assistantMsg];
+      persistMessages([...messages, assistantMsg]);
     } catch (err) {
       chatError = err.message || 'Не удалось получить ответ от ассистента. Проверьте соединение с сервером.';
     } finally {
