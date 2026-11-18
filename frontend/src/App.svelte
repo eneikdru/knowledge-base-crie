@@ -124,6 +124,13 @@
     currentTab = tabId;
   }
 
+  function clearAllFilters() {
+    selectedSpecialty = 'all';
+    selectedDocType = 'all';
+    query = '';
+    fetchDocuments('');
+  }
+
   function registerPWA() {
     if (typeof window === 'undefined') return;
 
@@ -167,6 +174,7 @@
           <button
             type="button"
             class="desktop-nav-link {currentTab === tab.id ? 'active' : ''}"
+            data-testid={`desktop-tab-${tab.id}`}
             on:click={() => selectTab(tab.id)}
             aria-current={currentTab === tab.id ? 'page' : undefined}
           >
@@ -192,17 +200,17 @@
 
             <!-- Telemetry summary cards -->
             <div class="telemetry-cards" aria-label="Метрики базы знаний">
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-docs-count">
                 <span class="telemetry-label">Документов</span>
                 <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
                 <span class="telemetry-trend positive">↑ 100% верифицировано</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-standard">
                 <span class="telemetry-label">Стандарт</span>
                 <span class="telemetry-value">ФГОС ВО</span>
                 <span class="telemetry-trend">31.08 Специалитет</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-status">
                 <span class="telemetry-label">Статус РПД</span>
                 <span class="telemetry-value active-status">Актуально</span>
                 <span class="telemetry-trend">Синхронизировано</span>
@@ -217,13 +225,14 @@
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input
                 id="catalog-search-input"
+                data-testid="search-input"
                 type="search"
                 bind:value={query}
                 placeholder="Поиск по названию, автору или ключевому слову..."
                 aria-label="Поиск материалов"
               />
             </div>
-            <button type="submit" class="btn-search" disabled={status === 'loading'}>
+            <button type="submit" class="btn-search" data-testid="search-button" disabled={status === 'loading'}>
               {status === 'loading' ? 'Поиск...' : 'Найти'}
             </button>
           </form>
@@ -237,6 +246,7 @@
                   <button
                     type="button"
                     role="radio"
+                    data-testid={`filter-specialty-${spec.id}`}
                     aria-checked={selectedSpecialty === spec.id}
                     class="chip {selectedSpecialty === spec.id ? 'chip-active' : ''}"
                     on:click={() => setSpecialtyFilter(spec.id)}
@@ -254,6 +264,7 @@
                   <button
                     type="button"
                     role="radio"
+                    data-testid={`filter-doctype-${docType.id}`}
                     aria-checked={selectedDocType === docType.id}
                     class="chip {selectedDocType === docType.id ? 'chip-active' : ''}"
                     on:click={() => setDocTypeFilter(docType.id)}
@@ -268,17 +279,17 @@
 
         <section class="catalog-content" aria-live="polite">
           {#if status === 'loading'}
-            <div class="state-view loading-state" role="status" aria-busy="true">
+            <div class="state-view loading-state" data-testid="loading-state" role="status" aria-busy="true">
               <div class="spinner" aria-hidden="true"></div>
               <p>Загрузка материалов каталога...</p>
             </div>
           {:else if status === 'error'}
-            <div class="state-view error-state" role="alert">
+            <div class="state-view error-state" data-testid="error-state" role="alert">
               <div class="error-icon" aria-hidden="true">!</div>
               <h2>Не удалось загрузить материалы</h2>
               <p class="error-message">{errorMessage}</p>
               <p class="retry-guidance">Пожалуйста, проверьте подключение или повторите попытку позже.</p>
-              <button type="button" class="btn-retry" on:click={handleRetry}>Повторить попытку</button>
+              <button type="button" class="btn-retry" data-testid="btn-retry" on:click={handleRetry}>Повторить попытку</button>
             </div>
           {:else if status === 'success' && filteredDocuments.length === 0}
             <div class="state-view empty-state" data-testid="empty-state">
@@ -289,12 +300,8 @@
                 <button
                   type="button"
                   class="btn-retry"
-                  on:click={() => {
-                    selectedSpecialty = 'all';
-                    selectedDocType = 'all';
-                    query = '';
-                    fetchDocuments('');
-                  }}
+                  data-testid="btn-reset-filters"
+                  on:click={clearAllFilters}
                 >
                   Сбросить все фильтры
                 </button>
@@ -307,7 +314,7 @@
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
-                  <article class="document-card" role="listitem">
+                  <article class="document-card" data-testid="document-card" role="listitem">
                     <div class="card-header-meta">
                       {#if doc.category || doc.type}
                         <span class="badge-doc-type">{doc.category || doc.type}</span>
@@ -331,6 +338,7 @@
                       <a
                         href={getDocxDownloadUrl(doc)}
                         class="btn-download btn-download-docx"
+                        data-testid="download-docx"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -342,6 +350,7 @@
                       <a
                         href={getPdfDownloadUrl(doc)}
                         class="btn-download btn-download-pdf"
+                        data-testid="download-pdf"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -370,6 +379,7 @@
       <button
         type="button"
         class="bottom-nav-item {currentTab === tab.id ? 'active' : ''}"
+        data-testid={`bottom-tab-${tab.id}`}
         on:click={() => selectTab(tab.id)}
         aria-current={currentTab === tab.id ? 'page' : undefined}
         aria-label={tab.label}
