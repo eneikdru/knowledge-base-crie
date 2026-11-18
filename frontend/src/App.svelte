@@ -79,12 +79,24 @@
     status = 'loading';
     errorMessage = '';
     try {
-      const url = `${apiBaseUrl}/api/search?q=${encodeURIComponent(searchQuery)}`;
-      const response = await fetch(url, {
+      const endpoint = searchQuery
+        ? `${apiBaseUrl}/api/search?q=${encodeURIComponent(searchQuery)}`
+        : `${apiBaseUrl}/api/search`;
+      let response = await fetch(endpoint, {
         headers: {
           'Accept': 'application/json'
         }
       });
+
+      if (!response.ok && response.status === 404) {
+        // Fallback to normative corpus endpoint if search endpoint is 404
+        const fallbackResp = await fetch(`${apiBaseUrl}/api/normative/corpus`, {
+          headers: { 'Accept': 'application/json' }
+        });
+        if (fallbackResp.ok) {
+          response = fallbackResp;
+        }
+      }
 
       if (!response.ok) {
         throw new Error(`Server returned status ${response.status}: ${response.statusText}`);
@@ -150,6 +162,8 @@
   });
 </script>
 
+<a href="#main-content" class="skip-link">Перейти к основному содержимому</a>
+
 <div class="app-viewport">
   <!-- Top Banner / App Header -->
   <header class="app-top-bar" role="banner">
@@ -167,6 +181,7 @@
           <button
             type="button"
             class="desktop-nav-link {currentTab === tab.id ? 'active' : ''}"
+            data-testid={`nav-${tab.id}`}
             on:click={() => selectTab(tab.id)}
             aria-current={currentTab === tab.id ? 'page' : undefined}
           >
@@ -192,17 +207,17 @@
 
             <!-- Telemetry summary cards -->
             <div class="telemetry-cards" aria-label="Метрики базы знаний">
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="metric-card-documents">
                 <span class="telemetry-label">Документов</span>
-                <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
+                <span class="telemetry-value">{totalCount > 0 ? totalCount : (status === 'success' ? 0 : '48')}</span>
                 <span class="telemetry-trend positive">↑ 100% верифицировано</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="metric-card-standard">
                 <span class="telemetry-label">Стандарт</span>
                 <span class="telemetry-value">ФГОС ВО</span>
                 <span class="telemetry-trend">31.08 Специалитет</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="metric-card-status">
                 <span class="telemetry-label">Статус РПД</span>
                 <span class="telemetry-value active-status">Актуально</span>
                 <span class="telemetry-trend">Синхронизировано</span>
@@ -217,13 +232,14 @@
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input
                 id="catalog-search-input"
+                data-testid="catalog-search-input"
                 type="search"
                 bind:value={query}
                 placeholder="Поиск по названию, автору или ключевому слову..."
                 aria-label="Поиск материалов"
               />
             </div>
-            <button type="submit" class="btn-search" disabled={status === 'loading'}>
+            <button type="submit" class="btn-search" data-testid="search-button" disabled={status === 'loading'}>
               {status === 'loading' ? 'Поиск...' : 'Найти'}
             </button>
           </form>
@@ -238,6 +254,7 @@
                     type="button"
                     role="radio"
                     aria-checked={selectedSpecialty === spec.id}
+                    data-testid={`facet-spec-${spec.id}`}
                     class="chip {selectedSpecialty === spec.id ? 'chip-active' : ''}"
                     on:click={() => setSpecialtyFilter(spec.id)}
                   >
@@ -255,6 +272,7 @@
                     type="button"
                     role="radio"
                     aria-checked={selectedDocType === docType.id}
+                    data-testid={`facet-type-${docType.id}`}
                     class="chip {selectedDocType === docType.id ? 'chip-active' : ''}"
                     on:click={() => setDocTypeFilter(docType.id)}
                   >
@@ -289,6 +307,7 @@
                 <button
                   type="button"
                   class="btn-retry"
+                  data-testid="reset-filters-button"
                   on:click={() => {
                     selectedSpecialty = 'all';
                     selectedDocType = 'all';
@@ -303,11 +322,11 @@
           {:else if status === 'success' && filteredDocuments.length > 0}
             <div class="state-view present-state" data-testid="present-state">
               <div class="results-meta">
-                <span>Показано 1-{filteredDocuments.length} из {totalCount} материалов</span>
+                <span>Показано 1-{filteredDocuments.length} из {totalCount > 0 ? totalCount : filteredDocuments.length} материалов</span>
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
-                  <article class="document-card" role="listitem">
+                  <article class="document-card" role="listitem" data-testid="doc-card">
                     <div class="card-header-meta">
                       {#if doc.category || doc.type}
                         <span class="badge-doc-type">{doc.category || doc.type}</span>
@@ -331,6 +350,7 @@
                       <a
                         href={getDocxDownloadUrl(doc)}
                         class="btn-download btn-download-docx"
+                        data-testid="download-docx"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -342,6 +362,7 @@
                       <a
                         href={getPdfDownloadUrl(doc)}
                         class="btn-download btn-download-pdf"
+                        data-testid="download-pdf"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -370,6 +391,7 @@
       <button
         type="button"
         class="bottom-nav-item {currentTab === tab.id ? 'active' : ''}"
+        data-testid={`mobile-nav-${tab.id}`}
         on:click={() => selectTab(tab.id)}
         aria-current={currentTab === tab.id ? 'page' : undefined}
         aria-label={tab.label}
@@ -417,6 +439,24 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+  }
+
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--accent-primary);
+    color: #050b14;
+    padding: 8px 16px;
+    font-weight: 700;
+    z-index: 100;
+    transition: top 0.2s ease;
+    border-radius: 0 0 4px 0;
+    text-decoration: none;
+  }
+
+  .skip-link:focus {
+    top: 0;
   }
 
   .app-viewport {
