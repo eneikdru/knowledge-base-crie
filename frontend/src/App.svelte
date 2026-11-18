@@ -445,9 +445,9 @@
   }
 
   .top-bar-inner {
-    max-width: 1040px;
+    max-width: 1280px;
     margin: 0 auto;
-    padding: 0.85rem 1rem;
+    padding: 0.85rem 1.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -543,10 +543,10 @@
 
   /* Catalog Container */
   .catalog-container {
-    max-width: 1040px;
+    max-width: 1280px;
     width: 100%;
     margin: 0 auto;
-    padding: 1.5rem 1rem;
+    padding: 1.5rem 1.25rem;
     box-sizing: border-box;
     overflow-x: hidden;
   }
@@ -869,6 +869,12 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.25rem;
+  }
+
+  @media (min-width: 1024px) {
+    .document-grid {
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    }
   }
 
   .document-card {
