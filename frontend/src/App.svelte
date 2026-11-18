@@ -157,7 +157,7 @@
       <div class="branding">
         <div class="branding-tag-row">
           <span class="institute-badge">ФБУН ЦНИИ Эпидемиологии</span>
-          <span class="compliance-pill">WCAG AAA</span>
+          <span class="compliance-pill">WCAG 2.1 AAA</span>
         </div>
         <h1 class="app-title">База знаний и ИИ-помощник</h1>
       </div>
@@ -390,13 +390,13 @@
     --border-subtle: #243b5e;
     --border-strong: #3b5f94;
     --text-primary: #ffffff;
-    --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
+    --text-secondary: #f1f5f9;
+    --text-muted: #cbd5e1;
     --accent-primary: #38bdf8;
     --accent-hover: #7dd3fc;
     --accent-active: #0284c7;
     --success-accent: #34d399;
-    --danger: #f87171;
+    --danger: #fca5a5;
     --danger-surface: #450a0a;
   }
 
@@ -475,11 +475,12 @@
   }
 
   .compliance-pill {
-    font-size: 0.65rem;
-    font-weight: 700;
-    color: #ffffff;
-    background: #0f766e;
-    padding: 0.1rem 0.4rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    color: #6ee7b7;
+    background: #022c22;
+    border: 1px solid #059669;
+    padding: 0.15rem 0.5rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
   }
@@ -512,6 +513,7 @@
     border: 1px solid transparent;
     border-radius: 0.375rem;
     padding: 0.5rem 0.85rem;
+    min-height: 44px;
     color: var(--text-secondary);
     font-size: 0.875rem;
     font-weight: 600;
@@ -596,7 +598,7 @@
 
   .telemetry-label {
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-muted);
@@ -615,8 +617,8 @@
 
   .telemetry-trend {
     font-size: 0.75rem;
-    color: var(--text-secondary);
-    font-weight: 500;
+    color: var(--text-muted);
+    font-weight: 600;
   }
 
   .telemetry-trend.positive {
@@ -646,6 +648,7 @@
     border: 1px solid var(--border-strong);
     border-radius: 0.375rem;
     padding: 0 0.85rem;
+    min-height: 44px;
     transition: border-color 0.2s;
     min-width: 0;
   }
@@ -683,8 +686,9 @@
     border: none;
     border-radius: 0.375rem;
     padding: 0.75rem 1.35rem;
+    min-height: 44px;
     font-size: 0.9375rem;
-    font-weight: 700;
+    font-weight: 800;
     cursor: pointer;
     text-decoration: none;
     display: inline-flex;
@@ -746,7 +750,7 @@
   .chip-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.45rem;
+    gap: 0.5rem;
   }
 
   .chip {
@@ -754,13 +758,15 @@
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
     border-radius: 9999px;
-    padding: 0.35rem 0.85rem;
+    padding: 0.5rem 0.95rem;
+    min-height: 44px;
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
+    touch-action: manipulation;
   }
 
   .chip:hover {
@@ -830,7 +836,7 @@
   }
 
   .error-message {
-    font-weight: 600;
+    font-weight: 700;
     margin: 0.5rem 0;
     color: #ffffff;
   }
@@ -881,6 +887,7 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s ease-in-out;
     word-break: break-word;
+    overflow-wrap: break-word;
   }
 
   .document-card:hover {
@@ -900,19 +907,20 @@
   .badge-doc-type {
     display: inline-block;
     font-size: 0.6875rem;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 0.2rem 0.55rem;
+    padding: 0.25rem 0.6rem;
     border-radius: 0.25rem;
     background: var(--surface-elevated);
-    color: var(--accent-primary);
-    border: 1px solid var(--border-subtle);
+    color: #7dd3fc;
+    border: 1px solid var(--border-strong);
   }
 
   .doc-date {
     font-size: 0.75rem;
     color: var(--text-muted);
+    font-weight: 500;
   }
 
   .doc-title {
@@ -921,6 +929,7 @@
     line-height: 1.4;
     font-weight: 700;
     color: var(--text-primary);
+    overflow-wrap: break-word;
   }
 
   .doc-author {
@@ -935,6 +944,7 @@
     color: var(--text-secondary);
     flex: 1;
     line-height: 1.5;
+    overflow-wrap: break-word;
   }
 
   .card-actions {
@@ -949,8 +959,9 @@
   .btn-download {
     flex: 1 1 calc(50% - 0.35rem);
     min-width: 120px;
+    min-height: 44px;
     border-radius: 0.375rem;
-    padding: 0.55rem 0.75rem;
+    padding: 0.6rem 0.75rem;
     font-size: 0.8125rem;
     font-weight: 700;
     cursor: pointer;
@@ -960,12 +971,14 @@
     justify-content: center;
     gap: 0.4rem;
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    touch-action: manipulation;
   }
 
   .btn-download-docx {
     background-color: var(--accent-primary);
     color: #050b14;
     border: 1px solid var(--accent-primary);
+    font-weight: 800;
   }
 
   .btn-download-docx:hover {
@@ -977,6 +990,7 @@
     background-color: var(--surface-elevated);
     color: #ffffff;
     border: 1px solid var(--border-strong);
+    font-weight: 700;
   }
 
   .btn-download-pdf:hover {
@@ -1037,7 +1051,7 @@
 
   .bottom-nav-item.active {
     color: var(--accent-primary);
-    font-weight: 700;
+    font-weight: 800;
   }
 
   .bottom-nav-item .nav-icon {
@@ -1049,7 +1063,7 @@
   .bottom-nav-item .nav-label {
     font-size: 0.6875rem;
     letter-spacing: 0.01em;
-    font-weight: 600;
+    font-weight: 700;
   }
 
   .visually-hidden {
