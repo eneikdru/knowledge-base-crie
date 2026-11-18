@@ -1,0 +1,15 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "Consider verifying safe-area-inset-bottom padding on pinned mobile bottom navigation bar for iOS Safari viewports.",
+          "severity": "low"
+        }
+      ]
+    }
+  ]
+}
