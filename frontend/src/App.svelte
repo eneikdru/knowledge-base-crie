@@ -398,6 +398,9 @@
     --success-accent: #34d399;
     --danger: #f87171;
     --danger-surface: #450a0a;
+    --font-heading: clamp(1.25rem, 2.5vw, 1.75rem);
+    --font-title: clamp(1rem, 2vw, 1.15rem);
+    --font-subtitle: clamp(0.875rem, 1.25vw, 1rem);
   }
 
   :global(html) {
@@ -442,6 +445,7 @@
     position: sticky;
     top: 0;
     z-index: 40;
+    backdrop-filter: blur(8px);
   }
 
   .top-bar-inner {
@@ -479,13 +483,13 @@
     font-weight: 700;
     color: #ffffff;
     background: #0f766e;
-    padding: 0.1rem 0.4rem;
+    padding: 0.1rem 0.45rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
   }
 
   .app-title {
-    font-size: 1.15rem;
+    font-size: var(--font-title);
     font-weight: 700;
     margin: 0;
     color: var(--text-primary);
@@ -565,7 +569,7 @@
 
   .hero-text h2 {
     margin: 0 0 0.35rem;
-    font-size: 1.625rem;
+    font-size: var(--font-heading);
     font-weight: 700;
     color: var(--text-primary);
   }
@@ -573,8 +577,8 @@
   .subtitle {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 0.9375rem;
-    line-height: 1.4;
+    font-size: var(--font-subtitle);
+    line-height: 1.45;
   }
 
   .telemetry-cards {
@@ -592,6 +596,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   }
 
   .telemetry-label {
@@ -690,7 +695,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, transform 0.1s ease;
     flex-shrink: 0;
   }
 
