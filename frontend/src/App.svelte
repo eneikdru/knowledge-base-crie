@@ -387,6 +387,7 @@
     --bg-secondary: #0c1527;
     --surface: #132238;
     --surface-elevated: #1e3352;
+    --surface-hover: #263e63;
     --border-subtle: #243b5e;
     --border-strong: #3b5f94;
     --text-primary: #ffffff;
@@ -398,6 +399,7 @@
     --success-accent: #34d399;
     --danger: #f87171;
     --danger-surface: #450a0a;
+    --font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   }
 
   :global(html) {
@@ -414,8 +416,9 @@
     padding: 0;
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: var(--font-heading);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
   }
 
@@ -442,10 +445,12 @@
     position: sticky;
     top: 0;
     z-index: 40;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
   .top-bar-inner {
-    max-width: 1040px;
+    max-width: 1080px;
     margin: 0 auto;
     padding: 0.85rem 1rem;
     display: flex;
@@ -467,7 +472,7 @@
   }
 
   .institute-badge {
-    font-size: 0.75rem;
+    font-size: clamp(0.7rem, 1.2vw, 0.75rem);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--accent-primary);
@@ -485,7 +490,7 @@
   }
 
   .app-title {
-    font-size: 1.15rem;
+    font-size: clamp(1.05rem, 2vw, 1.25rem);
     font-weight: 700;
     margin: 0;
     color: var(--text-primary);
@@ -543,10 +548,10 @@
 
   /* Catalog Container */
   .catalog-container {
-    max-width: 1040px;
+    max-width: 1080px;
     width: 100%;
     margin: 0 auto;
-    padding: 1.5rem 1rem;
+    padding: clamp(1rem, 2.5vw, 1.75rem) 1rem;
     box-sizing: border-box;
     overflow-x: hidden;
   }
@@ -565,16 +570,17 @@
 
   .hero-text h2 {
     margin: 0 0 0.35rem;
-    font-size: 1.625rem;
+    font-size: clamp(1.35rem, 2.8vw, 1.75rem);
     font-weight: 700;
     color: var(--text-primary);
+    letter-spacing: -0.015em;
   }
 
   .subtitle {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 0.9375rem;
-    line-height: 1.4;
+    font-size: clamp(0.875rem, 1.5vw, 0.95rem);
+    line-height: 1.5;
   }
 
   .telemetry-cards {
@@ -592,6 +598,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 
   .telemetry-label {
@@ -603,7 +610,7 @@
   }
 
   .telemetry-value {
-    font-size: 1.25rem;
+    font-size: clamp(1.15rem, 2vw, 1.35rem);
     font-weight: 800;
     color: var(--text-primary);
     line-height: 1.2;
@@ -646,13 +653,14 @@
     border: 1px solid var(--border-strong);
     border-radius: 0.375rem;
     padding: 0 0.85rem;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
     min-width: 0;
   }
 
   .search-input-wrapper:focus-within {
     outline: 2px solid var(--accent-primary);
     border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
   }
 
   .search-icon {
@@ -667,7 +675,7 @@
     padding: 0.75rem 0;
     border: none;
     outline: none;
-    font-size: 0.95rem;
+    font-size: clamp(0.875rem, 1.5vw, 0.95rem);
     color: var(--text-primary);
     background: transparent;
     min-width: 0;
@@ -690,8 +698,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, transform 0.1s;
     flex-shrink: 0;
+    min-height: 44px;
   }
 
   .btn-search:hover:not(:disabled),
@@ -716,7 +725,7 @@
     flex-direction: column;
     gap: 0.85rem;
     background: var(--surface);
-    padding: 1.15rem;
+    padding: clamp(0.85rem, 1.8vw, 1.15rem);
     border-radius: 0.5rem;
     border: 1px solid var(--border-subtle);
     width: 100%;
@@ -761,6 +770,7 @@
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
+    min-height: 36px;
   }
 
   .chip:hover {
@@ -789,7 +799,7 @@
 
   /* Status and Empty States */
   .state-view {
-    padding: 3rem 1.5rem;
+    padding: clamp(2rem, 5vw, 3rem) 1.5rem;
     border-radius: 0.5rem;
     text-align: center;
     background-color: var(--surface);
@@ -917,7 +927,7 @@
 
   .doc-title {
     margin: 0 0 0.5rem;
-    font-size: 1.05rem;
+    font-size: clamp(0.95rem, 1.8vw, 1.05rem);
     line-height: 1.4;
     font-weight: 700;
     color: var(--text-primary);
@@ -931,7 +941,7 @@
 
   .doc-annotation {
     margin: 0.25rem 0 1.25rem;
-    font-size: 0.875rem;
+    font-size: clamp(0.8125rem, 1.4vw, 0.875rem);
     color: var(--text-secondary);
     flex: 1;
     line-height: 1.5;
@@ -960,6 +970,7 @@
     justify-content: center;
     gap: 0.4rem;
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    min-height: 38px;
   }
 
   .btn-download-docx {
