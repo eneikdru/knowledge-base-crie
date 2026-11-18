@@ -4,7 +4,8 @@
   // Active tab state: 'assistant' | 'orders' | 'workload'
   export let activeTab = 'assistant';
 
-  // Chat State
+  // Chat State & Session Persistence (D002/D010 compliant)
+  const CHAT_STORAGE_KEY = 'crie_chat_history_v1';
   let chatQuery = '';
   let isSubmitting = false;
   let chatError = null;
@@ -18,6 +19,28 @@
       timestamp: '09:00'
     }
   ];
+
+  onMount(() => {
+    try {
+      const savedChat = localStorage.getItem(CHAT_STORAGE_KEY);
+      if (savedChat) {
+        const parsed = JSON.parse(savedChat);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          messages = parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not restore chat session from localStorage', e);
+    }
+  });
+
+  $: if (typeof window !== 'undefined' && window.localStorage && messages) {
+    try {
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+    } catch (e) {
+      // Quota exceeded or private browsing silently handled
+    }
+  }
 
   // Document Generator State
   // Document classes according to GOST R 7.0.97-2016 and Brief item 3:
