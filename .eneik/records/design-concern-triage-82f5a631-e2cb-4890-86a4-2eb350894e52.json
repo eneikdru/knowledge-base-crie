@@ -1,0 +1,20 @@
+[
+  {
+    "concern": "(low) Header navigation links have tight touch padding; verify touch hit area meets 44x44px requirements on mobile viewports.",
+    "jtbd": "When navigating on a touchscreen device, I want header navigation links to have at least a 44x44px interactive tap target, so that I can reliably activate links without misclicks.",
+    "acceptanceCriteria": "Given a mobile viewport (375px width), When measuring the touch target of each header navigation link, Then the computed interactive hit area is at least 44px by 44px in compliance with WCAG 2.5.5 and 2.5.8 target size requirements.",
+    "editInstruction": "In design/approved/20261118224026-mockup/mockup.html, in the header <nav> element, replace 'rounded-sm p-1' on each <a> link with 'rounded-sm min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3 py-2' to satisfy the 44x44px touch target requirement on mobile.",
+    "kanoClass": "must_be",
+    "cynefinDomain": "clear",
+    "leanValue": "essential"
+  },
+  {
+    "concern": "(low) External script reference to Tailwind CDN should be replaced with local compiled CSS in production deployment.",
+    "jtbd": "When deploying the application to production, I want static styles compiled locally rather than fetched from an external CDN script, so that the page loads deterministically and securely without external dependencies or runtime styling shifts.",
+    "acceptanceCriteria": "Given a production deployment build, When inspecting the HTML document head, Then the external runtime script '<script src=\"https://cdn.tailwindcss.com\"></script>' is removed and replaced by a local compiled stylesheet link '<link rel=\"stylesheet\" href=\"css/styles.css\">'.",
+    "editInstruction": "In design/approved/20261118224026-mockup/mockup.html, in the <head> section, replace '<script src=\"https://cdn.tailwindcss.com\"></script>' with '<link rel=\"stylesheet\" href=\"css/styles.css\">'.",
+    "kanoClass": "must_be",
+    "cynefinDomain": "clear",
+    "leanValue": "valuable"
+  }
+]
