@@ -9,7 +9,9 @@
   let isSubmitting = false;
   let chatError = null;
   let copySuccessId = null;
-  let messages = [
+  const STORAGE_KEY = 'crie_internal_chat_history_v1';
+
+  const initialDefaultMessages = [
     {
       id: 'm-1',
       sender: 'assistant',
@@ -18,6 +20,34 @@
       timestamp: '09:00'
     }
   ];
+
+  let messages = initialDefaultMessages;
+
+  onMount(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          messages = parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load chat history from localStorage', e);
+    }
+  });
+
+  function persistMessages(msgs) {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(msgs));
+      }
+    } catch (e) {
+      console.warn('Failed to persist chat history to localStorage', e);
+    }
+  }
+
+  $: persistMessages(messages);
 
   // Document Generator State
   // Document classes according to GOST R 7.0.97-2016 and Brief item 3:
