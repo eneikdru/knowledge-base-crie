@@ -42,16 +42,18 @@
   // Filter documents in real-time by facet chips and search query
   $: filteredDocuments = rawDocuments.filter(doc => {
     if (selectedSpecialty !== 'all') {
-      const specMatch = (doc.specialty && doc.specialty.includes(selectedSpecialty)) ||
-        (doc.title && doc.title.includes(selectedSpecialty)) ||
-        (doc.description && doc.description.includes(selectedSpecialty)) ||
-        (doc.annotation && doc.annotation.includes(selectedSpecialty));
+      const spec = selectedSpecialty.toLowerCase();
+      const specMatch = (doc.specialty && doc.specialty.toLowerCase().includes(spec)) ||
+        (doc.title && doc.title.toLowerCase().includes(spec)) ||
+        (doc.description && doc.description.toLowerCase().includes(spec)) ||
+        (doc.annotation && doc.annotation.toLowerCase().includes(spec));
       if (!specMatch) return false;
     }
     if (selectedDocType !== 'all') {
-      const typeMatch = (doc.type && doc.type.toLowerCase().includes(selectedDocType.toLowerCase())) ||
-        (doc.title && doc.title.toLowerCase().includes(selectedDocType.toLowerCase())) ||
-        (doc.category && doc.category.toLowerCase().includes(selectedDocType.toLowerCase()));
+      const type = selectedDocType.toLowerCase();
+      const typeMatch = (doc.type && doc.type.toLowerCase().includes(type)) ||
+        (doc.title && doc.title.toLowerCase().includes(type)) ||
+        (doc.category && doc.category.toLowerCase().includes(type));
       if (!typeMatch) return false;
     }
     return true;
@@ -79,7 +81,9 @@
     status = 'loading';
     errorMessage = '';
     try {
-      const url = `${apiBaseUrl}/api/search?q=${encodeURIComponent(searchQuery)}`;
+      const url = searchQuery
+        ? `${apiBaseUrl}/api/search?q=${encodeURIComponent(searchQuery)}`
+        : `${apiBaseUrl}/api/search`;
       const response = await fetch(url, {
         headers: {
           'Accept': 'application/json'
@@ -167,6 +171,7 @@
           <button
             type="button"
             class="desktop-nav-link {currentTab === tab.id ? 'active' : ''}"
+            data-tab={tab.id}
             on:click={() => selectTab(tab.id)}
             aria-current={currentTab === tab.id ? 'page' : undefined}
           >
@@ -192,17 +197,17 @@
 
             <!-- Telemetry summary cards -->
             <div class="telemetry-cards" aria-label="Метрики базы знаний">
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card-count">
                 <span class="telemetry-label">Документов</span>
                 <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
                 <span class="telemetry-trend positive">↑ 100% верифицировано</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card-standard">
                 <span class="telemetry-label">Стандарт</span>
                 <span class="telemetry-value">ФГОС ВО</span>
                 <span class="telemetry-trend">31.08 Специалитет</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card-status">
                 <span class="telemetry-label">Статус РПД</span>
                 <span class="telemetry-value active-status">Актуально</span>
                 <span class="telemetry-trend">Синхронизировано</span>
@@ -217,13 +222,15 @@
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input
                 id="catalog-search-input"
+                data-testid="search-input"
                 type="search"
                 bind:value={query}
+                on:search={() => { if (query === '') fetchDocuments(''); }}
                 placeholder="Поиск по названию, автору или ключевому слову..."
                 aria-label="Поиск материалов"
               />
             </div>
-            <button type="submit" class="btn-search" disabled={status === 'loading'}>
+            <button type="submit" class="btn-search" data-testid="search-submit" disabled={status === 'loading'}>
               {status === 'loading' ? 'Поиск...' : 'Найти'}
             </button>
           </form>
@@ -238,6 +245,7 @@
                     type="button"
                     role="radio"
                     aria-checked={selectedSpecialty === spec.id}
+                    data-filter-id={spec.id}
                     class="chip {selectedSpecialty === spec.id ? 'chip-active' : ''}"
                     on:click={() => setSpecialtyFilter(spec.id)}
                   >
@@ -255,6 +263,7 @@
                     type="button"
                     role="radio"
                     aria-checked={selectedDocType === docType.id}
+                    data-filter-id={docType.id}
                     class="chip {selectedDocType === docType.id ? 'chip-active' : ''}"
                     on:click={() => setDocTypeFilter(docType.id)}
                   >
@@ -307,7 +316,7 @@
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
-                  <article class="document-card" role="listitem">
+                  <article class="document-card" data-testid="document-card" role="listitem">
                     <div class="card-header-meta">
                       {#if doc.category || doc.type}
                         <span class="badge-doc-type">{doc.category || doc.type}</span>
@@ -331,6 +340,7 @@
                       <a
                         href={getDocxDownloadUrl(doc)}
                         class="btn-download btn-download-docx"
+                        data-testid="download-docx"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -342,6 +352,7 @@
                       <a
                         href={getPdfDownloadUrl(doc)}
                         class="btn-download btn-download-pdf"
+                        data-testid="download-pdf"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -370,6 +381,7 @@
       <button
         type="button"
         class="bottom-nav-item {currentTab === tab.id ? 'active' : ''}"
+        data-tab={tab.id}
         on:click={() => selectTab(tab.id)}
         aria-current={currentTab === tab.id ? 'page' : undefined}
         aria-label={tab.label}
@@ -423,7 +435,7 @@
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    padding-bottom: 72px; /* space for mobile bottom nav */
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
     overflow-x: hidden;
     width: 100%;
   }
@@ -592,6 +604,11 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    transition: border-color 0.2s;
+  }
+
+  .telemetry-card:hover {
+    border-color: var(--border-strong);
   }
 
   .telemetry-label {
@@ -886,7 +903,7 @@
   .document-card:hover {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
     border-color: var(--border-strong);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
   }
 
   .card-header-meta {
@@ -999,7 +1016,8 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 64px;
+    height: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     background-color: var(--bg-secondary);
     border-top: 1px solid var(--border-subtle);
     display: flex;
