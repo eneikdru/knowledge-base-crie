@@ -1,0 +1,15 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "Ensure continuous visual regression and mobile viewport (375px) smoke verification in follow-up automated E2E runs.",
+          "severity": "low"
+        }
+      ]
+    }
+  ]
+}
