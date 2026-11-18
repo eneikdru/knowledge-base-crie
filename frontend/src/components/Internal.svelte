@@ -4,20 +4,48 @@
   // Active tab state: 'assistant' | 'orders' | 'workload'
   export let activeTab = 'assistant';
 
+  const CHAT_STORAGE_KEY = 'crie_chat_messages_v1';
+  const INITIAL_MESSAGE = {
+    id: 'm-1',
+    sender: 'assistant',
+    text: 'Здравствуйте! Я ИИ-помощник Образовательного центра ФБУН ЦНИИ Эпидемиологии. Готов проконсультировать по стандартам ФГОС ВО, структуре учебного года, СанПиН, требованиям ВАК или подготовить проект приказа.',
+    citations: ['ФГОС ВО 31.08.36', 'Регламент ГИА 2026'],
+    timestamp: '09:00'
+  };
+
   // Chat State
   let chatQuery = '';
   let isSubmitting = false;
   let chatError = null;
   let copySuccessId = null;
-  let messages = [
-    {
-      id: 'm-1',
-      sender: 'assistant',
-      text: 'Здравствуйте! Я ИИ-помощник Образовательного центра ФБУН ЦНИИ Эпидемиологии. Готов проконсультировать по стандартам ФГОС ВО, структуре учебного года, СанПиН, требованиям ВАК или подготовить проект приказа.',
-      citations: ['ФГОС ВО 31.08.36', 'Регламент ГИА 2026'],
-      timestamp: '09:00'
+  let messages = [INITIAL_MESSAGE];
+
+  onMount(() => {
+    try {
+      const saved = localStorage.getItem(CHAT_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          messages = parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load chat history from localStorage', e);
     }
-  ];
+  });
+
+  function persistMessages(nextMessages) {
+    messages = nextMessages;
+    try {
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+    } catch (e) {
+      console.error('Failed to save chat history to localStorage', e);
+    }
+  }
+
+  function clearChatHistory() {
+    persistMessages([INITIAL_MESSAGE]);
+  }
 
   // Document Generator State
   // Document classes according to GOST R 7.0.97-2016 and Brief item 3:
@@ -35,6 +63,7 @@
   let docNumber = 'ПР-2026/04';
   let docDate = new Date().toISOString().split('T')[0];
   let validationErrors = {};
+  let docErrorMessage = null;
 
   // Subtype options for orders
   const orderSubtypes = [
@@ -165,6 +194,17 @@
     departmentNorm = 800;
   }
 
+  function formatHttpError(status, defaultText) {
+    if (status === 400) {
+      return '400 Некорректный запрос: проверьте правильность введенных параметров или структуры запроса.';
+    } else if (status === 401) {
+      return '401 Не авторизован: сессия истекла или отсутствует действительный токен защищенного периметра 152-ФЗ.';
+    } else if (status === 403) {
+      return '403 Доступ запрещен: недостаточно административных полномочий для выполнения операции над академическими записями.';
+    }
+    return defaultText;
+  }
+
   async function sendChatMessage() {
     if (!chatQuery.trim() || isSubmitting) return;
 
@@ -175,7 +215,8 @@
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    messages = [...messages, userMsg];
+    const nextMessages = [...messages, userMsg];
+    persistMessages(nextMessages);
     const queryText = chatQuery;
     chatQuery = '';
     isSubmitting = true;
@@ -191,7 +232,11 @@
       });
 
       if (!response.ok) {
-        throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}`);
+        const formatted = formatHttpError(
+          response.status,
+          `Ошибка сервера: ${response.status} ${response.statusText}`
+        );
+        throw new Error(formatted);
       }
 
       const data = await response.json();
@@ -204,7 +249,7 @@
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
-      messages = [...messages, assistantMsg];
+      persistMessages([...nextMessages, assistantMsg]);
     } catch (err) {
       chatError = err.message || 'Не удалось получить ответ от ассистента. Проверьте соединение с сервером.';
     } finally {
@@ -232,6 +277,7 @@
   }
 
   async function triggerDocumentGeneration() {
+    docErrorMessage = null;
     if (!validateCurrentDocForm()) return;
     if (isGeneratingDoc) return;
 
@@ -258,7 +304,11 @@
 
       docGenerationProgress = 85;
       if (!resp.ok) {
-        throw new Error(`Ошибка сервера: ${resp.status}`);
+        const formatted = formatHttpError(
+          resp.status,
+          `Ошибка генерации документа: HTTP ${resp.status} ${resp.statusText}`
+        );
+        throw new Error(formatted);
       }
 
       const docData = await resp.json();
@@ -277,7 +327,7 @@
     } catch (err) {
       isGeneratingDoc = false;
       docGenerationProgress = 0;
-      alert('Ошибка при генерации документа: ' + err.message);
+      docErrorMessage = err.message || 'Произошла непредвиденная ошибка при генерации документа.';
     }
   }
 </script>
@@ -292,6 +342,17 @@
       class="chat-section"
       aria-label="Диалог с ассистентом"
     >
+      <div class="chat-toolbar">
+        <span class="session-tag">Сессия: 152-ФЗ локальный защищенный контур</span>
+        <button
+          type="button"
+          class="btn-clear-chat"
+          on:click={clearChatHistory}
+          aria-label="Очистить историю диалога"
+        >
+          Очистить историю
+        </button>
+      </div>
       <div class="chat-history" id="chat-history" role="log" aria-live="polite">
         {#each messages as msg (msg.id)}
           <div class="message-row {msg.sender}">
@@ -407,6 +468,13 @@
             Прямой экспорт и скачивание стандартизированных .DOCX файлов в один клик: протоколы УМС, приказы директора института, экзаменационные сессии, учебные планы, кадровые справки и локальные акты.
           </p>
         </div>
+
+        {#if docErrorMessage}
+          <div class="doc-error-banner" role="alert" aria-live="assertive">
+            <span class="error-icon">⚠️</span>
+            <span class="error-text">{docErrorMessage}</span>
+          </div>
+        {/if}
 
         <form class="order-form" on:submit|preventDefault={triggerDocumentGeneration} novalidate>
           <!-- Document Class Selection -->
@@ -910,6 +978,36 @@
     overflow: hidden;
   }
 
+  .chat-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: #f1f5f9;
+    border-bottom: 1px solid #cbd5e1;
+    font-size: 0.75rem;
+  }
+
+  .session-tag {
+    color: #475569;
+    font-weight: 500;
+  }
+
+  .btn-clear-chat {
+    background: transparent;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.25rem;
+    padding: 0.2rem 0.5rem;
+    color: #475569;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+
+  .btn-clear-chat:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+
   .chat-history {
     flex: 1;
     padding: 1rem;
@@ -1024,7 +1122,8 @@
     font-size: 0.875rem;
   }
 
-  .chat-error-banner {
+  .chat-error-banner,
+  .doc-error-banner {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -1034,6 +1133,7 @@
     color: #991b1b;
     border-radius: 0.375rem;
     font-size: 0.875rem;
+    margin-bottom: 1rem;
   }
 
   .error-icon {
