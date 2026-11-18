@@ -385,11 +385,11 @@
   :global(:root) {
     --bg-primary: #070d18;
     --bg-secondary: #0c1527;
-    --surface: #132238;
-    --surface-elevated: #1e3352;
-    --border-subtle: #243b5e;
-    --border-strong: #3b5f94;
-    --text-primary: #ffffff;
+    --surface: #121e33;
+    --surface-elevated: #1a2a47;
+    --border-subtle: #223758;
+    --border-strong: #385582;
+    --text-primary: #f8fafc;
     --text-secondary: #cbd5e1;
     --text-muted: #94a3b8;
     --accent-primary: #38bdf8;
@@ -402,6 +402,7 @@
 
   :global(html) {
     box-sizing: border-box;
+    font-size: 16px;
   }
 
   :global(*), :global(*::before), :global(*::after) {
@@ -445,9 +446,9 @@
   }
 
   .top-bar-inner {
-    max-width: 1040px;
+    max-width: 1280px;
     margin: 0 auto;
-    padding: 0.85rem 1rem;
+    padding: 0.85rem 1.25rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -543,12 +544,18 @@
 
   /* Catalog Container */
   .catalog-container {
-    max-width: 1040px;
+    max-width: 1280px;
     width: 100%;
     margin: 0 auto;
-    padding: 1.5rem 1rem;
+    padding: 1.5rem 1.25rem;
     box-sizing: border-box;
     overflow-x: hidden;
+  }
+
+  @media (max-width: 480px) {
+    .catalog-container {
+      padding: 1rem 0.85rem;
+    }
   }
 
   .catalog-header {
@@ -579,7 +586,7 @@
 
   .telemetry-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 0.75rem;
     width: 100%;
   }
@@ -867,7 +874,7 @@
 
   .document-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 1.25rem;
   }
 
@@ -948,7 +955,7 @@
 
   .btn-download {
     flex: 1 1 calc(50% - 0.35rem);
-    min-width: 120px;
+    min-width: 110px;
     border-radius: 0.375rem;
     padding: 0.55rem 0.75rem;
     font-size: 0.8125rem;
