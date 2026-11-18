@@ -167,6 +167,7 @@
           <button
             type="button"
             class="desktop-nav-link {currentTab === tab.id ? 'active' : ''}"
+            data-testid="desktop-nav-{tab.id}"
             on:click={() => selectTab(tab.id)}
             aria-current={currentTab === tab.id ? 'page' : undefined}
           >
@@ -192,17 +193,17 @@
 
             <!-- Telemetry summary cards -->
             <div class="telemetry-cards" aria-label="Метрики базы знаний">
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card">
                 <span class="telemetry-label">Документов</span>
                 <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
                 <span class="telemetry-trend positive">↑ 100% верифицировано</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card">
                 <span class="telemetry-label">Стандарт</span>
                 <span class="telemetry-value">ФГОС ВО</span>
                 <span class="telemetry-trend">31.08 Специалитет</span>
               </div>
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card">
                 <span class="telemetry-label">Статус РПД</span>
                 <span class="telemetry-value active-status">Актуально</span>
                 <span class="telemetry-trend">Синхронизировано</span>
@@ -217,13 +218,14 @@
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input
                 id="catalog-search-input"
+                data-testid="search-input"
                 type="search"
                 bind:value={query}
                 placeholder="Поиск по названию, автору или ключевому слову..."
                 aria-label="Поиск материалов"
               />
             </div>
-            <button type="submit" class="btn-search" disabled={status === 'loading'}>
+            <button type="submit" class="btn-search" data-testid="search-button" disabled={status === 'loading'}>
               {status === 'loading' ? 'Поиск...' : 'Найти'}
             </button>
           </form>
@@ -237,6 +239,7 @@
                   <button
                     type="button"
                     role="radio"
+                    data-testid="chip-spec-{spec.id}"
                     aria-checked={selectedSpecialty === spec.id}
                     class="chip {selectedSpecialty === spec.id ? 'chip-active' : ''}"
                     on:click={() => setSpecialtyFilter(spec.id)}
@@ -254,6 +257,7 @@
                   <button
                     type="button"
                     role="radio"
+                    data-testid="chip-type-{docType.id}"
                     aria-checked={selectedDocType === docType.id}
                     class="chip {selectedDocType === docType.id ? 'chip-active' : ''}"
                     on:click={() => setDocTypeFilter(docType.id)}
@@ -268,12 +272,12 @@
 
         <section class="catalog-content" aria-live="polite">
           {#if status === 'loading'}
-            <div class="state-view loading-state" role="status" aria-busy="true">
+            <div class="state-view loading-state" data-testid="loading-state" role="status" aria-busy="true">
               <div class="spinner" aria-hidden="true"></div>
               <p>Загрузка материалов каталога...</p>
             </div>
           {:else if status === 'error'}
-            <div class="state-view error-state" role="alert">
+            <div class="state-view error-state" data-testid="error-state" role="alert">
               <div class="error-icon" aria-hidden="true">!</div>
               <h2>Не удалось загрузить материалы</h2>
               <p class="error-message">{errorMessage}</p>
@@ -307,7 +311,7 @@
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
-                  <article class="document-card" role="listitem">
+                  <article class="document-card" role="listitem" data-testid="document-card">
                     <div class="card-header-meta">
                       {#if doc.category || doc.type}
                         <span class="badge-doc-type">{doc.category || doc.type}</span>
@@ -331,6 +335,7 @@
                       <a
                         href={getDocxDownloadUrl(doc)}
                         class="btn-download btn-download-docx"
+                        data-testid="download-docx-btn"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -342,6 +347,7 @@
                       <a
                         href={getPdfDownloadUrl(doc)}
                         class="btn-download btn-download-pdf"
+                        data-testid="download-pdf-btn"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -370,6 +376,7 @@
       <button
         type="button"
         class="bottom-nav-item {currentTab === tab.id ? 'active' : ''}"
+        data-testid="bottom-nav-{tab.id}"
         on:click={() => selectTab(tab.id)}
         aria-current={currentTab === tab.id ? 'page' : undefined}
         aria-label={tab.label}
@@ -398,6 +405,10 @@
     --success-accent: #34d399;
     --danger: #f87171;
     --danger-surface: #450a0a;
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.625rem;
+    --radius-pill: 9999px;
   }
 
   :global(html) {
@@ -480,7 +491,7 @@
     color: #ffffff;
     background: #0f766e;
     padding: 0.1rem 0.4rem;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     letter-spacing: 0.05em;
   }
 
@@ -510,8 +521,9 @@
     gap: 0.4rem;
     background: transparent;
     border: 1px solid transparent;
-    border-radius: 0.375rem;
+    border-radius: var(--radius-sm);
     padding: 0.5rem 0.85rem;
+    min-height: 44px;
     color: var(--text-secondary);
     font-size: 0.875rem;
     font-weight: 600;
@@ -587,7 +599,7 @@
   .telemetry-card {
     background: var(--surface);
     border: 1px solid var(--border-subtle);
-    border-radius: 0.5rem;
+    border-radius: var(--radius-md);
     padding: 0.85rem 1rem;
     display: flex;
     flex-direction: column;
@@ -644,8 +656,9 @@
     align-items: center;
     background: var(--surface);
     border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
+    border-radius: var(--radius-sm);
     padding: 0 0.85rem;
+    min-height: 44px;
     transition: border-color 0.2s;
     min-width: 0;
   }
@@ -681,8 +694,9 @@
     background-color: var(--accent-primary);
     color: #050b14;
     border: none;
-    border-radius: 0.375rem;
+    border-radius: var(--radius-sm);
     padding: 0.75rem 1.35rem;
+    min-height: 44px;
     font-size: 0.9375rem;
     font-weight: 700;
     cursor: pointer;
@@ -717,7 +731,7 @@
     gap: 0.85rem;
     background: var(--surface);
     padding: 1.15rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-md);
     border: 1px solid var(--border-subtle);
     width: 100%;
   }
@@ -753,14 +767,16 @@
     background: var(--bg-secondary);
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
-    border-radius: 9999px;
-    padding: 0.35rem 0.85rem;
+    border-radius: var(--radius-pill);
+    padding: 0.45rem 1rem;
+    min-height: 44px;
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
   }
 
   .chip:hover {
@@ -790,7 +806,7 @@
   /* Status and Empty States */
   .state-view {
     padding: 3rem 1.5rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-md);
     text-align: center;
     background-color: var(--surface);
     border: 1px solid var(--border-subtle);
@@ -873,7 +889,7 @@
 
   .document-card {
     border: 1px solid var(--border-subtle);
-    border-radius: 0.625rem;
+    border-radius: var(--radius-lg);
     padding: 1.25rem;
     background-color: var(--surface);
     display: flex;
@@ -904,7 +920,7 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     padding: 0.2rem 0.55rem;
-    border-radius: 0.25rem;
+    border-radius: var(--radius-sm);
     background: var(--surface-elevated);
     color: var(--accent-primary);
     border: 1px solid var(--border-subtle);
@@ -949,7 +965,8 @@
   .btn-download {
     flex: 1 1 calc(50% - 0.35rem);
     min-width: 120px;
-    border-radius: 0.375rem;
+    min-height: 44px;
+    border-radius: var(--radius-sm);
     padding: 0.55rem 0.75rem;
     font-size: 0.8125rem;
     font-weight: 700;
