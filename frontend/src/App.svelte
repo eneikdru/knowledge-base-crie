@@ -390,8 +390,8 @@
     --border-subtle: #243b5e;
     --border-strong: #3b5f94;
     --text-primary: #ffffff;
-    --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
+    --text-secondary: #e2e8f0;
+    --text-muted: #cbd5e1;
     --accent-primary: #38bdf8;
     --accent-hover: #7dd3fc;
     --accent-active: #0284c7;
@@ -426,6 +426,8 @@
     padding-bottom: 72px; /* space for mobile bottom nav */
     overflow-x: hidden;
     width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
   }
 
   @media (min-width: 768px) {
@@ -442,32 +444,36 @@
     position: sticky;
     top: 0;
     z-index: 40;
+    width: 100%;
   }
 
   .top-bar-inner {
     max-width: 1040px;
     margin: 0 auto;
-    padding: 0.85rem 1rem;
+    padding: clamp(0.6rem, 2vw, 0.85rem) clamp(0.75rem, 3vw, 1rem);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
+    width: 100%;
   }
 
   .branding {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .branding-tag-row {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .institute-badge {
-    font-size: 0.75rem;
+    font-size: clamp(0.7rem, 1.8vw, 0.75rem);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--accent-primary);
@@ -475,7 +481,7 @@
   }
 
   .compliance-pill {
-    font-size: 0.65rem;
+    font-size: clamp(0.6rem, 1.5vw, 0.65rem);
     font-weight: 700;
     color: #ffffff;
     background: #0f766e;
@@ -485,11 +491,12 @@
   }
 
   .app-title {
-    font-size: 1.15rem;
+    font-size: clamp(1rem, 2.8vw, 1.25rem);
     font-weight: 700;
     margin: 0;
     color: var(--text-primary);
     letter-spacing: -0.01em;
+    word-break: break-word;
   }
 
   /* Desktop Navigation */
@@ -546,64 +553,69 @@
     max-width: 1040px;
     width: 100%;
     margin: 0 auto;
-    padding: 1.5rem 1rem;
+    padding: clamp(1rem, 3vw, 1.5rem) clamp(0.75rem, 3vw, 1rem);
     box-sizing: border-box;
     overflow-x: hidden;
   }
 
   .catalog-header {
-    margin-bottom: 1.75rem;
+    margin-bottom: clamp(1.25rem, 3vw, 1.75rem);
   }
 
   /* Hero & Telemetry Section */
   .hero-section {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
-    margin-bottom: 1.5rem;
+    gap: clamp(1rem, 2.5vw, 1.25rem);
+    margin-bottom: clamp(1.25rem, 3vw, 1.5rem);
   }
 
   .hero-text h2 {
     margin: 0 0 0.35rem;
-    font-size: 1.625rem;
+    font-size: clamp(1.25rem, 4vw, 1.625rem);
     font-weight: 700;
     color: var(--text-primary);
+    letter-spacing: -0.015em;
+    word-break: break-word;
   }
 
   .subtitle {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 0.9375rem;
-    line-height: 1.4;
+    font-size: clamp(0.85rem, 2vw, 0.9375rem);
+    line-height: 1.45;
+    word-break: break-word;
   }
 
   .telemetry-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: clamp(0.5rem, 2vw, 0.75rem);
     width: 100%;
+    box-sizing: border-box;
   }
 
   .telemetry-card {
     background: var(--surface);
     border: 1px solid var(--border-subtle);
     border-radius: 0.5rem;
-    padding: 0.85rem 1rem;
+    padding: clamp(0.7rem, 2vw, 0.85rem) clamp(0.75rem, 2vw, 1rem);
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .telemetry-label {
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-muted);
   }
 
   .telemetry-value {
-    font-size: 1.25rem;
+    font-size: clamp(1.1rem, 3vw, 1.25rem);
     font-weight: 800;
     color: var(--text-primary);
     line-height: 1.2;
@@ -616,7 +628,7 @@
   .telemetry-trend {
     font-size: 0.75rem;
     color: var(--text-secondary);
-    font-weight: 500;
+    font-weight: 600;
   }
 
   .telemetry-trend.positive {
@@ -630,6 +642,7 @@
     gap: 0.75rem;
     margin-bottom: 1.25rem;
     width: 100%;
+    box-sizing: border-box;
   }
 
   @media (min-width: 640px) {
@@ -667,7 +680,7 @@
     padding: 0.75rem 0;
     border: none;
     outline: none;
-    font-size: 0.95rem;
+    font-size: clamp(0.875rem, 2.5vw, 0.95rem);
     color: var(--text-primary);
     background: transparent;
     min-width: 0;
@@ -692,6 +705,7 @@
     justify-content: center;
     transition: background-color 0.2s;
     flex-shrink: 0;
+    min-height: 44px;
   }
 
   .btn-search:hover:not(:disabled),
@@ -714,12 +728,13 @@
   .facet-filters-container {
     display: flex;
     flex-direction: column;
-    gap: 0.85rem;
+    gap: clamp(0.65rem, 2vw, 0.85rem);
     background: var(--surface);
-    padding: 1.15rem;
+    padding: clamp(0.85rem, 2.5vw, 1.15rem);
     border-radius: 0.5rem;
     border: 1px solid var(--border-subtle);
     width: 100%;
+    box-sizing: border-box;
   }
 
   .facet-group {
@@ -736,7 +751,7 @@
   }
 
   .facet-label {
-    font-size: 0.8125rem;
+    font-size: clamp(0.75rem, 2vw, 0.8125rem);
     font-weight: 700;
     color: var(--text-secondary);
     min-width: 120px;
@@ -755,12 +770,13 @@
     border: 1px solid var(--border-subtle);
     border-radius: 9999px;
     padding: 0.35rem 0.85rem;
-    font-size: 0.8125rem;
+    font-size: clamp(0.75rem, 2vw, 0.8125rem);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
+    min-height: 36px;
   }
 
   .chip:hover {
@@ -789,12 +805,13 @@
 
   /* Status and Empty States */
   .state-view {
-    padding: 3rem 1.5rem;
+    padding: clamp(2rem, 5vw, 3rem) clamp(1rem, 3vw, 1.5rem);
     border-radius: 0.5rem;
     text-align: center;
     background-color: var(--surface);
     border: 1px solid var(--border-subtle);
     margin-top: 1rem;
+    box-sizing: border-box;
   }
 
   .loading-state {
@@ -843,11 +860,12 @@
   .empty-state h2 {
     margin-bottom: 0.5rem;
     color: var(--text-primary);
+    font-size: clamp(1.15rem, 3vw, 1.4rem);
   }
 
   .empty-hint {
     color: var(--text-secondary);
-    font-size: 0.95rem;
+    font-size: clamp(0.85rem, 2vw, 0.95rem);
     margin-bottom: 1.25rem;
   }
 
@@ -860,7 +878,7 @@
 
   .results-meta {
     margin-bottom: 1rem;
-    font-size: 0.875rem;
+    font-size: clamp(0.8rem, 2vw, 0.875rem);
     color: var(--text-secondary);
     font-weight: 600;
   }
@@ -868,19 +886,24 @@
   .document-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.25rem;
+    gap: clamp(1rem, 2.5vw, 1.25rem);
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .document-card {
     border: 1px solid var(--border-subtle);
     border-radius: 0.625rem;
-    padding: 1.25rem;
+    padding: clamp(1rem, 2.5vw, 1.25rem);
     background-color: var(--surface);
     display: flex;
     flex-direction: column;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s ease-in-out;
     word-break: break-word;
+    overflow-wrap: break-word;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .document-card:hover {
@@ -895,6 +918,7 @@
     justify-content: space-between;
     gap: 0.5rem;
     margin-bottom: 0.65rem;
+    flex-wrap: wrap;
   }
 
   .badge-doc-type {
@@ -917,24 +941,26 @@
 
   .doc-title {
     margin: 0 0 0.5rem;
-    font-size: 1.05rem;
+    font-size: clamp(0.95rem, 2.5vw, 1.05rem);
     line-height: 1.4;
     font-weight: 700;
     color: var(--text-primary);
+    word-break: break-word;
   }
 
   .doc-author {
     margin: 0 0 0.5rem;
-    font-size: 0.8125rem;
+    font-size: clamp(0.75rem, 2vw, 0.8125rem);
     color: var(--text-secondary);
   }
 
   .doc-annotation {
     margin: 0.25rem 0 1.25rem;
-    font-size: 0.875rem;
+    font-size: clamp(0.8rem, 2.2vw, 0.875rem);
     color: var(--text-secondary);
     flex: 1;
     line-height: 1.5;
+    word-break: break-word;
   }
 
   .card-actions {
@@ -951,7 +977,7 @@
     min-width: 120px;
     border-radius: 0.375rem;
     padding: 0.55rem 0.75rem;
-    font-size: 0.8125rem;
+    font-size: clamp(0.75rem, 2vw, 0.8125rem);
     font-weight: 700;
     cursor: pointer;
     text-decoration: none;
@@ -960,6 +986,7 @@
     justify-content: center;
     gap: 0.4rem;
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    min-height: 40px;
   }
 
   .btn-download-docx {
@@ -1007,6 +1034,8 @@
     align-items: center;
     z-index: 50;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 100vw;
   }
 
   @media (min-width: 768px) {
@@ -1028,6 +1057,7 @@
     padding: 0.25rem 0;
     cursor: pointer;
     transition: color 0.15s ease;
+    min-width: 0;
   }
 
   .bottom-nav-item:focus-visible {
