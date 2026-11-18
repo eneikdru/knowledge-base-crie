@@ -8,10 +8,12 @@
   let currentTab = 'knowledge';
 
   let query = '';
+  let searchedQuery = '';
   let status = 'idle'; // 'idle' | 'loading' | 'success' | 'error'
   let rawDocuments = [];
   let errorMessage = '';
   let totalCount = 0;
+  let searchDebounceTimer = null;
 
   // Filter chips state
   let selectedSpecialty = 'all';
@@ -54,6 +56,15 @@
         (doc.category && doc.category.toLowerCase().includes(selectedDocType.toLowerCase()));
       if (!typeMatch) return false;
     }
+    // Immediate client-side query matching prior to or alongside API response
+    if (query.trim() && query.trim() !== searchedQuery.trim()) {
+      const q = query.toLowerCase().trim();
+      const match = (doc.title && doc.title.toLowerCase().includes(q)) ||
+        (doc.description && doc.description.toLowerCase().includes(q)) ||
+        (doc.annotation && doc.annotation.toLowerCase().includes(q)) ||
+        (doc.author && doc.author.toLowerCase().includes(q));
+      if (!match) return false;
+    }
     return true;
   });
 
@@ -78,6 +89,7 @@
   async function fetchDocuments(searchQuery = '') {
     status = 'loading';
     errorMessage = '';
+    searchedQuery = searchQuery;
     try {
       const url = `${apiBaseUrl}/api/search?q=${encodeURIComponent(searchQuery)}`;
       const response = await fetch(url, {
@@ -105,7 +117,22 @@
 
   function handleSearch(event) {
     if (event) event.preventDefault();
+    if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
     fetchDocuments(query);
+  }
+
+  function handleSearchInput(event) {
+    query = event.target.value;
+    if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+      fetchDocuments(query);
+    }, 250);
+  }
+
+  function handleClearSearch() {
+    query = '';
+    if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+    fetchDocuments('');
   }
 
   function handleRetry() {
@@ -147,6 +174,9 @@
   onMount(() => {
     registerPWA();
     fetchDocuments('');
+    return () => {
+      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+    };
   });
 </script>
 
@@ -214,14 +244,32 @@
           <form class="search-form" on:submit={handleSearch} role="search">
             <label for="catalog-search-input" class="visually-hidden">Поиск материалов</label>
             <div class="search-input-wrapper">
-              <span class="search-icon" aria-hidden="true">🔍</span>
+              <span class="search-icon" aria-hidden="true">
+                {#if status === 'loading'}
+                  <span class="mini-spinner" aria-hidden="true"></span>
+                {:else}
+                  🔍
+                {/if}
+              </span>
               <input
                 id="catalog-search-input"
                 type="search"
                 bind:value={query}
+                on:input={handleSearchInput}
                 placeholder="Поиск по названию, автору или ключевому слову..."
                 aria-label="Поиск материалов"
+                autocomplete="off"
               />
+              {#if query}
+                <button
+                  type="button"
+                  class="btn-clear-search"
+                  on:click={handleClearSearch}
+                  aria-label="Очистить строку поиска"
+                >
+                  ✕
+                </button>
+              {/if}
             </div>
             <button type="submit" class="btn-search" disabled={status === 'loading'}>
               {status === 'loading' ? 'Поиск...' : 'Найти'}
@@ -267,12 +315,12 @@
         </header>
 
         <section class="catalog-content" aria-live="polite">
-          {#if status === 'loading'}
+          {#if status === 'loading' && rawDocuments.length === 0}
             <div class="state-view loading-state" role="status" aria-busy="true">
               <div class="spinner" aria-hidden="true"></div>
               <p>Загрузка материалов каталога...</p>
             </div>
-          {:else if status === 'error'}
+          {:else if status === 'error' && rawDocuments.length === 0}
             <div class="state-view error-state" role="alert">
               <div class="error-icon" aria-hidden="true">!</div>
               <h2>Не удалось загрузить материалы</h2>
@@ -280,7 +328,7 @@
               <p class="retry-guidance">Пожалуйста, проверьте подключение или повторите попытку позже.</p>
               <button type="button" class="btn-retry" on:click={handleRetry}>Повторить попытку</button>
             </div>
-          {:else if status === 'success' && filteredDocuments.length === 0}
+          {:else if filteredDocuments.length === 0}
             <div class="state-view empty-state" data-testid="empty-state">
               <h2>Документы не найдены</h2>
               <p>Отображается 0 материалов</p>
@@ -292,18 +340,17 @@
                   on:click={() => {
                     selectedSpecialty = 'all';
                     selectedDocType = 'all';
-                    query = '';
-                    fetchDocuments('');
+                    handleClearSearch();
                   }}
                 >
                   Сбросить все фильтры
                 </button>
               {/if}
             </div>
-          {:else if status === 'success' && filteredDocuments.length > 0}
+          {:else}
             <div class="state-view present-state" data-testid="present-state">
               <div class="results-meta">
-                <span>Показано 1-{filteredDocuments.length} из {totalCount} материалов</span>
+                <span>Показано 1-{filteredDocuments.length} из {totalCount > 0 ? totalCount : filteredDocuments.length} материалов</span>
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
@@ -402,6 +449,8 @@
 
   :global(html) {
     box-sizing: border-box;
+    overflow-x: hidden;
+    width: 100%;
   }
 
   :global(*), :global(*::before), :global(*::after) {
@@ -417,6 +466,8 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    width: 100%;
+    position: relative;
   }
 
   .app-viewport {
@@ -426,6 +477,7 @@
     padding-bottom: 72px; /* space for mobile bottom nav */
     overflow-x: hidden;
     width: 100%;
+    max-width: 100vw;
   }
 
   @media (min-width: 768px) {
@@ -452,12 +504,14 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
+    width: 100%;
   }
 
   .branding {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .branding-tag-row {
@@ -472,6 +526,9 @@
     letter-spacing: 0.06em;
     color: var(--accent-primary);
     font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .compliance-pill {
@@ -482,6 +539,7 @@
     padding: 0.1rem 0.4rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
+    flex-shrink: 0;
   }
 
   .app-title {
@@ -490,12 +548,16 @@
     margin: 0;
     color: var(--text-primary);
     letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* Desktop Navigation */
   .desktop-nav {
     display: none;
     gap: 0.5rem;
+    flex-shrink: 0;
   }
 
   @media (min-width: 768px) {
@@ -517,6 +579,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    user-select: none;
   }
 
   .desktop-nav-link:hover,
@@ -531,6 +594,10 @@
     background: var(--surface);
     color: var(--accent-primary);
     border-color: var(--border-strong);
+  }
+
+  .desktop-nav-link:active {
+    transform: scale(0.97);
   }
 
   .main-content {
@@ -579,7 +646,7 @@
 
   .telemetry-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 0.75rem;
     width: 100%;
   }
@@ -592,6 +659,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .telemetry-label {
@@ -648,6 +716,7 @@
     padding: 0 0.85rem;
     transition: border-color 0.2s;
     min-width: 0;
+    position: relative;
   }
 
   .search-input-wrapper:focus-within {
@@ -660,9 +729,23 @@
     margin-right: 0.5rem;
     color: var(--text-secondary);
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+  }
+
+  .mini-spinner {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid var(--border-strong);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
   }
 
   .search-input-wrapper input[type='search'] {
+    flex: 1;
     width: 100%;
     padding: 0.75rem 0;
     border: none;
@@ -675,6 +758,29 @@
 
   .search-input-wrapper input[type='search']::placeholder {
     color: var(--text-muted);
+  }
+
+  .btn-clear-search {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0.25rem 0.4rem;
+    margin-left: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: color 0.15s, background-color 0.15s;
+    flex-shrink: 0;
+  }
+
+  .btn-clear-search:hover,
+  .btn-clear-search:focus-visible {
+    color: var(--text-primary);
+    background-color: var(--surface-elevated);
+    outline: none;
   }
 
   .btn-search, .btn-retry {
@@ -690,13 +796,19 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, transform 0.1s;
     flex-shrink: 0;
+    user-select: none;
   }
 
   .btn-search:hover:not(:disabled),
   .btn-retry:hover:not(:disabled) {
     background-color: var(--accent-hover);
+  }
+
+  .btn-search:active:not(:disabled),
+  .btn-retry:active:not(:disabled) {
+    transform: scale(0.98);
   }
 
   .btn-search:focus-visible,
@@ -720,6 +832,7 @@
     border-radius: 0.5rem;
     border: 1px solid var(--border-subtle);
     width: 100%;
+    box-sizing: border-box;
   }
 
   .facet-group {
@@ -761,12 +874,18 @@
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .chip:hover {
     background: var(--surface-elevated);
     color: #ffffff;
     border-color: var(--border-strong);
+  }
+
+  .chip:active {
+    transform: scale(0.97);
   }
 
   .chip:focus-visible {
@@ -795,6 +914,7 @@
     background-color: var(--surface);
     border: 1px solid var(--border-subtle);
     margin-top: 1rem;
+    box-sizing: border-box;
   }
 
   .loading-state {
@@ -881,6 +1001,7 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s ease-in-out;
     word-break: break-word;
+    min-width: 0;
   }
 
   .document-card:hover {
@@ -948,7 +1069,7 @@
 
   .btn-download {
     flex: 1 1 calc(50% - 0.35rem);
-    min-width: 120px;
+    min-width: 110px;
     border-radius: 0.375rem;
     padding: 0.55rem 0.75rem;
     font-size: 0.8125rem;
@@ -959,7 +1080,13 @@
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn-download:active {
+    transform: scale(0.98);
   }
 
   .btn-download-docx {
@@ -1027,7 +1154,14 @@
     color: var(--text-secondary);
     padding: 0.25rem 0;
     cursor: pointer;
-    transition: color 0.15s ease;
+    transition: color 0.15s ease, background-color 0.15s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+
+  .bottom-nav-item:active {
+    background-color: var(--surface);
   }
 
   .bottom-nav-item:focus-visible {
@@ -1038,6 +1172,17 @@
   .bottom-nav-item.active {
     color: var(--accent-primary);
     font-weight: 700;
+  }
+
+  .bottom-nav-item.active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 20%;
+    right: 20%;
+    height: 3px;
+    background: var(--accent-primary);
+    border-radius: 0 0 2px 2px;
   }
 
   .bottom-nav-item .nav-icon {
