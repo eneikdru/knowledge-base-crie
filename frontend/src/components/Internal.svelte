@@ -1,6 +1,9 @@
 <script>
   import { onMount } from 'svelte';
 
+  const STORAGE_KEY = 'crie_internal_chat_messages';
+  const TAB_STORAGE_KEY = 'crie_internal_active_tab';
+
   // Active tab state: 'assistant' | 'orders' | 'workload'
   export let activeTab = 'assistant';
 
@@ -18,6 +21,42 @@
       timestamp: '09:00'
     }
   ];
+
+  onMount(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const savedTab = localStorage.getItem(TAB_STORAGE_KEY);
+        if (savedTab && ['assistant', 'orders', 'workload'].includes(savedTab)) {
+          activeTab = savedTab;
+        }
+        const savedMessages = localStorage.getItem(STORAGE_KEY);
+        if (savedMessages) {
+          const parsed = JSON.parse(savedMessages);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            messages = parsed;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to restore chat session from localStorage', e);
+    }
+  });
+
+  $: if (typeof window !== 'undefined' && window.localStorage && messages) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    } catch (e) {
+      console.warn('Failed to persist chat session to localStorage', e);
+    }
+  }
+
+  $: if (typeof window !== 'undefined' && window.localStorage && activeTab) {
+    try {
+      localStorage.setItem(TAB_STORAGE_KEY, activeTab);
+    } catch (e) {
+      console.warn('Failed to persist active tab to localStorage', e);
+    }
+  }
 
   // Document Generator State
   // Document classes according to GOST R 7.0.97-2016 and Brief item 3:
