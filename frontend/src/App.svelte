@@ -108,6 +108,11 @@
     fetchDocuments(query);
   }
 
+  function handleClearSearch() {
+    query = '';
+    fetchDocuments('');
+  }
+
   function handleRetry() {
     fetchDocuments(query);
   }
@@ -217,11 +222,22 @@
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input
                 id="catalog-search-input"
+                data-testid="catalog-search-input"
                 type="search"
                 bind:value={query}
                 placeholder="Поиск по названию, автору или ключевому слову..."
                 aria-label="Поиск материалов"
               />
+              {#if query.trim() !== ''}
+                <button
+                  type="button"
+                  class="btn-clear-search"
+                  aria-label="Очистить строку поиска"
+                  on:click={handleClearSearch}
+                >
+                  ✕
+                </button>
+              {/if}
             </div>
             <button type="submit" class="btn-search" disabled={status === 'loading'}>
               {status === 'loading' ? 'Поиск...' : 'Найти'}
@@ -485,7 +501,7 @@
   }
 
   .app-title {
-    font-size: 1.15rem;
+    font-size: clamp(1rem, 1.5vw + 0.5rem, 1.25rem);
     font-weight: 700;
     margin: 0;
     color: var(--text-primary);
@@ -546,7 +562,7 @@
     max-width: 1040px;
     width: 100%;
     margin: 0 auto;
-    padding: 1.5rem 1rem;
+    padding: clamp(1rem, 2vw, 1.75rem) clamp(0.75rem, 2vw, 1.25rem);
     box-sizing: border-box;
     overflow-x: hidden;
   }
@@ -565,16 +581,18 @@
 
   .hero-text h2 {
     margin: 0 0 0.35rem;
-    font-size: 1.625rem;
+    font-size: clamp(1.4rem, 2.5vw + 0.5rem, 2rem);
     font-weight: 700;
     color: var(--text-primary);
+    letter-spacing: -0.02em;
+    line-height: 1.25;
   }
 
   .subtitle {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 0.9375rem;
-    line-height: 1.4;
+    font-size: clamp(0.875rem, 1vw + 0.5rem, 1rem);
+    line-height: 1.45;
   }
 
   .telemetry-cards {
@@ -592,6 +610,12 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    transition: border-color 0.2s ease, transform 0.15s ease;
+  }
+
+  .telemetry-card:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-1px);
   }
 
   .telemetry-label {
@@ -603,7 +627,7 @@
   }
 
   .telemetry-value {
-    font-size: 1.25rem;
+    font-size: clamp(1.25rem, 2vw + 0.5rem, 1.75rem);
     font-weight: 800;
     color: var(--text-primary);
     line-height: 1.2;
@@ -648,6 +672,7 @@
     padding: 0 0.85rem;
     transition: border-color 0.2s;
     min-width: 0;
+    position: relative;
   }
 
   .search-input-wrapper:focus-within {
@@ -675,6 +700,28 @@
 
   .search-input-wrapper input[type='search']::placeholder {
     color: var(--text-muted);
+  }
+
+  .btn-clear-search {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.25rem;
+    transition: color 0.15s;
+  }
+
+  .btn-clear-search:hover {
+    color: var(--text-primary);
+  }
+
+  .btn-clear-search:focus-visible {
+    outline: 2px solid var(--accent-primary);
   }
 
   .btn-search, .btn-retry {
@@ -814,7 +861,7 @@
   }
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to { transform: rotate(360deg); } 
   }
 
   .error-state {
@@ -917,7 +964,7 @@
 
   .doc-title {
     margin: 0 0 0.5rem;
-    font-size: 1.05rem;
+    font-size: clamp(1rem, 1.2vw + 0.4rem, 1.15rem);
     line-height: 1.4;
     font-weight: 700;
     color: var(--text-primary);
