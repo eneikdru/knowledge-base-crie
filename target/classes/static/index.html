@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Application</title>
+<script>
+  // D002: Temporal Continuity & Session Persistence
+  window.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem('crie_chat_history');
+    if (saved && window.restoreChatSession) {
+      try { window.restoreChatSession(JSON.parse(saved)); } catch (e) {}
+    }
+  });
+  window.persistChatSession = (history) => {
+    try { localStorage.setItem('crie_chat_history', JSON.stringify(history)); } catch (e) {}
+  };
+</script>
+</head>
+<body>
+<div id="app">
+<script>
+  import { onMount } from 'svelte';
+
+  let searchQuery = '';
+  let selectedCategory = 'all';
+  let selectedArticle = null;
+  let isLoading = false;
+  let error = null;
+
+  const categories = [
+    { id: 'all', label: 'All Topics' },
+    { id: 'getting-started', label: 'Getting Started' },
+    { id: 'architecture', label: 'Architecture' },
+    { id: 'api', label: 'API Reference' },
+    { id: 'deployment', label: 'Deployment' },
+    { id: 'faq', label: 'FAQ' }
+  ];
+
+  let articles = [
+    {
+      id: 1,
+      title: 'Platform Overview & Architecture Guide',
+      category: 'architecture',
+      summary: 'Comprehensive introduction to core microservices, event streams, and relational data architecture.',
+      author: 'Core Engineering',
+      updatedAt: '2026-11-17',
+      readTime: '6 min read',
+      tags: ['system', 'architecture', 'overview'],
+      content: 'This guide covers high-level architectural patterns, deontic boundaries, and data synchronization workflows.'
+    },
+    {
+      id: 2,
+      title: 'Getting Started with the Frontend Design System',
+      category: 'getting-started',
+      summary: 'Learn how to use standardized CSS custom properties, layout containers, and typography tokens.',
+      author: 'UI Team',
+      updatedAt: '2026-11-16',
+      readTime: '4 min read',
+      tags: ['frontend', 'svelte', 'css'],
+      content: 'Understand our design tokens for colors, typography scales, spacing grids, and responsive viewports.'
+    },
+    {
+      id: 3,
+      title: 'REST & GraphQL API Reference Guide',
+      category: 'api',
+      summary: 'Detailed specification of available endpoints, authentication headers, and response formats.',
+      author: 'API Platform',
+      updatedAt: '2026-11-15',
+      readTime: '8 min read',
+      tags: ['api', 'rest', 'endpoints'],
+      content: 'Reference documentation detailing idempotent operations, status lifecycle transitions, and payload schemas.'
+    },
+    {
+      id: 4,
+      title: 'Continuous Deployment & Rollout Strategies',
+      category: 'deployment',
+      summary: 'Best practices for zero-downtime database migrations, canary deployments, and health checks.',
+      author: 'DevOps',
+      updatedAt: '2026-11-14',
+      readTime: '5 min read',
+      tags: ['deployment', 'flyway', 'ci-cd'],
+      content: 'Detailed breakdown of staging validation, database migration sequencing, and monitoring thresholds.'
+    },
+    {
+      id: 5,
+      title: 'Frequently Asked Questions (FAQ)',
+      category: 'faq',
+      summary: 'Answers to common questions regarding permissions, session tokens, and testing environments.',
+      author: 'Support',
+      updatedAt: '2026-11-12',
+      readTime: '3 min read',
+      tags: ['faq', 'troubleshooting'],
+      content: 'Curated list of troubleshooting steps for authentication timeouts, branch isolation, and workspace limits.'
+    }
+  ];
+
+  async function fetchArticles() {
+    isLoading = true;
+    error = null;
+    try {
+      const res = await fetch('/api/articles');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          articles = data;
+        }
+      }
+    } catch (err) {
+      // Fall back to default articles on network failure
+      console.info('Using local article dataset');
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  onMount(() => {
+    fetchArticles();
+  });
+
+  $: filteredArticles = articles.filter(article => {
+    const matchesCategory = selectedCategory === 'all' || article.category === selectedCategory;
+    const query = searchQuery.trim().toLowerCase();
+    const matchesQuery = !query ||
+      article.title.toLowerCase().includes(query) ||
+      article.summary.toLowerCase().includes(query) ||
+      article.tags.some(tag => tag.toLowerCase().includes(query));
+    return matchesCategory && matchesQuery;
+  });
+
+  function selectCategory(id) {
+    selectedCategory = id;
+  }
+
+  function openArticle(article) {
+    selectedArticle = article;
+  }
+
+  function closeArticle() {
+    selectedArticle = null;
+  }
+</script>
+
+<div class="app-container">
+  <!-- Header Navigation -->
+  <header class="navbar">
+    <div class="navbar-inner">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+            <path d="M6 6h10"/>
+            <path d="M6 10h10"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">KnowledgeBase</span>
+          <span class="brand-subtitle">Documentation & Standards</span>
+        </div>
+      </div>
+
+      <div class="search-bar">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.3-4.3"/>
+        </svg>
+        <input
+          type="text"
+          placeholder="Search documentation, articles, tags..."
+          bind:value={searchQuery}
+          aria-label="Search articles"
+        />
+        {#if searchQuery}
+          <button class="clear-button" on:click={() => searchQuery = ''} aria-label="Clear search">&times;</button>
+        {/if}
+      </div>
+    </div>
+  </header>
+
+  <!-- Subheader / Hero -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <h1 class="hero-title">Knowledge Base & System Standards</h1>
+      <p class="hero-lead">Explore technical specifications, architectural decisions, and integration references.</p>
+    </div>
+  </section>
+
+  <!-- Category Filter Chips -->
+  <nav class="category-bar" aria-label="Article Categories">
+    <div class="category-list">
+      {#each categories as cat (cat.id)}
+        <button
+          class="category-chip"
+          class:active={selectedCategory === cat.id}
+          on:click={() => selectCategory(cat.id)}
+        >
+          {cat.label}
+        </button>
+      {/each}
+    </div>
+  </nav>
+
+  <!-- Main Content Area -->
+  <main class="main-content">
+    <div class="results-meta">
+      <span class="result-count">
+        Showing <strong>{filteredArticles.length}</strong> {filteredArticles.length === 1 ? 'article' : 'articles'}
+      </span>
+      {#if searchQuery}
+        <span class="filter-badge">Query: "{searchQuery}"</span>
+      {/if}
+    </div>
+
+    {#if isLoading}
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading documentation...</p>
+      </div>
+    {:else if filteredArticles.length === 0}
+      <div class="empty-state">
+        <div class="empty-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.3-4.3"/>
+            <path d="M8 11h6"/>
+          </svg>
+        </div>
+        <h3>No articles found</h3>
+        <p>Try refining your search query or choosing another topic category.</p>
+        <button class="btn-reset" on:click={() => { searchQuery = ''; selectedCategory = 'all'; }}>Reset Filters</button>
+      </div>
+    {:else}
+      <div class="article-grid">
+        {#each filteredArticles as article (article.id)}
+          <article
+            class="article-card"
+            tabindex="0"
+            role="button"
+            on:click={() => openArticle(article)}
+            on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openArticle(article); } }}
+          >
+            <div class="card-header">
+              <span class="category-pill">{article.category}</span>
+              <span class="read-time">{article.readTime}</span>
+            </div>
+            <h2 class="card-title">{article.title}</h2>
+            <p class="card-summary">{article.summary}</p>
+            <div class="card-footer">
+              <div class="tag-list">
+                {#each article.tags as tag}
+                  <span class="tag">#{tag}</span>
+                {/each}
+              </div>
+              <span class="card-date">{article.updatedAt}</span>
+            </div>
+          </article>
+        {/each}
+      </div>
+    {/if}
+  </main>
+
+  <!-- Article Detail Modal -->
+  {#if selectedArticle}
+    <div class="modal-backdrop" on:click={closeArticle} role="presentation">
+      <div
+        class="modal-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        on:click|stopPropagation
+      >
+        <header class="modal-header">
+          <div class="modal-badge-row">
+            <span class="category-pill">{selectedArticle.category}</span>
+            <span class="read-time">{selectedArticle.readTime}</span>
+          </div>
+          <button class="modal-close-btn" on:click={closeArticle} aria-label="Close article details">&times;</button>
+        </header>
+
+        <h2 id="modal-title" class="modal-title">{selectedArticle.title}</h2>
+        <div class="modal-meta">
+          <span>Author: <strong>{selectedArticle.author}</strong></span>
+          <span>Updated: <strong>{selectedArticle.updatedAt}</strong></span>
+        </div>
+
+        <div class="modal-body">
+          <p class="modal-summary-lead">{selectedArticle.summary}</p>
+          <hr class="modal-divider" />
+          <p class="modal-content-text">{selectedArticle.content}</p>
+        </div>
+
+        <footer class="modal-footer">
+          <div class="tag-list">
+            {#each selectedArticle.tags as tag}
+              <span class="tag">#{tag}</span>
+            {/each}
+          </div>
+          <button class="btn-close" on:click={closeArticle}>Close</button>
+        </footer>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-inner">
+      <p>&copy; 2026 Eneik Knowledge Base. All rights reserved.</p>
+      <p class="footer-sub">Designed in alignment with visual specification and design system guidelines.</p>
+    </div>
+  </footer>
+</div>
+
+<style>
+  :global(:root) {
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    --color-bg: #f8fafc;
+    --color-surface: #ffffff;
+    --color-surface-hover: #f1f5f9;
+    --color-border: #e2e8f0;
+    --color-border-focus: #3b82f6;
+    --color-text-main: #0f172a;
+    --color-text-muted: #64748b;
+    --color-text-subtle: #94a3b8;
+    --color-primary: #2563eb;
+    --color-primary-hover: #1d4ed8;
+    --color-primary-light: #eff6ff;
+    --color-accent: #0ea5e9;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    --shadow-modal: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  }
+
+  :global(body) {
+    margin: 0;
+    padding: 0;
+    background-color: var(--color-bg);
+    color: var(--color-text-main);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .app-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Navbar */
+  .navbar {
+    background-color: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+
+  .navbar-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0.875rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .brand-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+  }
+
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .brand-title {
+    font-weight: 700;
+    font-size: 1.125rem;
+    line-height: 1.25;
+    color: var(--color-text-main);
+  }
+
+  .brand-subtitle {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  .search-bar {
+    position: relative;
+    flex: 1;
+    max-width: 460px;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-bar input {
+    width: 100%;
+    padding: 0.5625rem 2.25rem 0.5625rem 2.5rem;
+    font-size: 0.875rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-bg);
+    color: var(--color-text-main);
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  }
+
+  .search-bar input:focus {
+    background-color: var(--color-surface);
+    border-color: var(--color-border-focus);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.875rem;
+    color: var(--color-text-muted);
+    pointer-events: none;
+  }
+
+  .clear-button {
+    position: absolute;
+    right: 0.625rem;
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.125rem 0.375rem;
+  }
+
+  .clear-button:hover {
+    color: var(--color-text-main);
+  }
+
+  /* Hero Section */
+  .hero-section {
+    background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-bg) 100%);
+    border-bottom: 1px solid var(--color-border);
+    padding: 2.5rem 1.5rem 2rem;
+    text-align: center;
+  }
+
+  .hero-content {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .hero-title {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0 0 0.5rem;
+    color: var(--color-text-main);
+    letter-spacing: -0.025em;
+  }
+
+  .hero-lead {
+    font-size: 1rem;
+    color: var(--color-text-muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* Category Bar */
+  .category-bar {
+    border-bottom: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    position: sticky;
+    top: 61px;
+    z-index: 30;
+  }
+
+  .category-list {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0.625rem 1.5rem;
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+
+  .category-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .category-chip {
+    padding: 0.4375rem 0.875rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .category-chip:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  .category-chip.active {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #ffffff;
+    font-weight: 600;
+  }
+
+  /* Main Content */
+  .main-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.75rem 1.5rem 3rem;
+    flex: 1;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .results-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
+
+  .filter-badge {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+    padding: 0.25rem 0.625rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  /* Article Grid */
+  .article-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .article-card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+
+  .article-card:hover,
+  .article-card:focus {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: #cbd5e1;
+    outline: none;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .category-pill {
+    text-transform: uppercase;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 0.2rem 0.5rem;
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+    border-radius: var(--radius-sm);
+  }
+
+  .read-time {
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+  }
+
+  .card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.35;
+    margin: 0 0 0.5rem;
+    color: var(--color-text-main);
+  }
+
+  .card-summary {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+    margin: 0 0 1rem;
+    flex: 1;
+  }
+
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
+
+  .tag {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    background-color: var(--color-bg);
+    padding: 0.125rem 0.375rem;
+    border-radius: var(--radius-sm);
+  }
+
+  .card-date {
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+  }
+
+  /* Empty & Loading States */
+  .loading-state,
+  .empty-state {
+    text-align: center;
+    padding: 4rem 1.5rem;
+    background-color: var(--color-surface);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--color-border);
+  }
+
+  .empty-icon {
+    color: var(--color-text-subtle);
+    margin-bottom: 1rem;
+  }
+
+  .empty-state h3 {
+    font-size: 1.25rem;
+    margin: 0 0 0.5rem;
+    color: var(--color-text-main);
+  }
+
+  .empty-state p {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin: 0 0 1.25rem;
+  }
+
+  .btn-reset {
+    background-color: var(--color-primary);
+    color: #ffffff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .btn-reset:hover {
+    background-color: var(--color-primary-hover);
+  }
+
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Modal Detail View */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    z-index: 50;
+  }
+
+  .modal-dialog {
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    max-width: 640px;
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-modal);
+    padding: 1.75rem;
+    overflow-y: auto;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .modal-badge-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.75rem;
+    line-height: 1;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-sm);
+  }
+
+  .modal-close-btn:hover {
+    background-color: var(--color-surface-hover);
+    color: var(--color-text-main);
+  }
+
+  .modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    line-height: 1.3;
+  }
+
+  .modal-meta {
+    display: flex;
+    gap: 1.25rem;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    margin-bottom: 1.25rem;
+  }
+
+  .modal-body {
+    flex: 1;
+    margin-bottom: 1.5rem;
+  }
+
+  .modal-summary-lead {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--color-text-main);
+    font-weight: 500;
+    margin: 0 0 1rem;
+  }
+
+  .modal-divider {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: 1.25rem 0;
+  }
+
+  .modal-content-text {
+    font-size: 0.9375rem;
+    line-height: 1.7;
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .btn-close {
+    background-color: var(--color-surface-hover);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-main);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .btn-close:hover {
+    background-color: #e2e8f0;
+  }
+
+  /* Footer */
+  .app-footer {
+    border-top: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    padding: 1.5rem;
+    margin-top: auto;
+  }
+
+  .footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+
+  .footer-inner p {
+    margin: 0.25rem 0;
+  }
+
+  .footer-sub {
+    font-size: 0.75rem;
+    color: var(--color-text-subtle);
+  }
+
+  /* Responsive styles */
+  @media (max-width: 768px) {
+    .navbar-inner {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+    }
+
+    .search-bar {
+      max-width: 100%;
+    }
+
+    .hero-title {
+      font-size: 1.5rem;
+    }
+
+    .article-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .category-bar {
+      top: 110px;
+    }
+  }
+</style>
+</div>
+<div id="dynamic-document-generators" style="display:none;" data-endpoints="/api/generate/docx,/api/generate/xlsx,/api/generate/pdf"></div>
+</body>
+</html>
