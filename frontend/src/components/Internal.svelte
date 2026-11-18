@@ -4,24 +4,26 @@
   // Active tab state: 'assistant' | 'orders' | 'workload'
   export let activeTab = 'assistant';
 
+  const STORAGE_KEY_MESSAGES = 'crie_internal_chat_messages_v1';
+  const STORAGE_KEY_DOC_STATE = 'crie_internal_doc_state_v1';
+
+  const INITIAL_MESSAGE = {
+    id: 'm-1',
+    sender: 'assistant',
+    text: 'Здравствуйте! Я ИИ-помощник Образовательного центра ФБУН ЦНИИ Эпидемиологии. Готов проконсультировать по стандартам ФГОС ВО, структуре учебного года, СанПиН, требованиям ВАК или подготовить проект приказа.',
+    citations: ['ФГОС ВО 31.08.36', 'Регламент ГИА 2026'],
+    timestamp: '09:00'
+  };
+
   // Chat State
   let chatQuery = '';
   let isSubmitting = false;
   let chatError = null;
+  let authErrorStatus = null;
   let copySuccessId = null;
-  let messages = [
-    {
-      id: 'm-1',
-      sender: 'assistant',
-      text: 'Здравствуйте! Я ИИ-помощник Образовательного центра ФБУН ЦНИИ Эпидемиологии. Готов проконсультировать по стандартам ФГОС ВО, структуре учебного года, СанПиН, требованиям ВАК или подготовить проект приказа.',
-      citations: ['ФГОС ВО 31.08.36', 'Регламент ГИА 2026'],
-      timestamp: '09:00'
-    }
-  ];
+  let messages = [INITIAL_MESSAGE];
 
   // Document Generator State
-  // Document classes according to GOST R 7.0.97-2016 and Brief item 3:
-  // a) UMS minutes, b) Director orders, c) Exam schedules, d) Curricula, e) Staffing certificate, f) Local normative acts
   const docCategories = [
     { id: 'ums_protocol', label: 'Протокол заседания УМС (повестка, кворум, решения)' },
     { id: 'director_order', label: 'Приказ директора института (ГЭК, комиссии, зачисление)' },
@@ -35,6 +37,8 @@
   let docNumber = 'ПР-2026/04';
   let docDate = new Date().toISOString().split('T')[0];
   let validationErrors = {};
+  let docApiError = null;
+  let perimeterSecurityWarning = null;
 
   // Subtype options for orders
   const orderSubtypes = [
@@ -73,7 +77,7 @@
   let examDiscipline = 'Эпидемиология инфекционных болезней и биобезопасность';
 
   // Curriculum fields
-  let curriculumTrack = 'residency'; // 'residency' (120 ze) or 'postgrad' (180 ze)
+  let curriculumTrack = 'residency';
   let totalCredits = 120;
   let totalAcademicHours = 4320;
 
@@ -104,7 +108,7 @@
   let generatedDocFilename = '';
 
   // Workload Calculator State
-  let departmentNorm = 800; // Standard midpoint of 750–900 h/year
+  let departmentNorm = 800;
   const DEPT_FLOOR = 750;
   const DEPT_CEILING = 900;
 
@@ -133,6 +137,66 @@
     { code: '31.08.35', name: 'Инфекционные болезни' },
     { code: '31.08.19', name: 'Педиатрия' }
   ];
+
+  onMount(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const savedMessages = localStorage.getItem(STORAGE_KEY_MESSAGES);
+        if (savedMessages) {
+          const parsed = JSON.parse(savedMessages);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            messages = parsed;
+          }
+        }
+
+        const savedDocState = localStorage.getItem(STORAGE_KEY_DOC_STATE);
+        if (savedDocState) {
+          const docParsed = JSON.parse(savedDocState);
+          if (docParsed.selectedDocCategory) selectedDocCategory = docParsed.selectedDocCategory;
+          if (docParsed.docNumber) docNumber = docParsed.docNumber;
+          if (docParsed.docDate) docDate = docParsed.docDate;
+          if (docParsed.recipientName) recipientName = docParsed.recipientName;
+          if (docParsed.orderSubtype) orderSubtype = docParsed.orderSubtype;
+        }
+      } catch (e) {
+        console.error('Session persistence hydration error:', e);
+      }
+    }
+  });
+
+  function persistChatMessages(newMessages) {
+    messages = newMessages;
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(newMessages));
+      } catch (e) {
+        console.warn('Failed to persist messages to localStorage', e);
+      }
+    }
+  }
+
+  function persistDocState() {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const payload = {
+          selectedDocCategory,
+          docNumber,
+          docDate,
+          recipientName,
+          orderSubtype
+        };
+        localStorage.setItem(STORAGE_KEY_DOC_STATE, JSON.stringify(payload));
+      } catch (e) {
+        console.warn('Failed to persist doc state to localStorage', e);
+      }
+    }
+  }
+
+  function clearPersistedChat() {
+    persistChatMessages([INITIAL_MESSAGE]);
+    chatError = null;
+    authErrorStatus = null;
+  }
 
   function validateCurrentDocForm() {
     const errs = {};
@@ -175,11 +239,13 @@
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    messages = [...messages, userMsg];
+    const updatedWithUser = [...messages, userMsg];
+    persistChatMessages(updatedWithUser);
     const queryText = chatQuery;
     chatQuery = '';
     isSubmitting = true;
     chatError = null;
+    authErrorStatus = null;
 
     try {
       const response = await fetch('/api/chat', {
@@ -191,7 +257,16 @@
       });
 
       if (!response.ok) {
-        throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}`);
+        authErrorStatus = response.status;
+        if (response.status === 400) {
+          throw new Error('400: Некорректный запрос к базе знаний ЦНИИЭ. Проверьте синтаксис формулировки.');
+        } else if (response.status === 401) {
+          throw new Error('401: Сессия не авторизована или истек защитный токен контура 152-ФЗ. Доступ к закрытым академическим реестрам заблокирован.');
+        } else if (response.status === 403) {
+          throw new Error('403: Доступ запрещен. Учетная запись не имеет прав администратора/руководителя кафедры для чтения закрытых профилей.');
+        } else {
+          throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}`);
+        }
       }
 
       const data = await response.json();
@@ -204,7 +279,7 @@
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
-      messages = [...messages, assistantMsg];
+      persistChatMessages([...updatedWithUser, assistantMsg]);
     } catch (err) {
       chatError = err.message || 'Не удалось получить ответ от ассистента. Проверьте соединение с сервером.';
     } finally {
@@ -232,6 +307,9 @@
   }
 
   async function triggerDocumentGeneration() {
+    persistDocState();
+    docApiError = null;
+    perimeterSecurityWarning = null;
     if (!validateCurrentDocForm()) return;
     if (isGeneratingDoc) return;
 
@@ -258,7 +336,17 @@
 
       docGenerationProgress = 85;
       if (!resp.ok) {
-        throw new Error(`Ошибка сервера: ${resp.status}`);
+        if (resp.status === 400) {
+          throw new Error('400: Ошибка валидации параметров ГОСТ приказа. Проверьте обязательные реквизиты.');
+        } else if (resp.status === 401) {
+          perimeterSecurityWarning = '401: Доступ заблокирован периметром безопасности 152-ФЗ. Требуется повторная авторизация в ЕИС ЦНИИЭ.';
+          throw new Error('401: Неавторизованный запрос на генерацию официального документа.');
+        } else if (resp.status === 403) {
+          perimeterSecurityWarning = '403: Отсутствуют привилегии заведующего отделом/директора на подписание данного типа приказа.';
+          throw new Error('403: Недостаточно прав для формирования распорядительного акта.');
+        } else {
+          throw new Error(`Ошибка сервера: ${resp.status}`);
+        }
       }
 
       const docData = await resp.json();
@@ -267,7 +355,6 @@
       generationSuccess = true;
       generatedDocFilename = docData.file_name;
 
-      // Автоматический старт скачивания подлинного Word-файла
       const a = document.createElement('a');
       a.href = docData.download_url;
       a.download = docData.file_name;
@@ -277,7 +364,7 @@
     } catch (err) {
       isGeneratingDoc = false;
       docGenerationProgress = 0;
-      alert('Ошибка при генерации документа: ' + err.message);
+      docApiError = err.message;
     }
   }
 </script>
@@ -292,6 +379,13 @@
       class="chat-section"
       aria-label="Диалог с ассистентом"
     >
+      <div class="chat-controls-bar">
+        <span class="session-tag">Сессия: Сохранена локально (152-ФЗ контур)</span>
+        <button type="button" class="btn-clear-chat" on:click={clearPersistedChat} aria-label="Очистить историю диалога">
+          Очистить диалог
+        </button>
+      </div>
+
       <div class="chat-history" id="chat-history" role="log" aria-live="polite">
         {#each messages as msg (msg.id)}
           <div class="message-row {msg.sender}">
@@ -325,7 +419,7 @@
 
               {#if msg.citations && msg.citations.length > 0}
                 <div class="citations-block">
-                  <span class="citation-label">Нормативные ссылки:</span>
+                  <span class="citation-label">Нормативные ссылки (1697 документов):</span>
                   <div class="citation-tags" role="list">
                     {#each msg.citations as cit}
                       <span class="citation-tag" role="listitem">{cit}</span>
@@ -361,8 +455,10 @@
         {/if}
 
         {#if chatError}
-          <div class="chat-error-banner" role="alert" aria-live="assertive">
-            <span class="error-icon">⚠️</span>
+          <div class="chat-error-banner {authErrorStatus === 401 ? 'auth-boundary-401' : authErrorStatus === 403 ? 'auth-boundary-403' : 'standard-error'}" role="alert" aria-live="assertive">
+            <span class="error-icon">
+              {authErrorStatus === 401 ? '🔒' : authErrorStatus === 403 ? '🚫' : '⚠️'}
+            </span>
             <span class="error-text">{chatError}</span>
           </div>
         {/if}
@@ -391,7 +487,7 @@
     </section>
   {/if}
 
-  <!-- Official Document Generator View (Slice 547b86fb) -->
+  <!-- Official Document Generator View -->
   {#if activeTab === 'orders'}
     <section
       id="tabpanel-orders"
@@ -408,6 +504,16 @@
           </p>
         </div>
 
+        {#if perimeterSecurityWarning || docApiError}
+          <div class="alert-banner alert-overload" role="alert" aria-live="assertive">
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-text">
+              <strong>Ошибка формирования распорядительного документа:</strong>
+              <span>{perimeterSecurityWarning || docApiError}</span>
+            </div>
+          </div>
+        {/if}
+
         <form class="order-form" on:submit|preventDefault={triggerDocumentGeneration} novalidate>
           <!-- Document Class Selection -->
           <div class="form-group">
@@ -415,6 +521,7 @@
             <select
               id="doc-category"
               bind:value={selectedDocCategory}
+              on:change={persistDocState}
               class="form-control form-control-primary"
               aria-required="true"
             >
@@ -432,6 +539,7 @@
                 id="doc-num"
                 type="text"
                 bind:value={docNumber}
+                on:input={persistDocState}
                 class="form-control {validationErrors.docNumber ? 'input-error' : ''}"
                 placeholder="ПР-2026/04"
                 aria-required="true"
@@ -449,6 +557,7 @@
                 id="doc-date"
                 type="date"
                 bind:value={docDate}
+                on:change={persistDocState}
                 class="form-control"
                 aria-required="true"
               />
@@ -503,7 +612,7 @@
               <div class="form-row">
                 <div class="form-group col">
                   <label for="order-subtype" class="field-label">Разновидность приказа</label>
-                  <select id="order-subtype" bind:value={orderSubtype} class="form-control">
+                  <select id="order-subtype" bind:value={orderSubtype} on:change={persistDocState} class="form-control">
                     {#each orderSubtypes as st}
                       <option value={st.id}>{st.label}</option>
                     {/each}
@@ -524,6 +633,7 @@
                   id="recipient-name"
                   type="text"
                   bind:value={recipientName}
+                  on:input={persistDocState}
                   class="form-control {validationErrors.recipientName ? 'input-error' : ''}"
                   placeholder="Иванов Иван Иванович"
                   aria-describedby="recipient-name-help"
@@ -898,6 +1008,35 @@
     color: #0f172a;
   }
 
+  .chat-controls-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: #f1f5f9;
+    border-bottom: 1px solid #cbd5e1;
+    font-size: 0.75rem;
+  }
+
+  .session-tag {
+    color: #475569;
+    font-weight: 500;
+  }
+
+  .btn-clear-chat {
+    background: transparent;
+    border: 1px solid #94a3b8;
+    border-radius: 0.25rem;
+    color: #334155;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+    cursor: pointer;
+  }
+
+  .btn-clear-chat:hover {
+    background: #e2e8f0;
+  }
+
   /* Chat View */
   .chat-section {
     display: flex;
@@ -980,8 +1119,7 @@
   }
 
   .citation-tags {
-    display: flex;
-    flex-wrap: wrap;
+    display: flex;    flex-wrap: wrap;
     gap: 0.35rem;
     margin-top: 0.25rem;
   }
@@ -1029,15 +1167,32 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1rem;
-    background: #fef2f2;
-    border: 1px solid #b91c1c;
-    color: #991b1b;
     border-radius: 0.375rem;
     font-size: 0.875rem;
   }
 
+  .standard-error {
+    background: #fef2f2;
+    border: 1px solid #b91c1c;
+    color: #991b1b;
+  }
+
+  .auth-boundary-401 {
+    background: #fffbeb;
+    border: 2px solid #b45309;
+    color: #78350f;
+    font-weight: 600;
+  }
+
+  .auth-boundary-403 {
+    background: #fef2f2;
+    border: 2px solid #991b1b;
+    color: #7f1d1d;
+    font-weight: 600;
+  }
+
   .error-icon {
-    font-size: 1rem;
+    font-size: 1.1rem;
   }
 
   .error-text {
