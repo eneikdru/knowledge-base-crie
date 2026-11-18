@@ -124,6 +124,13 @@
     currentTab = tabId;
   }
 
+  function clearFilters() {
+    selectedSpecialty = 'all';
+    selectedDocType = 'all';
+    query = '';
+    fetchDocuments('');
+  }
+
   function registerPWA() {
     if (typeof window === 'undefined') return;
 
@@ -289,12 +296,7 @@
                 <button
                   type="button"
                   class="btn-retry"
-                  on:click={() => {
-                    selectedSpecialty = 'all';
-                    selectedDocType = 'all';
-                    query = '';
-                    fetchDocuments('');
-                  }}
+                  on:click={clearFilters}
                 >
                   Сбросить все фильтры
                 </button>
