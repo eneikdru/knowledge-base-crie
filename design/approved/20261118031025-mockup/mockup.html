@@ -1,125 +1,487 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Full-product design refresh for knowledge-base-crie - round complete - FinTech</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ЦНИИ Эпидемиологии — Нормативный реестр и база знаний</title>
   <style>
     :root {
-      --bg-base: #0B0F19;
-      --bg-surface: #111827;
-      --text-primary: #F3F4F6;
-      --font-clamp-h1: clamp(2rem, 5vw, 4rem);
-      --font-clamp-h2: clamp(1.5rem, 3.5vw, 2.75rem);
-      --font-clamp-body: clamp(1rem, 1.2vw, 1.125rem);
+      --color-primary: #0a4d8c;
+      --color-primary-dark: #073563;
+      --color-primary-light: #e8f1fa;
+      --color-accent: #00875a;
+      --color-bg: #f4f6f9;
+      --color-surface: #ffffff;
+      --color-border: #dcdfe6;
+      --color-text-main: #1f2937;
+      --color-text-muted: #6b7280;
+      --color-tag-bg: #e5e7eb;
+      --nav-height: 64px;
+      --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
-    body { background-color: #0B0F19; color: #F3F4F6; font-size: var(--font-clamp-body); }
-    h1 { font-size: var(--font-clamp-h1); line-height: 1.1; }
-    h2 { font-size: var(--font-clamp-h2); line-height: 1.2; }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--color-bg);
+      color: var(--color-text-main);
+      line-height: 1.4;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .app-viewport {
+      width: 100%;
+      max-width: 480px;
+      background-color: var(--color-surface);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Header */
+    .header {
+      background-color: var(--color-primary);
+      color: #ffffff;
+      padding: 16px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-badge {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: rgba(255, 255, 255, 0.18);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .header-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+
+    .header-subtitle {
+      font-size: 13px;
+      opacity: 0.88;
+      margin-top: 2px;
+    }
+
+    /* Main Content Container */
+    .main-content {
+      flex: 1;
+      padding: 16px 16px calc(var(--nav-height) + 24px) 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Search Section */
+    .search-box {
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 12px 14px 12px 40px;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      font-size: 14px;
+      background: #fafbfc;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(10, 77, 140, 0.15);
+      background: #ffffff;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 18px;
+      color: var(--color-text-muted);
+    }
+
+    /* Specialty Facets */
+    .facets-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .facets-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .facets-list {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+
+    .facets-list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .facet-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      border: 1px solid var(--color-border);
+      background-color: #ffffff;
+      color: var(--color-text-main);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .facet-pill.active {
+      background-color: var(--color-primary-light);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      font-weight: 600;
+    }
+
+    .facet-code {
+      font-family: monospace;
+      font-weight: 700;
+      margin-right: 6px;
+      font-size: 12px;
+    }
+
+    /* Document Registry */
+    .registry-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-top: 4px;
+    }
+
+    .registry-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--color-text-main);
+    }
+
+    .registry-count {
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    .document-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .document-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .document-card:hover {
+      border-color: #b5c7db;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .document-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .document-code {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--color-primary);
+      background: var(--color-primary-light);
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    .document-status {
+      font-size: 11px;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .status-active {
+      background: #e6f4ea;
+      color: #137333;
+    }
+
+    .status-review {
+      background: #fef7e0;
+      color: #b06000;
+    }
+
+    .document-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text-main);
+      line-height: 1.35;
+    }
+
+    .document-meta {
+      font-size: 12px;
+      color: var(--color-text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .document-meta span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .document-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 8px;
+      border-top: 1px solid #f0f2f5;
+    }
+
+    .specialty-tag {
+      font-size: 11px;
+      color: #4b5563;
+      background: var(--color-tag-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .action-link {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-primary);
+      text-decoration: none;
+    }
+
+    /* Mobile Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      height: var(--nav-height);
+      background: #ffffff;
+      border-top: 1px solid var(--color-border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      color: var(--color-text-muted);
+      flex: 1;
+      height: 100%;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-item svg {
+      width: 22px;
+      height: 22px;
+      stroke-width: 2;
+    }
+
+    .nav-item.active {
+      color: var(--color-primary);
+      font-weight: 700;
+    }
+
+    .nav-item.active svg {
+      stroke: var(--color-primary);
+    }
   </style>
-
-<!-- Audit Refinement Round 1 -->
-<style id="audit-refinement-round-1">
-  /* Reason: Mobile 375px viewport horizontal overflow detected */
-  body, main, section { overflow-x: hidden; max-width: 100vw; }
-</style>
 </head>
-<body class="min-h-screen flex flex-col font-sans text-slate-100 antialiased overflow-x-hidden">
-  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-emerald-500 focus:text-slate-950 focus:outline-none focus:ring-2 focus:ring-emerald-400 font-semibold rounded-md shadow-xl">
-    Skip to main content
-  </a>
+<body>
+  <div class="app-viewport">
+    <!-- CRIE Header -->
+    <header class="header">
+      <div class="header-top">
+        <span class="header-badge">ФБУН ЦНИИ Эпидемиологии</span>
+        <span style="font-size: 12px; opacity: 0.85;">Портал ординатуры</span>
+      </div>
+      <h1 class="header-title">Нормативная база и реестр</h1>
+      <p class="header-subtitle">Стандарты, клинические протоколы и учебные планы</p>
+    </header>
 
-  <header role="banner" class="w-full border-b border-white/[0.07] bg-[#111827] px-6 py-4 flex flex-wrap items-center justify-between gap-4">
-    <div class="flex items-center space-x-3">
-      <img src="assets/images/knowledge-base-crie-logo.svg" alt="FinTech Brand Logo" class="h-8 w-8 object-contain">
-      <span class="font-bold text-lg tracking-tight">Full-product design refresh for knowledge-base-crie - round complete</span>
-    </div>
-    <nav role="navigation" aria-label="Main Navigation" class="flex flex-wrap items-center gap-4">
-      <a href="#section-0" class="text-sm text-slate-200 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded-sm p-1">Full-product</a>
-      <a href="#section-1" class="text-sm text-slate-200 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded-sm p-1">Design</a>
-      <a href="#section-2" class="text-sm text-slate-200 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded-sm p-1">Refresh</a>
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Search Box -->
+      <div class="search-box">
+        <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        <input 
+          type="search" 
+          class="search-input" 
+          placeholder="Поиск нормативных документов и стандартов..."
+          aria-label="Поиск нормативных документов"
+        />
+      </div>
+
+      <!-- Specialty Facets -->
+      <section class="facets-section" aria-label="Фильтры по специальностям">
+        <span class="facets-label">Специальности ординатуры</span>
+        <div class="facets-list">
+          <button class="facet-pill active">
+            Все разделы
+          </button>
+          <button class="facet-pill">
+            <span class="facet-code">32.08.12</span> Эпидемиология
+          </button>
+          <button class="facet-pill">
+            <span class="facet-code">31.08.35</span> Инфекционные болезни
+          </button>
+          <button class="facet-pill">
+            <span class="facet-code">31.08.19</span> Педиатрия
+          </button>
+        </div>
+      </section>
+
+      <!-- Document Registry Section -->
+      <section class="document-registry" aria-label="Реестр нормативных документов">
+        <div class="registry-header">
+          <h2 class="registry-title">Актуальные документы CRIE</h2>
+          <span class="registry-count">3 документа доступно</span>
+        </div>
+
+        <div class="document-list" style="margin-top: 10px;">
+          <!-- Document Card 1: 32.08.12 -->
+          <article class="document-card">
+            <div class="document-header">
+              <span class="document-code">МР 3.1.0225-21</span>
+              <span class="document-status status-active">Действующий норматив</span>
+            </div>
+            <h3 class="document-title">Особенности противоэпидемических мероприятий в очагах воздушно-капельных инфекций</h3>
+            <div class="document-meta">
+              <span>Утв. Роспотребнадзор</span>
+              <span>Ред. 2024</span>
+            </div>
+            <div class="document-footer">
+              <span class="specialty-tag">32.08.12 Эпидемиология</span>
+              <a href="#open-norm" class="action-link">Открыть карточку &rarr;</a>
+            </div>
+          </article>
+
+          <!-- Document Card 2: 31.08.35 -->
+          <article class="document-card">
+            <div class="document-header">
+              <span class="document-code">КР-ИБ-2025/1</span>
+              <span class="document-status status-active">Утверждено МЗ РФ</span>
+            </div>
+            <h3 class="document-title">Клинические рекомендации: Диагностика и терапия острых кишечных инфекций у взрослых и детей</h3>
+            <div class="document-meta">
+              <span>Протокол ЦНИИЭ</span>
+              <span>Секция инфектологии</span>
+            </div>
+            <div class="document-footer">
+              <span class="specialty-tag">31.08.35 Инфекционные болезни</span>
+              <a href="#open-norm" class="action-link">Открыть карточку &rarr;</a>
+            </div>
+          </article>
+
+          <!-- Document Card 3: 31.08.19 -->
+          <article class="document-card">
+            <div class="document-header">
+              <span class="document-code">УП-ПЕД-2026</span>
+              <span class="document-status status-review">На согласовании</span>
+            </div>
+            <h3 class="document-title">Стандарт практической подготовки ординаторов в инфекционном детском стационаре</h3>
+            <div class="document-meta">
+              <span>Кафедра детских болезней</span>
+              <span>Аттестационный план</span>
+            </div>
+            <div class="document-footer">
+              <span class="specialty-tag">31.08.19 Педиатрия</span>
+              <a href="#open-norm" class="action-link">Открыть карточку &rarr;</a>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <!-- Mobile Bottom Navigation (Pinned at bottom for 375px+ viewports) -->
+    <nav class="bottom-nav" aria-label="Основная мобильная навигация">
+      <a href="#catalog" class="nav-item active" aria-current="page">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+        </svg>
+        <span>Каталог</span>
+      </a>
+      <a href="#assistant" class="nav-item">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+        </svg>
+        <span>Ассистент</span>
+      </a>
+      <a href="#workload" class="nav-item">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+        </svg>
+        <span>Нагрузка</span>
+      </a>
     </nav>
-  </header>
-
-  <main id="main-content" role="main" class="flex-1 container mx-auto px-6 py-10">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-      <section aria-labelledby="hero-heading" class="col-span-12 lg:col-span-7 flex flex-col justify-center space-y-6 p-6 rounded-xl border border-white/[0.07] bg-[#111827]">
-        <div class="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-emerald-400">
-          <span>FIN_TECH</span>
-          <span>&bull;</span>
-          <span>WCAG AAA 18.3:1</span>
-        </div>
-        <h1 id="hero-heading" class="font-extrabold tracking-tight text-white">
-          Full-product design refresh for knowledge-base-crie - round complete
-        </h1>
-        <p class="text-slate-200 max-w-2xl leading-relaxed">
-          Full-product design refresh for knowledge-base-crie - round complete (3/10 features delivered).
-        </p>
-        <div class="flex flex-wrap gap-2 pt-1">
-          <span class="px-3 py-1 text-xs font-mono rounded-full bg-slate-900 text-emerald-300 border border-white/[0.07]">full-product</span>
-          <span class="px-3 py-1 text-xs font-mono rounded-full bg-slate-900 text-emerald-300 border border-white/[0.07]">design</span>
-          <span class="px-3 py-1 text-xs font-mono rounded-full bg-slate-900 text-emerald-300 border border-white/[0.07]">refresh</span>
-          <span class="px-3 py-1 text-xs font-mono rounded-full bg-slate-900 text-emerald-300 border border-white/[0.07]">knowledge-base-crie</span>
-        </div>
-        <div class="pt-4 flex flex-wrap gap-4 items-center">
-          <button type="button" class="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold rounded-lg shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 transition-all">
-            Launch Full-product
-          </button>
-          <button type="button" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-100 border border-white/[0.07] font-semibold rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 transition-all">
-            Inspect Specification
-          </button>
-        </div>
-      </section>
-
-      <section aria-labelledby="media-heading" class="col-span-12 lg:col-span-5 p-6 rounded-xl border border-white/[0.07] bg-[#111827]">
-        <h2 id="media-heading" class="font-bold text-slate-100 mb-4">Full-product Topology</h2>
-        <div class="relative overflow-hidden rounded-lg border border-white/[0.07]">
-          <img src="assets/images/knowledge-base-crie-hero.webp" alt="FinTech Main Interface Preview" class="w-full h-auto object-cover">
-        </div>
-      </section>
-
-      <section aria-labelledby="telemetry-heading" data-domain-module="telemetry-kpi" class="col-span-12 p-6 rounded-xl border border-white/[0.07] bg-[#111827]">
-        <h2 id="telemetry-heading" class="font-bold text-slate-100 mb-4">Operational Telemetry &amp; Invariants</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="p-4 rounded-lg bg-slate-900 border border-white/[0.07]">
-            <div class="text-xs font-mono uppercase text-slate-300">full-product</div>
-            <div class="text-2xl font-extrabold text-emerald-400 mt-1">99.94%</div>
-          </div>
-          <div class="p-4 rounded-lg bg-slate-900 border border-white/[0.07]">
-            <div class="text-xs font-mono uppercase text-slate-300">design</div>
-            <div class="text-2xl font-extrabold text-emerald-400 mt-1">16 Slots</div>
-          </div>
-          <div class="p-4 rounded-lg bg-slate-900 border border-white/[0.07]">
-            <div class="text-xs font-mono uppercase text-slate-300">refresh</div>
-            <div class="text-2xl font-extrabold text-emerald-400 mt-1">>= 7.0:1</div>
-          </div>
-        </div>
-      </section>
-
-      <section aria-labelledby="form-heading" class="col-span-12 p-6 rounded-xl border border-white/[0.07] bg-[#111827]">
-        <h2 id="form-heading" class="font-bold text-slate-100 mb-4">Full-product design refresh for knowledge-base-crie - round complete Control Parameters</h2>
-        <form role="form" action="#" method="POST" class="space-y-4 max-w-xl">
-          <div>
-            <label for="user-email" class="block text-sm font-medium text-slate-200 mb-1">Operator Endpoint / Email</label>
-            <input id="user-email" name="email" type="email" required aria-required="true" placeholder="operator@domain.com" class="w-full px-4 py-2 bg-slate-900 border border-white/[0.07] text-white rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
-          </div>
-          <div>
-            <label for="project-archetype-select" class="block text-sm font-medium text-slate-200 mb-1">Target Archetype</label>
-            <select id="project-archetype-select" name="archetype" class="w-full px-4 py-2 bg-slate-900 border border-white/[0.07] text-white rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
-              <option value="FIN_TECH" selected>FinTech</option>
-            </select>
-          </div>
-          <button type="submit" class="px-6 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-medium rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 transition-all">
-            Apply Full-product State
-          </button>
-        </form>
-      </section>
-    </div>
-  </main>
-
-  <footer role="contentinfo" class="w-full border-t border-white/[0.07] bg-[#111827] px-6 py-4 text-center text-xs text-slate-300">
-    <p>&copy; 2026 Sovereign Design Workshop &mdash; Full-product design refresh for knowledge-base-crie - round complete (WCAG 2.1 AAA Verified).</p>
-  </footer>
+  </div>
 </body>
 </html>
