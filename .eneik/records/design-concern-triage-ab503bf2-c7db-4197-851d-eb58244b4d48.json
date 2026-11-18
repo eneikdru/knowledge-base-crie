@@ -1,0 +1,20 @@
+[
+  {
+    "concern": "(low) Relative preview image path (assets/images/knowledge-base-crie-hero.webp) requires a fallback placeholder in offline or standalone environments.",
+    "jtbd": "When viewing the mockup in standalone or offline environments without static assets loaded, I want a resilient fallback placeholder for the preview image, so that visual layout stability and layout hierarchy are preserved without broken image artifacts.",
+    "acceptanceCriteria": "Given the mockup is rendered in an offline environment where 'assets/images/knowledge-base-crie-hero.webp' fails to load, When the image onerror event triggers or when CSS fallback styles are evaluated, Then a styled SVG/CSS placeholder container with consistent aspect ratio is displayed without causing Cumulative Layout Shift (CLS < 0.1).",
+    "editInstruction": "In section[aria-labelledby=\"media-heading\"], update the img element for 'assets/images/knowledge-base-crie-hero.webp' to include an onerror handler or wrap it in a fallback container (e.g., onerror=\"this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 800 450\' fill=\'%231e293b\'><rect width=\'800\' height=\'450\' fill=\'%230f172a\'/><text x=\'50%\' y=\'50%\' fill=\'%2364748b\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'20\'>Preview Unavailable</text></svg>';\" class=\"w-full h-auto object-cover min-h-[180px] bg-slate-900\") to provide immediate visual resilience.",
+    "kanoClass": "performance",
+    "cynefinDomain": "clear",
+    "leanValue": "valuable"
+  },
+  {
+    "concern": "(low) Telemetry KPI card items should include explicit aria-describedby attributes for assistive accessibility parity.",
+    "jtbd": "When navigating the operational telemetry KPI cards using screen readers or assistive devices, I want the metric values to programmatically reference their explanatory labels, so that I can understand the metric context unambiguously without visual spatial deduction.",
+    "acceptanceCriteria": "Given a user navigates to the telemetry KPI cards in section[data-domain-module=\"telemetry-kpi\"], When an assistive technology focuses or reads each metric value, Then each metric value has an aria-describedby attribute referencing the unique id of its corresponding label element.",
+    "editInstruction": "In section[data-domain-module=\"telemetry-kpi\"], assign unique id attributes to the metric label divs (e.g., id=\"kpi-label-full-product\", id=\"kpi-label-design\", id=\"kpi-label-refresh\") and add matching aria-describedby attributes to the metric value divs (e.g., aria-describedby=\"kpi-label-full-product\", aria-describedby=\"kpi-label-design\", aria-describedby=\"kpi-label-refresh\") to establish explicit assistive accessibility binding.",
+    "kanoClass": "must_be",
+    "cynefinDomain": "clear",
+    "leanValue": "essential"
+  }
+]
