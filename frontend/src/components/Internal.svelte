@@ -4,12 +4,13 @@
   // Active tab state: 'assistant' | 'orders' | 'workload'
   export let activeTab = 'assistant';
 
-  // Chat State
+  // Chat State & Session Persistence (D002 compliance)
   let chatQuery = '';
   let isSubmitting = false;
   let chatError = null;
   let copySuccessId = null;
-  let messages = [
+  const STORAGE_KEY = 'crie_internal_chat_history_v1';
+  const INITIAL_MESSAGES = [
     {
       id: 'm-1',
       sender: 'assistant',
@@ -18,6 +19,29 @@
       timestamp: '09:00'
     }
   ];
+  let messages = [...INITIAL_MESSAGES];
+
+  onMount(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          messages = parsed;
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to restore chat session from localStorage', err);
+    }
+  });
+
+  $: if (typeof localStorage !== 'undefined' && messages && messages.length > 0) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    } catch (err) {
+      console.warn('Failed to persist chat session to localStorage', err);
+    }
+  }
 
   // Document Generator State
   // Document classes according to GOST R 7.0.97-2016 and Brief item 3:
