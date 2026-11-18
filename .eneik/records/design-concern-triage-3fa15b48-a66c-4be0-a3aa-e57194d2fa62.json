@@ -1,0 +1,20 @@
+[
+  {
+    "concern": "(low) Header navigation links wrap inline on narrow mobile viewports (<375px); consider adding a collapsible drawer or hamburger toggle for compact viewports.",
+    "jtbd": "When I view the interface on a narrow mobile screen (<375px), I want the navigation links cleanly organized in a collapsible drawer or hamburger menu, so that the header does not wrap into multiple awkward lines and crowd out brand identity.",
+    "acceptanceCriteria": "Given a mobile viewport width below 375px, When the page is loaded, Then the header navigation displays a compact hamburger button with aria-expanded attributes that toggles a mobile drawer containing the links, preventing inline wrapping in the top bar.",
+    "editInstruction": "In header > nav, add a responsive mobile toggle button (hidden on sm/md and visible on narrow mobile viewports <375px) with aria-label='Toggle Navigation', and collapse the inline links into a slide-over/dropdown drawer when collapsed on compact viewports.",
+    "kanoClass": "performance",
+    "cynefinDomain": "clear",
+    "leanValue": "valuable"
+  },
+  {
+    "concern": "(low) Ensure an explicit aspect-ratio placeholder or skeleton container is reserved for the topology preview image to prevent cumulative layout shift (CLS) during load.",
+    "jtbd": "When the page is loading on slow or high-latency network connections, I want the topology preview image container to reserve its exact aspect ratio and spatial footprint with a placeholder, so that the DOM does not shift unexpectedly upon asset arrival.",
+    "acceptanceCriteria": "Given the topology section is rendered before the hero image asset finishes loading, When observing page layout shift metrics, Then the image container has an explicit aspect-ratio (e.g., aspect-video / 16:9) and skeleton background, maintaining CLS strictly below 0.1.",
+    "editInstruction": "In section[aria-labelledby='media-heading'] div.relative, apply explicit aspect-ratio styling (class 'aspect-video w-full bg-slate-800') and add width/height attributes or CSS aspect-ratio to the <img> element to reserve layout space prior to image download.",
+    "kanoClass": "must_be",
+    "cynefinDomain": "clear",
+    "leanValue": "essential"
+  }
+]
