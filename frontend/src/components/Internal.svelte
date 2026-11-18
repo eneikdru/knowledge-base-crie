@@ -4,20 +4,59 @@
   // Active tab state: 'assistant' | 'orders' | 'workload'
   export let activeTab = 'assistant';
 
-  // Chat State
+  // Chat Persistence & State (localStorage session persistence satisfying D002 / 152-FZ requirements)
+  const CHAT_STORAGE_KEY = 'crie_internal_chat_session_v1';
+  const DEFAULT_INITIAL_MESSAGE = {
+    id: 'm-1',
+    sender: 'assistant',
+    text: 'Здравствуйте! Я ИИ-помощник Образовательного центра ФБУН ЦНИИ Эпидемиологии. Готов проконсультировать по стандартам ФГОС ВО, структуре учебного года, СанПиН, требованиям ВАК или подготовить проект приказа.',
+    citations: ['ФГОС ВО 31.08.36', 'Регламент ГИА 2026'],
+    timestamp: '09:00'
+  };
+
   let chatQuery = '';
   let isSubmitting = false;
   let chatError = null;
   let copySuccessId = null;
-  let messages = [
-    {
-      id: 'm-1',
-      sender: 'assistant',
-      text: 'Здравствуйте! Я ИИ-помощник Образовательного центра ФБУН ЦНИИ Эпидемиологии. Готов проконсультировать по стандартам ФГОС ВО, структуре учебного года, СанПиН, требованиям ВАК или подготовить проект приказа.',
-      citations: ['ФГОС ВО 31.08.36', 'Регламент ГИА 2026'],
-      timestamp: '09:00'
+  let isStorageInitialized = false;
+  let messages = [DEFAULT_INITIAL_MESSAGE];
+
+  onMount(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const savedChat = localStorage.getItem(CHAT_STORAGE_KEY);
+        if (savedChat) {
+          const parsed = JSON.parse(savedChat);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            messages = parsed;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Не удалось загрузить сохраненную сессию чата из localStorage:', err);
+    } finally {
+      isStorageInitialized = true;
     }
-  ];
+  });
+
+  $: if (isStorageInitialized && typeof window !== 'undefined' && window.localStorage) {
+    try {
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+    } catch (err) {
+      console.warn('Не удалось сохранить сессию чата в localStorage:', err);
+    }
+  }
+
+  function clearChatSession() {
+    messages = [DEFAULT_INITIAL_MESSAGE];
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+      } catch (err) {
+        console.warn('Ошибка очистки сессии чата:', err);
+      }
+    }
+  }
 
   // Document Generator State
   // Document classes according to GOST R 7.0.97-2016 and Brief item 3:
@@ -190,7 +229,15 @@
         body: JSON.stringify({ query: queryText })
       });
 
-      if (!response.ok) {
+      // Explicit 400 / 401 / 403 boundary handling (152-FZ security perimeter & BARCAN-TAG-07)
+      if (response.status === 401) {
+        throw new Error('401 Unauthorized: Запрос не авторизован в защищенном периметре 152-ФЗ. Доступ к академическим записям и сущностям института заблокирован.');
+      } else if (response.status === 403) {
+        throw new Error('403 Forbidden: Отсутствуют административные полномочия для доступа к защищенным сущностям и операциям графа знаний ЦНИИЭ.');
+      } else if (response.status === 400) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || errData.message || '400 Bad Request: Некорректный запрос или невалидные параметры запроса к нормативной базе.');
+      } else if (!response.ok) {
         throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}`);
       }
 
@@ -256,11 +303,19 @@
         })
       });
 
-      docGenerationProgress = 85;
-      if (!resp.ok) {
+      // Explicit 400 / 401 / 403 boundary handling (152-FZ security perimeter & BARCAN-TAG-07)
+      if (resp.status === 401) {
+        throw new Error('401 Unauthorized: Требуется авторизация в периметре 152-ФЗ для генерации официальных документов института.');
+      } else if (resp.status === 403) {
+        throw new Error('403 Forbidden: Недостаточно прав для утверждения и формирования официального приказа или протокола.');
+      } else if (resp.status === 400) {
+        const errJson = await resp.json().catch(() => ({}));
+        throw new Error(errJson.detail || errJson.message || '400 Bad Request: Некорректные реквизиты документа по стандарту ГОСТ Р 7.0.97-2016.');
+      } else if (!resp.ok) {
         throw new Error(`Ошибка сервера: ${resp.status}`);
       }
 
+      docGenerationProgress = 85;
       const docData = await resp.json();
       docGenerationProgress = 100;
       isGeneratingDoc = false;
@@ -292,6 +347,22 @@
       class="chat-section"
       aria-label="Диалог с ассистентом"
     >
+      <div class="chat-top-bar">
+        <span class="chat-session-status" role="status">
+          <span class="status-dot" aria-hidden="true"></span>
+          Сессия защищена (152-ФЗ, локальное сохранение)
+        </span>
+        <button
+          type="button"
+          class="btn-clear-chat"
+          on:click={clearChatSession}
+          title="Очистить локальную историю диалога"
+          aria-label="Очистить локальную историю сообщений"
+        >
+          🗑️ Сбросить диалог
+        </button>
+      </div>
+
       <div class="chat-history" id="chat-history" role="log" aria-live="polite">
         {#each messages as msg (msg.id)}
           <div class="message-row {msg.sender}">
@@ -908,6 +979,48 @@
     border: 1px solid #cbd5e1;
     border-radius: 0.5rem;
     overflow: hidden;
+  }
+
+  .chat-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .chat-session-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: #475569;
+    font-weight: 500;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #16a34a;
+  }
+
+  .btn-clear-chat {
+    background: transparent;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.25rem;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-clear-chat:hover, .btn-clear-chat:focus-visible {
+    background: #f1f5f9;
+    color: #b91c1c;
+    border-color: #fca5a5;
   }
 
   .chat-history {
