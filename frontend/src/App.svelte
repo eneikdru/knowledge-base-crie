@@ -39,8 +39,19 @@
     { id: 'workload', label: 'Нагрузка', icon: '⚖️' }
   ];
 
-  // Filter documents in real-time by facet chips and search query
+  // Filter documents in real-time by facet chips and search query for immediate visual feedback
   $: filteredDocuments = rawDocuments.filter(doc => {
+    if (query && query.trim() !== '') {
+      const q = query.trim().toLowerCase();
+      const titleMatch = (doc.title || '').toLowerCase().includes(q);
+      const annotMatch = (doc.annotation || doc.description || '').toLowerCase().includes(q);
+      const authorMatch = (doc.author || '').toLowerCase().includes(q);
+      const catMatch = (doc.category || doc.type || '').toLowerCase().includes(q);
+      const specMatch = (doc.specialty || '').toLowerCase().includes(q);
+      if (!titleMatch && !annotMatch && !authorMatch && !catMatch && !specMatch) {
+        return false;
+      }
+    }
     if (selectedSpecialty !== 'all') {
       const specMatch = (doc.specialty && doc.specialty.includes(selectedSpecialty)) ||
         (doc.title && doc.title.includes(selectedSpecialty)) ||
@@ -106,6 +117,11 @@
   function handleSearch(event) {
     if (event) event.preventDefault();
     fetchDocuments(query);
+  }
+
+  function handleClearSearch() {
+    query = '';
+    fetchDocuments('');
   }
 
   function handleRetry() {
@@ -210,7 +226,7 @@
             </div>
           </div>
 
-          <!-- Accessible Mobile-first Search Form -->
+          <!-- Accessible Mobile-first Search Form with immediate clear feedback -->
           <form class="search-form" on:submit={handleSearch} role="search">
             <label for="catalog-search-input" class="visually-hidden">Поиск материалов</label>
             <div class="search-input-wrapper">
@@ -222,6 +238,17 @@
                 placeholder="Поиск по названию, автору или ключевому слову..."
                 aria-label="Поиск материалов"
               />
+              {#if query}
+                <button
+                  type="button"
+                  class="search-clear-btn"
+                  aria-label="Очистить строку поиска"
+                  title="Очистить"
+                  on:click={handleClearSearch}
+                >
+                  ✕
+                </button>
+              {/if}
             </div>
             <button type="submit" class="btn-search" disabled={status === 'loading'}>
               {status === 'loading' ? 'Поиск...' : 'Найти'}
@@ -402,6 +429,7 @@
 
   :global(html) {
     box-sizing: border-box;
+    overflow-x: hidden;
   }
 
   :global(*), :global(*::before), :global(*::after) {
@@ -417,6 +445,7 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    width: 100%;
   }
 
   .app-viewport {
@@ -442,6 +471,7 @@
     position: sticky;
     top: 0;
     z-index: 40;
+    width: 100%;
   }
 
   .top-bar-inner {
@@ -452,18 +482,21 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
+    box-sizing: border-box;
   }
 
   .branding {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .branding-tag-row {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-wrap: wrap;
   }
 
   .institute-badge {
@@ -490,6 +523,7 @@
     margin: 0;
     color: var(--text-primary);
     letter-spacing: -0.01em;
+    word-break: break-word;
   }
 
   /* Desktop Navigation */
@@ -516,7 +550,7 @@
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background-color 0.15s, color 0.15s, transform 0.1s;
   }
 
   .desktop-nav-link:hover,
@@ -527,10 +561,15 @@
     outline-offset: 2px;
   }
 
+  .desktop-nav-link:active {
+    transform: scale(0.97);
+  }
+
   .desktop-nav-link.active {
     background: var(--surface);
     color: var(--accent-primary);
     border-color: var(--border-strong);
+    box-shadow: inset 0 -2px 0 var(--accent-primary);
   }
 
   .main-content {
@@ -568,6 +607,7 @@
     font-size: 1.625rem;
     font-weight: 700;
     color: var(--text-primary);
+    word-break: break-word;
   }
 
   .subtitle {
@@ -575,13 +615,15 @@
     color: var(--text-secondary);
     font-size: 0.9375rem;
     line-height: 1.4;
+    word-break: break-word;
   }
 
   .telemetry-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 0.75rem;
     width: 100%;
+    box-sizing: border-box;
   }
 
   .telemetry-card {
@@ -592,6 +634,13 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
+    transition: border-color 0.15s, background-color 0.15s;
+  }
+
+  .telemetry-card:hover {
+    border-color: var(--border-strong);
+    background-color: var(--surface-elevated);
   }
 
   .telemetry-label {
@@ -630,6 +679,7 @@
     gap: 0.75rem;
     margin-bottom: 1.25rem;
     width: 100%;
+    box-sizing: border-box;
   }
 
   @media (min-width: 640px) {
@@ -646,13 +696,14 @@
     border: 1px solid var(--border-strong);
     border-radius: 0.375rem;
     padding: 0 0.85rem;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
     min-width: 0;
   }
 
   .search-input-wrapper:focus-within {
     outline: 2px solid var(--accent-primary);
     border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
   }
 
   .search-icon {
@@ -677,6 +728,28 @@
     color: var(--text-muted);
   }
 
+  .search-clear-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1rem;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background-color 0.15s;
+    margin-left: 0.25rem;
+  }
+
+  .search-clear-btn:hover,
+  .search-clear-btn:focus-visible {
+    color: var(--text-primary);
+    background-color: var(--surface-elevated);
+    outline: 2px solid var(--accent-primary);
+  }
+
   .btn-search, .btn-retry {
     background-color: var(--accent-primary);
     color: #050b14;
@@ -690,13 +763,19 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s;
+    transition: background-color 0.15s, transform 0.1s;
     flex-shrink: 0;
   }
 
   .btn-search:hover:not(:disabled),
   .btn-retry:hover:not(:disabled) {
     background-color: var(--accent-hover);
+  }
+
+  .btn-search:active:not(:disabled),
+  .btn-retry:active:not(:disabled) {
+    background-color: var(--accent-active);
+    transform: scale(0.98);
   }
 
   .btn-search:focus-visible,
@@ -720,6 +799,7 @@
     border-radius: 0.5rem;
     border: 1px solid var(--border-subtle);
     width: 100%;
+    box-sizing: border-box;
   }
 
   .facet-group {
@@ -747,6 +827,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.45rem;
+    min-width: 0;
   }
 
   .chip {
@@ -758,15 +839,20 @@
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease-in-out;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
     display: inline-flex;
     align-items: center;
+    user-select: none;
   }
 
   .chip:hover {
     background: var(--surface-elevated);
     color: #ffffff;
     border-color: var(--border-strong);
+  }
+
+  .chip:active {
+    transform: scale(0.96);
   }
 
   .chip:focus-visible {
@@ -795,6 +881,7 @@
     background-color: var(--surface);
     border: 1px solid var(--border-subtle);
     margin-top: 1rem;
+    box-sizing: border-box;
   }
 
   .loading-state {
@@ -869,6 +956,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.25rem;
+    box-sizing: border-box;
   }
 
   .document-card {
@@ -881,6 +969,8 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s ease-in-out;
     word-break: break-word;
+    overflow-wrap: anywhere;
+    box-sizing: border-box;
   }
 
   .document-card:hover {
@@ -921,6 +1011,7 @@
     line-height: 1.4;
     font-weight: 700;
     color: var(--text-primary);
+    word-break: break-word;
   }
 
   .doc-author {
@@ -935,6 +1026,7 @@
     color: var(--text-secondary);
     flex: 1;
     line-height: 1.5;
+    word-break: break-word;
   }
 
   .card-actions {
@@ -959,7 +1051,12 @@
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+    box-sizing: border-box;
+  }
+
+  .btn-download:active {
+    transform: scale(0.98);
   }
 
   .btn-download-docx {
@@ -1007,6 +1104,8 @@
     align-items: center;
     z-index: 50;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+    box-sizing: border-box;
+    max-width: 100vw;
   }
 
   @media (min-width: 768px) {
@@ -1027,7 +1126,11 @@
     color: var(--text-secondary);
     padding: 0.25rem 0;
     cursor: pointer;
-    transition: color 0.15s ease;
+    transition: color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .bottom-nav-item:active {
+    background-color: var(--surface);
   }
 
   .bottom-nav-item:focus-visible {
@@ -1038,6 +1141,7 @@
   .bottom-nav-item.active {
     color: var(--accent-primary);
     font-weight: 700;
+    box-shadow: inset 0 2px 0 var(--accent-primary);
   }
 
   .bottom-nav-item .nav-icon {
