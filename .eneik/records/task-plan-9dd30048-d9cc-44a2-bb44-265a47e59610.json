@@ -1,0 +1,34 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "e59b167a-75af-4f81-b7cc-01c00c7b02fd",
+      "title": "Standalone Responsive Knowledge Base & Fast Search Tool",
+      "jtbd": "When an educational resident, researcher, or faculty member accesses the CRIE knowledge base on desktop or mobile, I want a fast, thoughtful, self-contained search and document exploration interface without third-party integration friction, so that I can immediately find and inspect clinical, academic, and normative resources in seconds.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "Visual fidelity rate >= 99% against approved design mockup without layout shifts or regressions",
+      "tocConstraintRef": "Frontend static template layout synchronization in src/main/resources/static/index.html",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Implement approved design reference 20261118014022-mockup into the existing frontend (src/main/resources/static/index.html) with pixel-perfect fidelity, responsive styling, and accessible contrast ratios."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Implement approved design mockup in existing frontend codebase",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing the design mockup refresh for this epic, I want to update src/main/resources/static/index.html to match approved mockup 20261118014022-mockup, so that the knowledge base search interface adheres to the approved visual standards across mobile and desktop.",
+          "acceptanceCriteria": "Given the approved design mockup at design/approved/20261118014022-mockup/mockup.html,\nWhen updating src/main/resources/static/index.html with the approved structure and styling,\nThen the rendered interface matches the approved layout, typography, and controls with zero visual regressions.\nGiven mobile (375px) and desktop (1440px) viewports,\nWhen rendering the updated interface and executing smoke/regression checks,\nThen navigation and search actions provide immediate visual feedback with no horizontal overflow.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Frontend template structure and asset integration",
+          "sixSigmaMetric": "0 visual defect escapes and 100% design token compliance",
+          "hasUi": true,
+          "requirementRefs": [
+            "R1"
+          ]
+        }
+      ]
+    }
+  ]
+}
