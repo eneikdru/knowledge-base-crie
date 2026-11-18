@@ -485,7 +485,7 @@
   }
 
   .app-title {
-    font-size: 1.15rem;
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
     font-weight: 700;
     margin: 0;
     color: var(--text-primary);
@@ -546,7 +546,7 @@
     max-width: 1040px;
     width: 100%;
     margin: 0 auto;
-    padding: 1.5rem 1rem;
+    padding: clamp(1rem, 3vw, 1.75rem) clamp(0.75rem, 2vw, 1.25rem);
     box-sizing: border-box;
     overflow-x: hidden;
   }
@@ -565,21 +565,22 @@
 
   .hero-text h2 {
     margin: 0 0 0.35rem;
-    font-size: 1.625rem;
+    font-size: clamp(1.25rem, 4vw, 1.75rem);
     font-weight: 700;
     color: var(--text-primary);
+    line-height: 1.25;
   }
 
   .subtitle {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 0.9375rem;
+    font-size: clamp(0.875rem, 2vw, 1rem);
     line-height: 1.4;
   }
 
   .telemetry-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 0.75rem;
     width: 100%;
   }
@@ -603,7 +604,7 @@
   }
 
   .telemetry-value {
-    font-size: 1.25rem;
+    font-size: clamp(1.15rem, 3vw, 1.35rem);
     font-weight: 800;
     color: var(--text-primary);
     line-height: 1.2;
@@ -648,6 +649,7 @@
     padding: 0 0.85rem;
     transition: border-color 0.2s;
     min-width: 0;
+    min-height: 44px;
   }
 
   .search-input-wrapper:focus-within {
@@ -685,6 +687,7 @@
     padding: 0.75rem 1.35rem;
     font-size: 0.9375rem;
     font-weight: 700;
+    min-height: 44px;
     cursor: pointer;
     text-decoration: none;
     display: inline-flex;
@@ -716,7 +719,7 @@
     flex-direction: column;
     gap: 0.85rem;
     background: var(--surface);
-    padding: 1.15rem;
+    padding: clamp(0.75rem, 2vw, 1.15rem);
     border-radius: 0.5rem;
     border: 1px solid var(--border-subtle);
     width: 100%;
@@ -754,13 +757,15 @@
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
     border-radius: 9999px;
-    padding: 0.35rem 0.85rem;
+    padding: 0.45rem 0.85rem;
+    min-height: 38px;
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
   }
 
   .chip:hover {
@@ -789,7 +794,7 @@
 
   /* Status and Empty States */
   .state-view {
-    padding: 3rem 1.5rem;
+    padding: clamp(2rem, 5vw, 3rem) 1.5rem;
     border-radius: 0.5rem;
     text-align: center;
     background-color: var(--surface);
@@ -867,7 +872,7 @@
 
   .document-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 1.25rem;
   }
 
@@ -951,6 +956,7 @@
     min-width: 120px;
     border-radius: 0.375rem;
     padding: 0.55rem 0.75rem;
+    min-height: 44px;
     font-size: 0.8125rem;
     font-weight: 700;
     cursor: pointer;
@@ -1022,6 +1028,7 @@
     align-items: center;
     justify-content: center;
     height: 100%;
+    min-height: 44px;
     background: transparent;
     border: none;
     color: var(--text-secondary);
