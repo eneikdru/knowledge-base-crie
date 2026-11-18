@@ -4,12 +4,9 @@
   // Active tab state: 'assistant' | 'orders' | 'workload'
   export let activeTab = 'assistant';
 
-  // Chat State
-  let chatQuery = '';
-  let isSubmitting = false;
-  let chatError = null;
-  let copySuccessId = null;
-  let messages = [
+  const STORAGE_KEY_MESSAGES = 'crie_internal_chat_messages_v1';
+
+  const INITIAL_MESSAGES = [
     {
       id: 'm-1',
       sender: 'assistant',
@@ -18,6 +15,43 @@
       timestamp: '09:00'
     }
   ];
+
+  // Chat State with Session Persistence (localStorage)
+  let chatQuery = '';
+  let isSubmitting = false;
+  let chatError = null;
+  let chatErrorCode = null;
+  let copySuccessId = null;
+  let messages = INITIAL_MESSAGES;
+
+  onMount(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_MESSAGES);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          messages = parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not restore chat messages from localStorage:', e);
+    }
+  });
+
+  function saveMessagesToStorage(updated) {
+    messages = updated;
+    try {
+      localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Could not persist chat messages to localStorage:', e);
+    }
+  }
+
+  function clearChatHistory() {
+    saveMessagesToStorage(INITIAL_MESSAGES);
+    chatError = null;
+    chatErrorCode = null;
+  }
 
   // Document Generator State
   // Document classes according to GOST R 7.0.97-2016 and Brief item 3:
@@ -35,6 +69,8 @@
   let docNumber = 'ПР-2026/04';
   let docDate = new Date().toISOString().split('T')[0];
   let validationErrors = {};
+  let docApiError = null;
+  let docApiErrorCode = null;
 
   // Subtype options for orders
   const orderSubtypes = [
@@ -175,11 +211,14 @@
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    messages = [...messages, userMsg];
+    const nextMessages = [...messages, userMsg];
+    saveMessagesToStorage(nextMessages);
+
     const queryText = chatQuery;
     chatQuery = '';
     isSubmitting = true;
     chatError = null;
+    chatErrorCode = null;
 
     try {
       const response = await fetch('/api/chat', {
@@ -191,7 +230,16 @@
       });
 
       if (!response.ok) {
-        throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}`);
+        chatErrorCode = response.status;
+        if (response.status === 400) {
+          throw new Error('400 Некорректный запрос: проверьте правильность введенных данных (Validation Error)');
+        } else if (response.status === 401) {
+          throw new Error('401 Неавторизованный доступ: недействительный токен периметра безопасности 152-ФЗ');
+        } else if (response.status === 403) {
+          throw new Error('403 Доступ запрещен: недостаточно административных привилегий для доступа к академическим сущностям ЦНИИЭ');
+        } else {
+          throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}`);
+        }
       }
 
       const data = await response.json();
@@ -204,7 +252,7 @@
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
-      messages = [...messages, assistantMsg];
+      saveMessagesToStorage([...messages, assistantMsg]);
     } catch (err) {
       chatError = err.message || 'Не удалось получить ответ от ассистента. Проверьте соединение с сервером.';
     } finally {
@@ -232,6 +280,8 @@
   }
 
   async function triggerDocumentGeneration() {
+    docApiError = null;
+    docApiErrorCode = null;
     if (!validateCurrentDocForm()) return;
     if (isGeneratingDoc) return;
 
@@ -258,7 +308,16 @@
 
       docGenerationProgress = 85;
       if (!resp.ok) {
-        throw new Error(`Ошибка сервера: ${resp.status}`);
+        docApiErrorCode = resp.status;
+        if (resp.status === 400) {
+          throw new Error('400 Некорректные параметры документа: проверьте заполнение обязательных реквизитов ГОСТ');
+        } else if (resp.status === 401) {
+          throw new Error('401 Ошибка авторизации: сессия истекла или токен периметра 152-ФЗ недействителен');
+        } else if (resp.status === 403) {
+          throw new Error('403 Отказано в доступе: создание официальных приказов требует роли УМС / Администратора');
+        } else {
+          throw new Error(`Ошибка сервера: ${resp.status}`);
+        }
       }
 
       const docData = await resp.json();
@@ -277,7 +336,7 @@
     } catch (err) {
       isGeneratingDoc = false;
       docGenerationProgress = 0;
-      alert('Ошибка при генерации документа: ' + err.message);
+      docApiError = err.message || 'Ошибка при генерации документа';
     }
   }
 </script>
@@ -292,6 +351,18 @@
       class="chat-section"
       aria-label="Диалог с ассистентом"
     >
+      <div class="chat-toolbar">
+        <span class="session-indicator" title="Данные сессии сохраняются локально">🔒 Сессия 152-ФЗ активна</span>
+        <button
+          type="button"
+          class="btn-clear-history"
+          on:click={clearChatHistory}
+          aria-label="Очистить историю диалога"
+        >
+          Очистить диалог
+        </button>
+      </div>
+
       <div class="chat-history" id="chat-history" role="log" aria-live="polite">
         {#each messages as msg (msg.id)}
           <div class="message-row {msg.sender}">
@@ -361,9 +432,12 @@
         {/if}
 
         {#if chatError}
-          <div class="chat-error-banner" role="alert" aria-live="assertive">
+          <div class="chat-error-banner status-code-{chatErrorCode || 'generic'}" role="alert" aria-live="assertive">
             <span class="error-icon">⚠️</span>
-            <span class="error-text">{chatError}</span>
+            <div class="error-details">
+              <span class="error-code-badge">{chatErrorCode ? `HTTP ${chatErrorCode}` : 'Ошибка соединения'}</span>
+              <span class="error-text">{chatError}</span>
+            </div>
           </div>
         {/if}
       </div>
@@ -391,7 +465,7 @@
     </section>
   {/if}
 
-  <!-- Official Document Generator View (Slice 547b86fb) -->
+  <!-- Official Document Generator View -->
   {#if activeTab === 'orders'}
     <section
       id="tabpanel-orders"
@@ -407,6 +481,16 @@
             Прямой экспорт и скачивание стандартизированных .DOCX файлов в один клик: протоколы УМС, приказы директора института, экзаменационные сессии, учебные планы, кадровые справки и локальные акты.
           </p>
         </div>
+
+        {#if docApiError}
+          <div class="chat-error-banner status-code-{docApiErrorCode || 'generic'}" style="margin-bottom: 1.25rem;" role="alert" aria-live="assertive">
+            <span class="error-icon">⚠️</span>
+            <div class="error-details">
+              <span class="error-code-badge">{docApiErrorCode ? `HTTP ${docApiErrorCode}` : 'Ошибка операции'}</span>
+              <span class="error-text">{docApiError}</span>
+            </div>
+          </div>
+        {/if}
 
         <form class="order-form" on:submit|preventDefault={triggerDocumentGeneration} novalidate>
           <!-- Document Class Selection -->
@@ -910,6 +994,39 @@
     overflow: hidden;
   }
 
+  .chat-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: #f1f5f9;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .session-indicator {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #0f766e;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .btn-clear-history {
+    background: transparent;
+    border: 1px solid #94a3b8;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    color: #475569;
+    padding: 0.2rem 0.5rem;
+    cursor: pointer;
+  }
+
+  .btn-clear-history:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+
   .chat-history {
     flex: 1;
     padding: 1rem;
@@ -1026,14 +1143,39 @@
 
   .chat-error-banner {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    align-items: flex-start;
+    gap: 0.75rem;
     padding: 0.75rem 1rem;
-    background: #fef2f2;
-    border: 1px solid #b91c1c;
-    color: #991b1b;
     border-radius: 0.375rem;
     font-size: 0.875rem;
+    border: 1px solid #b91c1c;
+    background: #fef2f2;
+    color: #991b1b;
+  }
+
+  .chat-error-banner.status-code-401,
+  .chat-error-banner.status-code-403 {
+    background: #fff7ed;
+    border-color: #ea580c;
+    color: #9a3412;
+  }
+
+  .chat-error-banner.status-code-400 {
+    background: #fefce8;
+    border-color: #ca8a04;
+    color: #854d0e;
+  }
+
+  .error-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .error-code-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
   }
 
   .error-icon {
@@ -1042,6 +1184,7 @@
 
   .error-text {
     font-weight: 500;
+    line-height: 1.4;
   }
 
   .chat-input-area {
