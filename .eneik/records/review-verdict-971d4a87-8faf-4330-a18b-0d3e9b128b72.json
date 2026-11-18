@@ -1,0 +1,15 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "Ensure continuous visual regression checks against approved mockup design/approved/20261118052521-mockup/mockup.html on viewport changes",
+          "severity": "low"
+        }
+      ]
+    }
+  ]
+}
