@@ -4,6 +4,8 @@
   // Active tab state: 'assistant' | 'orders' | 'workload'
   export let activeTab = 'assistant';
 
+  const CHAT_STORAGE_KEY = 'crie_internal_chat_messages_v1';
+
   // Chat State
   let chatQuery = '';
   let isSubmitting = false;
@@ -14,10 +16,40 @@
       id: 'm-1',
       sender: 'assistant',
       text: 'Здравствуйте! Я ИИ-помощник Образовательного центра ФБУН ЦНИИ Эпидемиологии. Готов проконсультировать по стандартам ФГОС ВО, структуре учебного года, СанПиН, требованиям ВАК или подготовить проект приказа.',
-      citations: ['ФГОС ВО 31.08.36', 'Регламент ГИА 2026'],
+      citations: ['ФГОС ВО 32.08.12', 'Регламент ГИА 2026'],
       timestamp: '09:00'
     }
   ];
+
+  onMount(() => {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const stored = window.localStorage.getItem(CHAT_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            messages = parsed;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load chat messages from localStorage:', e);
+    }
+  });
+
+  function persistChat(msgs) {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(msgs));
+      }
+    } catch (e) {
+      console.warn('Failed to persist chat session to localStorage:', e);
+    }
+  }
+
+  $: if (typeof window !== 'undefined' && window.localStorage && messages && messages.length > 0) {
+    persistChat(messages);
+  }
 
   // Document Generator State
   // Document classes according to GOST R 7.0.97-2016 and Brief item 3:
@@ -46,7 +78,7 @@
   ];
   let orderSubtype = 'admission';
   let recipientName = 'Иванов Иван Иванович';
-  let specialtyCode = '31.08.36';
+  let specialtyCode = '32.08.12';
 
   // UMS Protocol fields
   let umsProtocolNum = '04/2026';
@@ -129,7 +161,7 @@
   $: gaugePercent = Math.min(100, Math.round((totalHours / DEPT_CEILING) * 100));
 
   const specialties = [
-    { code: '31.08.36', name: 'Эпидемиология' },
+    { code: '32.08.12', name: 'Эпидемиология' },
     { code: '31.08.35', name: 'Инфекционные болезни' },
     { code: '31.08.19', name: 'Педиатрия' }
   ];
@@ -176,6 +208,7 @@
     };
 
     messages = [...messages, userMsg];
+    persistChat(messages);
     const queryText = chatQuery;
     chatQuery = '';
     isSubmitting = true;
@@ -205,6 +238,7 @@
       };
 
       messages = [...messages, assistantMsg];
+      persistChat(messages);
     } catch (err) {
       chatError = err.message || 'Не удалось получить ответ от ассистента. Проверьте соединение с сервером.';
     } finally {
@@ -247,7 +281,7 @@
         body: JSON.stringify({
           doc_type: selectedDocCategory,
           subtype: orderSubtype,
-          specialty: specialtyCode === '32.08.12' ? '32.08.12 «Эпидемиология»' : (specialtyCode === '31.08.35' ? '31.08.35 «Инфекционные болезни»' : '32.08.12 «Эпидемиология»'),
+          specialty: specialtyCode === '32.08.12' ? '32.08.12 «Эпидемиология»' : (specialtyCode === '31.08.35' ? '31.08.35 «Инфекционные болезни»' : (specialtyCode === '31.08.19' ? '31.08.19 «Педиатрия»' : '32.08.12 «Эпидемиология»')),
           students: recipientName || 'Иванов И.И., Петров П.П.',
           number: docNumber || '26-ОД/01',
           date: docDate,
