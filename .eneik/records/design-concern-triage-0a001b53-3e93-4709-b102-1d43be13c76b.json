@@ -1,0 +1,20 @@
+[
+  {
+    "concern": "Mockup uses runtime Tailwind CDN script; ensure production build relies on precompiled CSS bundle to satisfy CSP and offline integrity.",
+    "jtbd": "When deploying the UI to production and air-gapped environments, I want styling to rely on a precompiled CSS bundle rather than a runtime CDN script, so that Content Security Policy (CSP) integrity is maintained and offline rendering operates without external network dependencies.",
+    "acceptanceCriteria": "Given mockup.html under review, When checking external resource links in the head element, Then the runtime script tag referencing cdn.tailwindcss.com is replaced with a link element referencing a local precompiled CSS stylesheet asset.",
+    "editInstruction": "In design/approved/20261118142520-mockup/mockup.html, remove the tag `<script src=\"https://cdn.tailwindcss.com\"></script>` from `<head>` and replace it with `<link rel=\"stylesheet\" href=\"assets/css/main.css\">`.",
+    "kanoClass": "must_be",
+    "cynefinDomain": "clear",
+    "leanValue": "valuable"
+  },
+  {
+    "concern": "Static media assets should declare explicit aspect-ratio attributes to prevent cumulative layout shift (CLS) during image loading.",
+    "jtbd": "When pages load across varying network conditions, I want static image tags to declare explicit aspect ratios or width and height dimensions, so that the browser allocates layout space before media assets finish loading to prevent layout shifts and keep CLS under 0.1.",
+    "acceptanceCriteria": "Given static img elements in mockup.html, When inspecting their DOM attributes and styles, Then each image tag specifies explicit width and height attributes or a CSS aspect-ratio style property reserving its rendered container geometry.",
+    "editInstruction": "In design/approved/20261118142520-mockup/mockup.html, add explicit `width`, `height`, and `style=\"aspect-ratio: ...\"` attributes to each `<img>` element (such as `assets/images/knowledge-base-crie-logo.svg` with `width=\"32\" height=\"32\" style=\"aspect-ratio: 1/1;\"` and `assets/images/knowledge-base-crie-hero.webp` with `width=\"600\" height=\"400\" style=\"aspect-ratio: 3/2;\"`) to reserve display bounds prior to asset load.",
+    "kanoClass": "must_be",
+    "cynefinDomain": "clear",
+    "leanValue": "essential"
+  }
+]
