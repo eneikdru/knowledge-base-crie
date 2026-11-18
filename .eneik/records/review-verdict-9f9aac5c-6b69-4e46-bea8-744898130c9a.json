@@ -1,0 +1,15 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "Verify that bottom navigation touch target sizing and active state contrast comply with mobile accessibility guidelines across all 375px viewports.",
+          "severity": "low"
+        }
+      ]
+    }
+  ]
+}
