@@ -157,7 +157,7 @@
       <div class="branding">
         <div class="branding-tag-row">
           <span class="institute-badge">ФБУН ЦНИИ Эпидемиологии</span>
-          <span class="compliance-pill">WCAG AAA</span>
+          <span class="compliance-pill" aria-label="Соответствие WCAG AAA">WCAG AAA</span>
         </div>
         <h1 class="app-title">База знаний и ИИ-помощник</h1>
       </div>
@@ -186,7 +186,7 @@
         <header class="catalog-header">
           <div class="hero-section">
             <div class="hero-text">
-              <h2>База знаний института</h2>
+              <h2 class="hero-title">База знаний института</h2>
               <p class="subtitle">Поиск и мгновенная фильтрация нормативных, методических и образовательных документов</p>
             </div>
 
@@ -390,14 +390,20 @@
     --border-subtle: #243b5e;
     --border-strong: #3b5f94;
     --text-primary: #ffffff;
-    --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
+    --text-secondary: #f1f5f9;
+    --text-muted: #cbd5e1;
     --accent-primary: #38bdf8;
     --accent-hover: #7dd3fc;
     --accent-active: #0284c7;
     --success-accent: #34d399;
     --danger: #f87171;
     --danger-surface: #450a0a;
+    --font-hero: clamp(1.25rem, 3.5vw + 0.5rem, 1.875rem);
+    --font-title: clamp(1rem, 2vw + 0.5rem, 1.25rem);
+    --font-card-title: clamp(0.95rem, 1.5vw + 0.45rem, 1.125rem);
+    --font-body: clamp(0.85rem, 1vw + 0.5rem, 0.9375rem);
+    --font-meta: clamp(0.72rem, 0.8vw + 0.45rem, 0.8125rem);
+    --spacing-container: clamp(0.75rem, 2.5vw, 1.5rem);
   }
 
   :global(html) {
@@ -447,7 +453,7 @@
   .top-bar-inner {
     max-width: 1040px;
     margin: 0 auto;
-    padding: 0.85rem 1rem;
+    padding: clamp(0.6rem, 1.5vw, 0.85rem) var(--spacing-container);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -467,7 +473,7 @@
   }
 
   .institute-badge {
-    font-size: 0.75rem;
+    font-size: var(--font-meta);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--accent-primary);
@@ -475,17 +481,18 @@
   }
 
   .compliance-pill {
-    font-size: 0.65rem;
-    font-weight: 700;
+    font-size: 0.6875rem;
+    font-weight: 800;
     color: #ffffff;
-    background: #0f766e;
-    padding: 0.1rem 0.4rem;
+    background: #044e47;
+    border: 1px solid #14b8a6;
+    padding: 0.15rem 0.45rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
   }
 
   .app-title {
-    font-size: 1.15rem;
+    font-size: var(--font-title);
     font-weight: 700;
     margin: 0;
     color: var(--text-primary);
@@ -516,6 +523,7 @@
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
+    min-height: 44px;
     transition: all 0.2s;
   }
 
@@ -546,13 +554,13 @@
     max-width: 1040px;
     width: 100%;
     margin: 0 auto;
-    padding: 1.5rem 1rem;
+    padding: clamp(1rem, 2.5vw, 1.75rem) var(--spacing-container);
     box-sizing: border-box;
     overflow-x: hidden;
   }
 
   .catalog-header {
-    margin-bottom: 1.75rem;
+    margin-bottom: clamp(1.25rem, 2.5vw, 1.75rem);
   }
 
   /* Hero & Telemetry Section */
@@ -563,23 +571,24 @@
     margin-bottom: 1.5rem;
   }
 
-  .hero-text h2 {
+  .hero-title {
     margin: 0 0 0.35rem;
-    font-size: 1.625rem;
+    font-size: var(--font-hero);
     font-weight: 700;
     color: var(--text-primary);
+    line-height: 1.25;
   }
 
   .subtitle {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 0.9375rem;
-    line-height: 1.4;
+    font-size: var(--font-body);
+    line-height: 1.45;
   }
 
   .telemetry-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 0.75rem;
     width: 100%;
   }
@@ -592,18 +601,19 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    min-width: 0;
   }
 
   .telemetry-label {
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: var(--font-meta);
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-muted);
   }
 
   .telemetry-value {
-    font-size: 1.25rem;
+    font-size: clamp(1.15rem, 2vw + 0.5rem, 1.35rem);
     font-weight: 800;
     color: var(--text-primary);
     line-height: 1.2;
@@ -614,7 +624,7 @@
   }
 
   .telemetry-trend {
-    font-size: 0.75rem;
+    font-size: var(--font-meta);
     color: var(--text-secondary);
     font-weight: 500;
   }
@@ -648,6 +658,7 @@
     padding: 0 0.85rem;
     transition: border-color 0.2s;
     min-width: 0;
+    min-height: 44px;
   }
 
   .search-input-wrapper:focus-within {
@@ -667,7 +678,7 @@
     padding: 0.75rem 0;
     border: none;
     outline: none;
-    font-size: 0.95rem;
+    font-size: var(--font-body);
     color: var(--text-primary);
     background: transparent;
     min-width: 0;
@@ -683,13 +694,14 @@
     border: none;
     border-radius: 0.375rem;
     padding: 0.75rem 1.35rem;
-    font-size: 0.9375rem;
+    font-size: var(--font-body);
     font-weight: 700;
     cursor: pointer;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    min-height: 44px;
     transition: background-color 0.2s;
     flex-shrink: 0;
   }
@@ -701,7 +713,7 @@
 
   .btn-search:focus-visible,
   .btn-retry:focus-visible {
-    outline: 2px solid var(--accent-primary);
+    outline: 3px solid #ffffff;
     outline-offset: 2px;
   }
 
@@ -716,7 +728,7 @@
     flex-direction: column;
     gap: 0.85rem;
     background: var(--surface);
-    padding: 1.15rem;
+    padding: clamp(0.75rem, 2vw, 1.15rem);
     border-radius: 0.5rem;
     border: 1px solid var(--border-subtle);
     width: 100%;
@@ -736,7 +748,7 @@
   }
 
   .facet-label {
-    font-size: 0.8125rem;
+    font-size: var(--font-meta);
     font-weight: 700;
     color: var(--text-secondary);
     min-width: 120px;
@@ -746,7 +758,7 @@
   .chip-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.45rem;
+    gap: 0.5rem;
   }
 
   .chip {
@@ -754,10 +766,11 @@
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
     border-radius: 9999px;
-    padding: 0.35rem 0.85rem;
-    font-size: 0.8125rem;
+    padding: 0.45rem 0.95rem;
+    font-size: var(--font-meta);
     font-weight: 600;
     cursor: pointer;
+    min-height: 40px;
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
@@ -771,7 +784,7 @@
 
   .chip:focus-visible {
     outline: 2px solid var(--accent-primary);
-    outline-offset: 1px;
+    outline-offset: 2px;
   }
 
   .chip-active {
@@ -789,7 +802,7 @@
 
   /* Status and Empty States */
   .state-view {
-    padding: 3rem 1.5rem;
+    padding: clamp(2rem, 5vw, 3rem) clamp(1rem, 3vw, 1.5rem);
     border-radius: 0.5rem;
     text-align: center;
     background-color: var(--surface);
@@ -843,11 +856,12 @@
   .empty-state h2 {
     margin-bottom: 0.5rem;
     color: var(--text-primary);
+    font-size: var(--font-title);
   }
 
   .empty-hint {
     color: var(--text-secondary);
-    font-size: 0.95rem;
+    font-size: var(--font-body);
     margin-bottom: 1.25rem;
   }
 
@@ -860,27 +874,28 @@
 
   .results-meta {
     margin-bottom: 1rem;
-    font-size: 0.875rem;
+    font-size: var(--font-meta);
     color: var(--text-secondary);
     font-weight: 600;
   }
 
   .document-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: clamp(0.85rem, 2vw, 1.25rem);
   }
 
   .document-card {
     border: 1px solid var(--border-subtle);
     border-radius: 0.625rem;
-    padding: 1.25rem;
+    padding: clamp(1rem, 2.5vw, 1.25rem);
     background-color: var(--surface);
     display: flex;
     flex-direction: column;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s ease-in-out;
     word-break: break-word;
+    min-width: 0;
   }
 
   .document-card:hover {
@@ -903,7 +918,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 0.2rem 0.55rem;
+    padding: 0.25rem 0.55rem;
     border-radius: 0.25rem;
     background: var(--surface-elevated);
     color: var(--accent-primary);
@@ -911,13 +926,13 @@
   }
 
   .doc-date {
-    font-size: 0.75rem;
+    font-size: var(--font-meta);
     color: var(--text-muted);
   }
 
   .doc-title {
     margin: 0 0 0.5rem;
-    font-size: 1.05rem;
+    font-size: var(--font-card-title);
     line-height: 1.4;
     font-weight: 700;
     color: var(--text-primary);
@@ -925,13 +940,13 @@
 
   .doc-author {
     margin: 0 0 0.5rem;
-    font-size: 0.8125rem;
+    font-size: var(--font-meta);
     color: var(--text-secondary);
   }
 
   .doc-annotation {
     margin: 0.25rem 0 1.25rem;
-    font-size: 0.875rem;
+    font-size: var(--font-body);
     color: var(--text-secondary);
     flex: 1;
     line-height: 1.5;
@@ -949,9 +964,10 @@
   .btn-download {
     flex: 1 1 calc(50% - 0.35rem);
     min-width: 120px;
+    min-height: 44px;
     border-radius: 0.375rem;
     padding: 0.55rem 0.75rem;
-    font-size: 0.8125rem;
+    font-size: var(--font-meta);
     font-weight: 700;
     cursor: pointer;
     text-decoration: none;
