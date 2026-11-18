@@ -398,6 +398,10 @@
     --success-accent: #34d399;
     --danger: #f87171;
     --danger-surface: #450a0a;
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-full: 9999px;
   }
 
   :global(html) {
@@ -480,7 +484,7 @@
     color: #ffffff;
     background: #0f766e;
     padding: 0.1rem 0.4rem;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     letter-spacing: 0.05em;
   }
 
@@ -510,13 +514,14 @@
     gap: 0.4rem;
     background: transparent;
     border: 1px solid transparent;
-    border-radius: 0.375rem;
+    border-radius: var(--radius-sm);
     padding: 0.5rem 0.85rem;
     color: var(--text-secondary);
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    min-height: 40px;
   }
 
   .desktop-nav-link:hover,
@@ -587,7 +592,7 @@
   .telemetry-card {
     background: var(--surface);
     border: 1px solid var(--border-subtle);
-    border-radius: 0.5rem;
+    border-radius: var(--radius-md);
     padding: 0.85rem 1rem;
     display: flex;
     flex-direction: column;
@@ -644,10 +649,11 @@
     align-items: center;
     background: var(--surface);
     border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
+    border-radius: var(--radius-sm);
     padding: 0 0.85rem;
     transition: border-color 0.2s;
     min-width: 0;
+    min-height: 44px;
   }
 
   .search-input-wrapper:focus-within {
@@ -681,7 +687,7 @@
     background-color: var(--accent-primary);
     color: #050b14;
     border: none;
-    border-radius: 0.375rem;
+    border-radius: var(--radius-sm);
     padding: 0.75rem 1.35rem;
     font-size: 0.9375rem;
     font-weight: 700;
@@ -692,6 +698,7 @@
     justify-content: center;
     transition: background-color 0.2s;
     flex-shrink: 0;
+    min-height: 44px;
   }
 
   .btn-search:hover:not(:disabled),
@@ -717,7 +724,7 @@
     gap: 0.85rem;
     background: var(--surface);
     padding: 1.15rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-md);
     border: 1px solid var(--border-subtle);
     width: 100%;
   }
@@ -753,14 +760,15 @@
     background: var(--bg-secondary);
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
-    border-radius: 9999px;
-    padding: 0.35rem 0.85rem;
+    border-radius: var(--radius-full);
+    padding: 0.4rem 0.85rem;
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease-in-out;
     display: inline-flex;
     align-items: center;
+    min-height: 36px;
   }
 
   .chip:hover {
@@ -790,7 +798,7 @@
   /* Status and Empty States */
   .state-view {
     padding: 3rem 1.5rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-md);
     text-align: center;
     background-color: var(--surface);
     border: 1px solid var(--border-subtle);
@@ -873,7 +881,7 @@
 
   .document-card {
     border: 1px solid var(--border-subtle);
-    border-radius: 0.625rem;
+    border-radius: var(--radius-lg);
     padding: 1.25rem;
     background-color: var(--surface);
     display: flex;
@@ -904,7 +912,7 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     padding: 0.2rem 0.55rem;
-    border-radius: 0.25rem;
+    border-radius: var(--radius-sm);
     background: var(--surface-elevated);
     color: var(--accent-primary);
     border: 1px solid var(--border-subtle);
@@ -949,7 +957,8 @@
   .btn-download {
     flex: 1 1 calc(50% - 0.35rem);
     min-width: 120px;
-    border-radius: 0.375rem;
+    min-height: 44px;
+    border-radius: var(--radius-sm);
     padding: 0.55rem 0.75rem;
     font-size: 0.8125rem;
     font-weight: 700;
@@ -1022,6 +1031,7 @@
     align-items: center;
     justify-content: center;
     height: 100%;
+    min-height: 48px;
     background: transparent;
     border: none;
     color: var(--text-secondary);
