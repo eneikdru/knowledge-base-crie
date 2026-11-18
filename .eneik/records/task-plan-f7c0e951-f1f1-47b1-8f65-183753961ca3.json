@@ -1,0 +1,33 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "e59b167a-75af-4f81-b7cc-01c00c7b02fd",
+      "title": "Standalone Responsive Knowledge Base & Fast Search Tool",
+      "jtbd": "When an educational resident, researcher, or faculty member accesses the CRIE knowledge base on desktop or mobile, I want a fast, thoughtful, self-contained search and document exploration interface without third-party integration friction, so that I can immediately find and inspect clinical, academic, and normative resources in seconds.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "Visual regression delta < 0.1% against approved design mockup",
+      "tocConstraintRef": "Frontend layout alignment and mobile responsive styling",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Implement pixel-perfect layout and component styling aligned with approved design mockup 20261118052521-mockup",
+        "R2: Verify full responsive compliance, WCAG contrast ratios, and interactive states across viewports"
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Implement pixel-perfect UI updates from approved design mockup 20261118052521-mockup",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing approved mockup changes for this epic, I want to update the existing frontend components and stylesheet against design/approved/20261118052521-mockup/mockup.html, so that the knowledge base interface matches the client-approved design specifications exactly.",
+          "acceptanceCriteria": "Given the approved mockup design/approved/20261118052521-mockup/mockup.html\nWhen the frontend components and stylesheet in frontend/src and static web resources are updated\nThen the resulting rendered UI matches typography, color palette, spacing, and component states of the approved mockup without breaking existing search and document navigation functionality\nGiven a mobile or desktop browser viewport\nWhen viewing the updated knowledge base interface\nThen layout flows responsively without horizontal overflow and satisfies WCAG 2.1 AAA contrast guidelines",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "UI presentation layer parity with approved mockup",
+          "sixSigmaMetric": "Mockup visual alignment >= 99.5% with zero broken interactive states",
+          "hasUi": true,
+          "requirementRefs": ["R1", "R2"]
+        }
+      ]
+    }
+  ]
+}
