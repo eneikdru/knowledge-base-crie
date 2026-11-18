@@ -192,7 +192,7 @@
 
             <!-- Telemetry summary cards -->
             <div class="telemetry-cards" aria-label="Метрики базы знаний">
-              <div class="telemetry-card">
+              <div class="telemetry-card" data-testid="telemetry-card">
                 <span class="telemetry-label">Документов</span>
                 <span class="telemetry-value">{totalCount > 0 ? totalCount : '48'}</span>
                 <span class="telemetry-trend positive">↑ 100% верифицировано</span>
@@ -217,13 +217,14 @@
               <span class="search-icon" aria-hidden="true">🔍</span>
               <input
                 id="catalog-search-input"
+                data-testid="search-input"
                 type="search"
                 bind:value={query}
                 placeholder="Поиск по названию, автору или ключевому слову..."
                 aria-label="Поиск материалов"
               />
             </div>
-            <button type="submit" class="btn-search" disabled={status === 'loading'}>
+            <button type="submit" class="btn-search" data-testid="search-submit" disabled={status === 'loading'}>
               {status === 'loading' ? 'Поиск...' : 'Найти'}
             </button>
           </form>
@@ -239,6 +240,7 @@
                     role="radio"
                     aria-checked={selectedSpecialty === spec.id}
                     class="chip {selectedSpecialty === spec.id ? 'chip-active' : ''}"
+                    data-testid={`chip-${spec.id}`}
                     on:click={() => setSpecialtyFilter(spec.id)}
                   >
                     {spec.label}
@@ -256,6 +258,7 @@
                     role="radio"
                     aria-checked={selectedDocType === docType.id}
                     class="chip {selectedDocType === docType.id ? 'chip-active' : ''}"
+                    data-testid={`chip-${docType.id}`}
                     on:click={() => setDocTypeFilter(docType.id)}
                   >
                     {docType.label}
@@ -307,7 +310,7 @@
               </div>
               <div class="document-grid" role="list">
                 {#each filteredDocuments as doc (doc.id || doc.url || doc.title)}
-                  <article class="document-card" role="listitem">
+                  <article class="document-card" data-testid="document-card" role="listitem">
                     <div class="card-header-meta">
                       {#if doc.category || doc.type}
                         <span class="badge-doc-type">{doc.category || doc.type}</span>
@@ -331,6 +334,7 @@
                       <a
                         href={getDocxDownloadUrl(doc)}
                         class="btn-download btn-download-docx"
+                        data-testid="download-docx"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -342,6 +346,7 @@
                       <a
                         href={getPdfDownloadUrl(doc)}
                         class="btn-download btn-download-pdf"
+                        data-testid="download-pdf"
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -414,7 +419,7 @@
     padding: 0;
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
   }
@@ -445,7 +450,7 @@
   }
 
   .top-bar-inner {
-    max-width: 1040px;
+    max-width: 1080px;
     margin: 0 auto;
     padding: 0.85rem 1rem;
     display: flex;
@@ -479,17 +484,17 @@
     font-weight: 700;
     color: #ffffff;
     background: #0f766e;
-    padding: 0.1rem 0.4rem;
+    padding: 0.1rem 0.45rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
   }
 
   .app-title {
-    font-size: 1.15rem;
+    font-size: 1.25rem;
     font-weight: 700;
     margin: 0;
     color: var(--text-primary);
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
   }
 
   /* Desktop Navigation */
@@ -510,7 +515,7 @@
     gap: 0.4rem;
     background: transparent;
     border: 1px solid transparent;
-    border-radius: 0.375rem;
+    border-radius: 0.5rem;
     padding: 0.5rem 0.85rem;
     color: var(--text-secondary);
     font-size: 0.875rem;
@@ -543,7 +548,7 @@
 
   /* Catalog Container */
   .catalog-container {
-    max-width: 1040px;
+    max-width: 1080px;
     width: 100%;
     margin: 0 auto;
     padding: 1.5rem 1rem;
@@ -565,33 +570,40 @@
 
   .hero-text h2 {
     margin: 0 0 0.35rem;
-    font-size: 1.625rem;
+    font-size: 1.75rem;
     font-weight: 700;
     color: var(--text-primary);
+    letter-spacing: -0.02em;
   }
 
   .subtitle {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 0.9375rem;
-    line-height: 1.4;
+    font-size: 0.95rem;
+    line-height: 1.45;
   }
 
   .telemetry-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 0.75rem;
+    gap: 0.85rem;
     width: 100%;
   }
 
   .telemetry-card {
     background: var(--surface);
     border: 1px solid var(--border-subtle);
-    border-radius: 0.5rem;
-    padding: 0.85rem 1rem;
+    border-radius: 0.625rem;
+    padding: 0.95rem 1rem;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: border-color 0.15s ease;
+  }
+
+  .telemetry-card:hover {
+    border-color: var(--border-strong);
   }
 
   .telemetry-label {
@@ -603,7 +615,7 @@
   }
 
   .telemetry-value {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     font-weight: 800;
     color: var(--text-primary);
     line-height: 1.2;
@@ -644,7 +656,7 @@
     align-items: center;
     background: var(--surface);
     border: 1px solid var(--border-strong);
-    border-radius: 0.375rem;
+    border-radius: 0.5rem;
     padding: 0 0.85rem;
     transition: border-color 0.2s;
     min-width: 0;
@@ -664,7 +676,7 @@
 
   .search-input-wrapper input[type='search'] {
     width: 100%;
-    padding: 0.75rem 0;
+    padding: 0.8rem 0;
     border: none;
     outline: none;
     font-size: 0.95rem;
@@ -681,8 +693,8 @@
     background-color: var(--accent-primary);
     color: #050b14;
     border: none;
-    border-radius: 0.375rem;
-    padding: 0.75rem 1.35rem;
+    border-radius: 0.5rem;
+    padding: 0.8rem 1.4rem;
     font-size: 0.9375rem;
     font-weight: 700;
     cursor: pointer;
@@ -717,7 +729,7 @@
     gap: 0.85rem;
     background: var(--surface);
     padding: 1.15rem;
-    border-radius: 0.5rem;
+    border-radius: 0.625rem;
     border: 1px solid var(--border-subtle);
     width: 100%;
   }
@@ -754,7 +766,7 @@
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
     border-radius: 9999px;
-    padding: 0.35rem 0.85rem;
+    padding: 0.4rem 0.9rem;
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
@@ -790,7 +802,7 @@
   /* Status and Empty States */
   .state-view {
     padding: 3rem 1.5rem;
-    border-radius: 0.5rem;
+    border-radius: 0.625rem;
     text-align: center;
     background-color: var(--surface);
     border: 1px solid var(--border-subtle);
@@ -867,26 +879,26 @@
 
   .document-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
     gap: 1.25rem;
   }
 
   .document-card {
     border: 1px solid var(--border-subtle);
-    border-radius: 0.625rem;
-    padding: 1.25rem;
+    border-radius: 0.75rem;
+    padding: 1.35rem;
     background-color: var(--surface);
     display: flex;
     flex-direction: column;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
     transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s ease-in-out;
     word-break: break-word;
   }
 
   .document-card:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.4);
     border-color: var(--border-strong);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
   }
 
   .card-header-meta {
@@ -903,8 +915,8 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 0.2rem 0.55rem;
-    border-radius: 0.25rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.375rem;
     background: var(--surface-elevated);
     color: var(--accent-primary);
     border: 1px solid var(--border-subtle);
@@ -917,7 +929,7 @@
 
   .doc-title {
     margin: 0 0 0.5rem;
-    font-size: 1.05rem;
+    font-size: 1.075rem;
     line-height: 1.4;
     font-weight: 700;
     color: var(--text-primary);
@@ -939,7 +951,7 @@
 
   .card-actions {
     margin-top: auto;
-    padding-top: 0.75rem;
+    padding-top: 0.85rem;
     display: flex;
     flex-wrap: wrap;
     gap: 0.625rem;
@@ -949,8 +961,8 @@
   .btn-download {
     flex: 1 1 calc(50% - 0.35rem);
     min-width: 120px;
-    border-radius: 0.375rem;
-    padding: 0.55rem 0.75rem;
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.85rem;
     font-size: 0.8125rem;
     font-weight: 700;
     cursor: pointer;
@@ -958,7 +970,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
+    gap: 0.45rem;
     transition: background-color 0.15s, border-color 0.15s, color 0.15s;
   }
 
