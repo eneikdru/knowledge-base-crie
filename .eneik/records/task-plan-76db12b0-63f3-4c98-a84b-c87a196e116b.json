@@ -1,0 +1,181 @@
+{
+  "epics": [
+    {
+      "existingEpicId": null,
+      "title": "Persistent Admission Contingent SQLite Registry, PDF Parser & Cross-Session LLM Context",
+      "jtbd": "When an educational administrator or admission officer queries the CRIE AI assistant about previously uploaded admission and enrollment reports, I want uploaded PDFs automatically parsed, deduplicated, and stored in SQLite with the full registry and aggregated counts injected into LLM context, so that exact contingent summary tables are returned across sessions without re-attaching files.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "100% numeric agreement between SQL-aggregated admission_records counts and deduplicated source PDFs (0 duplicate-inflation defects across files [1], [10], [11])",
+      "tocConstraintRef": "PDF layout variability across enrollment reports and cross-turn LLM context loss when files are not re-attached",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Create SQLite persistent schema in crie_persistent_memory.py with table uploaded_documents (id, filename, uploaded_at, raw_text, doc_type, content_hash) and table admission_records (id, doc_id, order_number, order_date, education_level [ординатура/аспирантура], specialty_code, specialty_name, financing_type [бюджет/целевая квота/договор], admission_stage [основной/допконкурс], enrolled_count, student_identifiers_json) enforcing foreign-key provenance to uploaded_documents.",
+        "R2: Implement deterministic SQL aggregation queries in crie_persistent_memory.py grouping admission_records by specialty_code, specialty_name, education_level, financing_type, and admission_stage with exact SUM(enrolled_count) and document/order provenance so totals are computed analytically rather than by LLM estimation.",
+        "R3: Implement automated PDF parser and canonical deduplication logic in crie_document_parser.py extracting raw_text, doc_type, order metadata, specialty codes/names, financing types, admission stages, enrolled counts, and student identifier lists from Svedeniya_o_zachislenii_* and Svedeniya_o_prieme_* PDFs.",
+        "R4: Run idempotent batch ingestion across all 11 already-uploaded PDFs (explicitly deduplicating duplicate files [1], [10], [11]) to populate uploaded_documents and admission_records with real verified counts and student identifier arrays.",
+        "R5: Provide structured ingestion failure recovery in crie_document_parser.py so malformed PDFs, missing fields, or unrecognized report formats emit diagnostic status records without corrupting committed SQLite rows or silently dropping state.",
+        "R6: Update slot [11] context assembly in crie_assistant_api.py and crie_smart_consultant.py so LLM prompts receive both current-turn attached files and the complete persistent registry of uploaded_documents combined with the aggregated admission_records selection.",
+        "R7: Expose FastAPI endpoints in crie_assistant_api.py to inspect the uploaded_documents registry, ingest/deduplicate uploaded PDFs with visible status feedback, and retrieve deterministic admission_records aggregations.",
+        "R8: Verify zero-attachment cross-session querying: submitting 'Из ранее загруженных файлов составь таблицу по специальностям, видам обучения и количеству зачисленных' without an attached file returns an accurate table matching admission_records totals, or an explicit empty-registry explanation when no parsed records exist."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Define Contingent Registry Schema, Deduplication & Slot [11] ADR",
+          "roleTag": "BARCAN-TAG-01",
+          "jtbd": "When implementing the data model and context pipeline for this epic, I want a committed architecture decision record specifying canonical enum values, deduplication keys for files [1]/[10]/[11], SQL aggregation views, and slot [11] payload structure, so that downstream storage, parser, API, and LLM slices integrate cleanly without rework.",
+          "acceptanceCriteria": "Given the four-module pipeline across crie_persistent_memory.py, crie_document_parser.py, crie_smart_consultant.py, and crie_assistant_api.py, When docs/architecture/contingent-registry-adr.md is authored, Then it specifies exact SQLite DDL, canonical normalization mappings for education_level/financing_type/admission_stage, SHA-256 and order-key deduplication rules, and the deterministic JSON/Markdown contract for slot [11].\nGiven analytic programming pattern constraints, When reviewing the ADR, Then all numeric rollups are mandated to originate from deterministic SQL queries with doc_id provenance rather than LLM free-text summation.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Schema and slot-[11] contract ambiguity between persistence, PDF parser, and LLM prompt builder",
+          "sixSigmaMetric": "0 breaking interface mismatches across downstream storage, parser, API, and prompt slices",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R6"]
+        },
+        {
+          "title": "Create SQLite Contingent Schema & Aggregation Module",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing persistent contingent storage for this epic, I want real SQLite tables uploaded_documents and admission_records with deterministic aggregation queries in crie_persistent_memory.py, so that uploaded admission PDFs and parsed enrollment rows survive across sessions with exact SQL totals.",
+          "acceptanceCriteria": "Given a fresh or existing SQLite database path, When crie_persistent_memory.py initializes the schema, Then tables uploaded_documents and admission_records are created with all specified columns, foreign key constraints, and unique deduplication constraints.\nGiven populated rows in admission_records, When calling the aggregation helper, Then it returns exact GROUP BY totals by specialty_code, specialty_name, education_level, financing_type, and admission_stage along with source doc_id and order references.\nGiven duplicate document hash or order signature inserts, When upsert/insert runs, Then idempotency prevents duplicate admission_records inflation and returns deduplication status.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "SQLite schema initialization and deterministic multi-dimensional aggregation accuracy",
+          "sixSigmaMetric": "100% SQL aggregation parity with row-level enrolled_count sums across all test fixtures (0 floating-point or double-count errors)",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        },
+        {
+          "title": "Implement Admission PDF Parser & 11-File Deduplicating Ingestor",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing automated PDF ingestion for this epic, I want crie_document_parser.py to extract structured enrollment records from Svedeniya_o_zachislenii_* and Svedeniya_o_prieme_* PDFs and deduplicate files [1], [10], and [11], so that admission_records holds real counts and student identifier lists without duplicates.",
+          "acceptanceCriteria": "Given the 11 pre-existing admission and enrollment PDFs, When the batch parser in crie_document_parser.py processes them, Then duplicates among files [1], [10], and [11] are detected and skipped while unique documents populate uploaded_documents and admission_records with real order numbers, specialties, financing types, stages, enrolled_count, and student_identifiers_json.\nGiven a corrupted or unrecognized PDF input, When the parser executes, Then it records a structured diagnostic failure without crashing the batch or leaving partial admission_records rows committed.\nGiven re-execution of the 11-PDF ingestion script, When run a second time against the populated SQLite DB, Then row counts in uploaded_documents and admission_records remain unchanged.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Layout heterogeneity across Svedeniya_o_zachislenii_* and Svedeniya_o_prieme_* PDF tables and duplicate detection accuracy",
+          "sixSigmaMetric": "100% of unique PDFs among the 11 corpus files parsed into validated admission_records with 0 duplicate records for [1]/[10]/[11]",
+          "hasUi": false,
+          "requirementRefs": ["R3", "R4", "R5"]
+        },
+        {
+          "title": "Update Slot [11] LLM Context Builder with DB Registry & Aggregations",
+          "roleTag": "BARCAN-TAG-04",
+          "jtbd": "When implementing cross-session assistant context for this epic, I want crie_smart_consultant.py to populate slot [11] with the persistent uploaded_documents registry and aggregated admission_records selection alongside any current-turn attachments, so that the LLM answers contingent table queries accurately without attached files.",
+          "acceptanceCriteria": "Given a user message with no attached files, When crie_smart_consultant.py builds slot [11], Then slot [11] includes the full uploaded_documents registry and the deterministic aggregated summary from admission_records.\nGiven a user query asking for a table by specialty, education/financing type, and enrolled count, When the prompt is formatted and processed, Then system instructions enforce using exact SQL-aggregated numbers from slot [11] without inventing or altering counts.\nGiven an empty admission_records table, When slot [11] is built, Then the assistant explicitly informs the user that no parsed admission records are available yet instead of fabricating figures.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "LLM context token budget vs. fidelity of preserving exact specialty and financing breakdowns in slot [11]",
+          "sixSigmaMetric": "100% presence of DB document registry and SQL aggregation block in slot [11] across zero-attachment contingent prompts",
+          "hasUi": false,
+          "requirementRefs": ["R6", "R8"]
+        },
+        {
+          "title": "Wire Persistent Registry & Slot [11] Endpoints in FastAPI",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing API orchestration for this epic, I want crie_assistant_api.py to persist uploaded PDFs via crie_document_parser.py, expose registry/aggregation inspection endpoints, and pass DB-backed slot [11] context on /api/chat requests, so that clients can ingest documents once and query contingent data in any subsequent session.",
+          "acceptanceCriteria": "Given a POST /api/chat or /crie/api/chat request without attached files, When crie_assistant_api.py handles the request, Then it fetches the persistent uploaded_documents registry and aggregated admission_records from crie_persistent_memory.py and forwards them into slot [11] of the consultant pipeline.\nGiven new endpoints for registry listing and aggregated contingent stats in crie_assistant_api.py, When queried via HTTP GET, Then JSON responses return document metadata, deduplication status, and exact SQL-aggregated counts with appropriate HTTP status codes.\nGiven an invalid or unparseable PDF upload, When the ingestion endpoint processes it, Then a clear structured validation error response is returned without losing existing DB state.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Request lifecycle wiring between FastAPI chat/upload endpoints and SQLite persistent memory",
+          "sixSigmaMetric": "<50ms p95 overhead for DB registry and aggregation lookup during /api/chat handling",
+          "hasUi": false,
+          "requirementRefs": ["R6", "R7", "R8"]
+        },
+        {
+          "title": "Full-Pyramid QA Verification for Contingent DB, Parser & Zero-Attachment Query",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying quality for this epic, I want automated unit, integration, and end-to-end API workflow tests in tests/test_contingent_registry.py, so that SQLite schema integrity, 11-PDF deduplication, slot [11] injection, and exact tabular query output are proven regression-free.",
+          "acceptanceCriteria": "Given unit tests for crie_persistent_memory.py and crie_document_parser.py, When pytest runs, Then schema creation, enum normalization, duplicate suppression for files [1]/[10]/[11], SQL aggregation math, and malformed-PDF error paths all pass.\nGiven integration tests for batch ingestion and FastAPI endpoints, When ingesting the 11-PDF fixture set and querying registry/aggregation endpoints, Then persisted counts match ground truth and duplicate runs remain idempotent.\nGiven an end-to-end API test sending 'Из ранее загруженных файлов составь таблицу по специальностям, видам обучения и количеству зачисленных' with no attached file to /api/chat, When the response is evaluated, Then it returns an exact table matching admission_records totals across all specialties, financing/education types, and enrolled counts.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "End-to-end assertion determinism when validating LLM-formatted tables against SQLite ground truth",
+          "sixSigmaMetric": "100% pass rate across unit, integration, and E2E API test layers with 0 skipped assertions",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": "63e9be05-24ca-4269-b118-5632d91c97e6",
+      "title": "Privacy, Data Protection & Accessibility Compliance",
+      "jtbd": "When deploying the platform for educational and clinical staff, I want data subject rights, local backup verification, and strict accessibility compliance, so that all legal and regulatory standards are fulfilled.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "100% verified backup/restore recovery and GDPR Art. 15/17 export/erasure coverage for contingent SQLite records",
+      "tocConstraintRef": "Personal student identifiers in student_identifiers_json and unverified SQLite backup restoration",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Support GDPR Art. 15 data export and Art. 17 erasure/pseudonymization for identifiable student entries stored in admission_records.student_identifiers_json and uploaded_documents.raw_text.",
+        "R2: Include the contingent SQLite database in scripts/backup_restore.py with an executed backup-and-restore integrity verification check proving uploaded_documents and admission_records recover intact."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Add Contingent SQLite Backup/Restore & Data Subject Export/Erasure",
+          "roleTag": "BARCAN-TAG-10",
+          "jtbd": "When implementing compliance controls for this epic, I want scripts/backup_restore.py and crie_persistent_memory.py to support verified SQLite backup/restore and data-subject export/erasure for student_identifiers_json, so that contingent personal data satisfies GDPR Art. 15, 17, and 32(1)(c).",
+          "acceptanceCriteria": "Given a populated contingent SQLite database, When invoking the data-subject export or erasure helper for a student identifier, Then matching entries in admission_records.student_identifiers_json are exported or irreversibly erased/pseudonymized while preserving aggregate statistical integrity.\nGiven scripts/backup_restore.py, When executing a backup followed by a restore to a clean target path, Then uploaded_documents and admission_records row counts and checksums match pre-backup state.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Maintaining aggregate count accuracy in admission_records after erasing individual identifiers",
+          "sixSigmaMetric": "100% checksum match on restored SQLite contingent tables and 0 residual identifier leaks post-erasure",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        },
+        {
+          "title": "Verify Contingent DB Backup Restore & Erasure Compliance Tests",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying compliance controls for this epic, I want automated unit and integration tests in tests/test_backup_restore.py covering contingent SQLite backup/restore and GDPR export/erasure, so that data protection compliance is continuously proven.",
+          "acceptanceCriteria": "Given unit tests for student identifier export and erasure in tests/test_backup_restore.py, When executed via pytest, Then target student identifiers are exported completely on request and removed on erasure without corrupting enrolled_count aggregates.\nGiven an integration restore test, When backing up and restoring the contingent SQLite DB file, Then a real restore completes and verifies all tables and row counts against the original database.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Automated round-trip SQLite restore validation inside pytest",
+          "sixSigmaMetric": "100% pass rate on contingent DB backup-restore and erasure assertions",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": "2b3fe757-2e92-4e0b-b8c0-70bde5caa296",
+      "title": "User Experience & Search Effectiveness Telemetry (GQM)",
+      "jtbd": "When managing and operating the knowledge base, I want Goal-Question-Metric telemetry measuring whether users find documents quickly on desktop and mobile, so that product performance and user satisfaction are objectively tracked.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "100% emission of GQM accuracy and deduplication metrics for cross-session contingent registry queries",
+      "tocConstraintRef": "Lack of observability into whether zero-attachment contingent queries use verified DB aggregations and deduplicated PDFs",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Define GQM Goal (administrators obtain exact cross-session contingent summary tables without re-uploading PDFs), Questions (Q1: Do zero-attachment contingent queries rely on exact admission_records totals? Q2: Are duplicate uploaded PDFs deduplicated without inflating metrics?), and only the matching metrics (contingent_db_grounded_query_rate, pdf_deduplication_count, slot11_db_lookup_ms).",
+        "R2: Instrument crie_assistant_api.py and crie_smart_consultant.py to record only those three GQM metrics cleanly without unrelated noise."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Instrument GQM Metrics for Contingent Registry & Slot [11] Queries",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing GQM measurement for this epic, I want crie_assistant_api.py and crie_smart_consultant.py to emit contingent_db_grounded_query_rate, pdf_deduplication_count, and slot11_db_lookup_ms tied to the stated GQM questions, so that contingent query reliability is objectively measurable.",
+          "acceptanceCriteria": "Given a PDF ingestion batch with duplicates and a subsequent zero-attachment contingent query, When processed by crie_assistant_api.py and crie_smart_consultant.py, Then telemetry records pdf_deduplication_count, slot11_db_lookup_ms, and contingent_db_grounded_query_rate.\nGiven the GQM scope constraint, When inspecting emitted telemetry payloads, Then no unrequested vanity counters are recorded outside the stated GQM questions.",
+          "leanValue": "valuable",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Low-overhead telemetry emission during slot [11] context construction",
+          "sixSigmaMetric": "<2ms telemetry instrumentation overhead per request",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        },
+        {
+          "title": "Verify GQM Contingent Telemetry Unit & Integration Tests",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying GQM measurement for this epic, I want unit and integration tests in tests/test_telemetry_gqm.py asserting the three contingent-registry GQM metrics, so that metric fidelity is continuously guaranteed.",
+          "acceptanceCriteria": "Given unit and integration tests in tests/test_telemetry_gqm.py, When running duplicate PDF ingestion and zero-attachment /api/chat contingent queries, Then emitted GQM metrics accurately reflect deduplicated file counts, slot [11] DB lookup latency, and DB-grounded query flags.",
+          "leanValue": "valuable",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Deterministic assertion of telemetry events across mocked and real SQLite flows",
+          "sixSigmaMetric": "100% GQM metric assertion coverage in tests/test_telemetry_gqm.py",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        }
+      ]
+    }
+  ]
+}
