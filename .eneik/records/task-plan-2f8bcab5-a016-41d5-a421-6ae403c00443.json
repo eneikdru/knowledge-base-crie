@@ -1,0 +1,97 @@
+{
+  "epics": [
+    {
+      "existingEpicId": null,
+      "title": "PR Diff-Evidence Verification and Knowledge-First Approval Gate Remediation",
+      "jtbd": "When reviewing and authorizing pull requests for merge, I want every approval verdict grounded in inspected diff evidence, schema and idempotency verification, and security checks, so that unverified changes never receive false-green approval.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "100% of audited PRs (#407, #408, #413, #415, #416, #417, #418, #419, #420, #421) verified against actual diffs with 0 uninspected approvals",
+      "tocConstraintRef": "Review verdicts issued without diff visibility or target-file inspection before merge authorization",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Inspect the actual diffs and target files (crie_persistent_memory.py, crie_normative_knowledge.py, and PR test files) for PR #419 to verify kcp_parameters schema, Order #824 seed values, and idempotency.",
+        "R2: Inspect the actual diffs for PR #415, PR #416, and PR #417 against their acceptance criteria, security checks, and absence of committed build artifacts.",
+        "R3: Inspect the actual diffs for PR #407 and PR #408 to verify SQLite tables, deduplication constraints, PDF parser extraction, and accompanying tests.",
+        "R4: Inspect the actual diffs for PR #413, PR #418, PR #420, and PR #421 and remediate any unverified implementation, schema, or compliance defects.",
+        "R5: Enforce the binary APPROVE/REJECT and knowledge-first review gate so approval is withheld whenever PR diff evidence, security checks, or acceptance-criteria verification is absent or uninspectable."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Audit diffs and target files for unverified PRs #407-#421",
+          "roleTag": "BARCAN-TAG-00",
+          "jtbd": "When implementing diff-backed merge-hygiene auditing for this epic, I want to inspect the actual diffs and target files for PRs #407, #408, #413, #415, #416, #417, #418, #419, #420, and #421, so that unverified schema, parser, security, and build-artifact gaps are resolved.",
+          "acceptanceCriteria": "Given PRs #407, #408, #413, #415, #416, #417, #418, #419, #420, and #421 were approved without diff inspection, When their diffs and target files (including crie_persistent_memory.py, crie_normative_knowledge.py, and test files) are audited, Then every verified gap in kcp_parameters schema, Order #824 seed values, SQLite deduplication, PDF extraction, or committed build artifacts is patched.\nGiven the diff audit completes, When verification findings are recorded, Then a committed markdown audit report is saved in docs/ without modifying forbidden .eneik/ files.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Uninspected diffs across 10 previously approved PRs",
+          "sixSigmaMetric": "10/10 audited PRs backed by diff inspection and 0 committed build artifacts",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4"]
+        },
+        {
+          "title": "Codify knowledge-first binary PR approval gate and refusal check",
+          "roleTag": "BARCAN-TAG-07",
+          "jtbd": "When implementing the knowledge-first authorization gate for this epic, I want an automated verification check and refusal policy requiring diff evidence before approval, so that false-green verdicts cannot bypass review controls.",
+          "acceptanceCriteria": "Given a PR review payload lacking inspectable diff content or target-file verification evidence, When the knowledge-first gate evaluates merge readiness, Then it withholds approval (reject/block) until diff, security, and acceptance-criteria evidence are present.\nGiven the gate enforcement rules are defined, When committed to the repository, Then an executable validation script in scripts/ and policy record in docs/ exist and pass self-checks.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Authorization ambiguity allowing pipeline approvals when diff context is absent",
+          "sixSigmaMetric": "0% false-green approvals emitted without inspectable diff evidence",
+          "hasUi": false,
+          "requirementRefs": ["R5"]
+        },
+        {
+          "title": "Verify SQLite schemas, seed idempotency, and parser behavior via tests",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When implementing QA verification for this epic, I want unit and integration tests covering kcp_parameters Order #824 seeding, SQLite deduplication, PDF parser extraction, and gate refusal behavior, so that all audited PR surfaces are verified.",
+          "acceptanceCriteria": "Given the audited modules from PRs #407-#421 and the knowledge-first gate script, When unit tests execute via pytest, Then Order #824 kcp_parameters seed idempotency, PDF parser extraction, and missing-diff refusal checks pass with zero skipped assertions.\nGiven integration flows across SQLite persistent memory and normative knowledge storage, When integration tests run against an isolated database, Then repeated ingestion enforces deduplication constraints and preserves expected counts.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Missing automated regression proof for uninspected PR implementations",
+          "sixSigmaMetric": "100% pass rate across unit and integration suites for audited PR components",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": "9ff49e2e-08bd-435d-abbf-b39f52dac707",
+      "sixSigmaMetric": "100% of generated TPL-01 admission orders formatted in Times New Roman 14pt with study-form and funding-source parameters",
+      "tocConstraintRef": "Hardcoded 12pt/13pt font sizes in compile_session_to_docx and missing study-form token in TPL-01 registry",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Update compile_session_to_docx in crie_document_engine.py so GOST R 7.0.97-2016 body paragraphs, requisites, preamble, actions, headers, and signatures use Times New Roman 14pt consistently with template_registry.json instead of hardcoded 12pt/13pt/9pt/10pt sizes.",
+        "R2: Update template TPL-01 in data/templates/template_registry.json to include a required parameter token for study form alongside BUDGET_TYPE and ensure admission order generation populates both study form and funding source."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Patch compile_session_to_docx to 14pt and add TPL-01 study-form token",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing GOST formatting and template token fixes for this epic, I want compile_session_to_docx to enforce Times New Roman 14pt and TPL-01 to require the study-form parameter alongside BUDGET_TYPE, so that generated admission orders comply with GOST R 7.0.97-2016 and institutional rules.",
+          "acceptanceCriteria": "Given a document session compiled via compile_session_to_docx, When the DOCX file is generated, Then body paragraphs, requisites, preamble, actions, command headers, and signatures use Times New Roman 14pt matching gost_font in data/templates/template_registry.json.\nGiven template TPL-01 in data/templates/template_registry.json, When required_tokens is read and an admission order is generated, Then the study-form token is included alongside BUDGET_TYPE and rendered in the operative clause.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Hardcoded Pt(12)/Pt(13) font overrides in crie_document_engine.py and missing TPL-01 study-form token",
+          "sixSigmaMetric": "100% of generated TPL-01 DOCX runs formatted at 14pt Times New Roman with 0 missing required_tokens",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        },
+        {
+          "title": "Verify GOST 14pt DOCX styling and TPL-01 study-form token via tests",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When implementing QA verification for this epic, I want unit and integration tests inspecting generated DOCX font properties and TPL-01 required tokens, so that GOST R 7.0.97-2016 font compliance and study-form rendering stay verified.",
+          "acceptanceCriteria": "Given the updated data/templates/template_registry.json, When unit tests validate TPL-01 schema and required_tokens, Then the study-form parameter is present alongside BUDGET_TYPE and gost_font specifies Times New Roman 14pt.\nGiven a residency admission order generated end-to-end by compile_session_to_docx, When integration tests inspect the resulting DOCX runs, Then all body, preamble, action, header, and signature runs resolve to 14pt Times New Roman and contain the study-form value.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Lack of automated assertions checking DOCX font sizes and TPL-01 study-form output",
+          "sixSigmaMetric": "100% pass rate on DOCX 14pt formatting and TPL-01 token integration tests",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        }
+      ]
+    }
+  ]
+}
