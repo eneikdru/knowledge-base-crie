@@ -1,0 +1,28 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "block",
+      "criticalReason": "Diff for PR #427 (https://github.com/eneikdru/knowledge-base-crie/pull/427) is not included in the review context and tool calls are disabled, so docs/architecture/contingent-registry-adr.md cannot be inspected. Cannot verify SQLite DDL, canonical enum mappings, SHA-256/order-key deduplication rules, slot [11] contract, or absence of committed build artifacts/secrets.",
+      "concerns": []
+    },
+    {
+      "sourceIndex": 1,
+      "verdict": "block",
+      "criticalReason": "Diff for PR #425 (https://github.com/eneikdru/knowledge-base-crie/pull/425) is not included in the review context and tool calls are disabled. The provided crie_document_engine.py excerpt is truncated and still shows Pt(12)/Pt(11) rather than Pt(14), and no updated DOCX typography tests are present in scope. Cannot verify compile_session_to_docx Pt(14) compliance, required tests, or absence of committed build artifacts/secrets.",
+      "concerns": []
+    },
+    {
+      "sourceIndex": 2,
+      "verdict": "block",
+      "criticalReason": "Diff for PR #426 (https://github.com/eneikdru/knowledge-base-crie/pull/426) is not included in the review context and tool calls are disabled, and neither data/templates/template_registry.json nor its rendering/test changes are present in scope. Cannot verify TPL-01 study-form token declaration and clause binding, test coverage, or absence of committed build artifacts/secrets.",
+      "concerns": []
+    },
+    {
+      "sourceIndex": 3,
+      "verdict": "block",
+      "criticalReason": "Diff for PR #428 (https://github.com/eneikdru/knowledge-base-crie/pull/428) is not included in the review context and tool calls are disabled, and no new QA verification pytest module for this slice is present in scope. Cannot verify required QA tests for missing-diff rejection and artifact/invariant checks or absence of committed build artifacts/secrets.",
+      "concerns": []
+    }
+  ]
+}
