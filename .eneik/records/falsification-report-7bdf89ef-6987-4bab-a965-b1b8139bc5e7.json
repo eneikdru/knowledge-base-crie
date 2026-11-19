@@ -1,0 +1,34 @@
+{
+  "violations": [
+    {
+      "roleTag": "BARCAN-TAG-00",
+      "type": "refusal_criteria",
+      "prNumber": 421,
+      "reason": "In .eneik/records/review-verdict-86c720e0-7abd-4295-9424-419348e1d85d.json, sourceIndex 0 recorded verdict 'approve' for PR #419 while stating in concerns (severity: medium) that the PR #419 diff and target files (crie_persistent_memory.py, crie_normative_knowledge.py, and PR test files) were not included and kcp_parameters schema, Order #824 seed values, and idempotency could not be directly verified. This violates BARCAN-TAG-00 binary review verification (APPROVE requires verified compliance with all criteria, not uninspected pass-through)."
+    },
+    {
+      "roleTag": "BARCAN-TAG-00",
+      "type": "refusal_criteria",
+      "prNumber": 420,
+      "reason": "In .eneik/records/review-verdict-da27aa1e-febf-4337-8f73-ab4074c23444.json, sourceIndex 0 recorded verdict 'approve' for PR #415 while explicitly stating in concerns (severity: medium) that the PR #415 diff was not provided and was 'approved leniently without diff inspection'. Issuing APPROVE without inspecting the diff violates BARCAN-TAG-00 code-review standards."
+    },
+    {
+      "roleTag": "BARCAN-TAG-00",
+      "type": "refusal_criteria",
+      "prNumber": 418,
+      "reason": "In .eneik/records/review-verdict-56306457-2d01-452b-9e7f-768e52342410.json, both sourceIndex 0 (PR #417) and sourceIndex 1 (PR #416) recorded verdict 'approve' while stating in concerns (severity: high) that neither diff was included and could not be inspected for acceptance criteria, security issues, or committed build artifacts. Approving uninspected PRs violates BARCAN-TAG-00 binary APPROVE/REJECT verification."
+    },
+    {
+      "roleTag": "BARCAN-TAG-07",
+      "type": "refusal_criteria",
+      "prNumber": 418,
+      "reason": "In .eneik/records/review-verdict-56306457-2d01-452b-9e7f-768e52342410.json, PR #417 (GQM telemetry) and PR #416 (SQLite backup/restore and data-subject export/erasure) were approved despite 'severity': 'high' concerns noting that security issues, acceptance criteria, and build artifacts could not be inspected. This violates BARCAN-TAG-07 ELVIN_GOLDMAN_02_KNOWLEDGE_FIRST_GATE ('Do not authorize a risky action from belief or intention alone; require knowledge-grade evidence')."
+    },
+    {
+      "roleTag": "BARCAN-TAG-00",
+      "type": "refusal_criteria",
+      "prNumber": 413,
+      "reason": "In .eneik/records/review-verdict-ba1cecbd-a7ed-40e2-9fb2-803b7a491720.json, both sourceIndex 0 (PR #407) and sourceIndex 1 (PR #408) recorded verdict 'approve' while stating in concerns (severity: medium) that neither diff was included and SQLite tables, deduplication, PDF parser extraction, and tests could not be verified. Issuing APPROVE without diff inspection violates BARCAN-TAG-00 review criteria."
+    }
+  ]
+}
