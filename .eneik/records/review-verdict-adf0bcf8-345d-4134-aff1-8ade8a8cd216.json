@@ -1,0 +1,26 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "PR #433 diff and target files (design/approved/20261118065523-mockup/mockup.html, frontend/src/App.svelte, full src/main/resources/static/index.html) were not included in the zero-tool-call prompt context, so diff and visual fidelity checks could not be performed and should be verified before merge.",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "sourceIndex": 1,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "PR #432 diff and target files (design/approved/20261118104023-mockup/mockup.html, full src/main/resources/static/index.html) were not included in the zero-tool-call prompt context, so diff and visual fidelity checks could not be performed and should be verified before merge.",
+          "severity": "high"
+        }
+      ]
+    }
+  ]
+}
