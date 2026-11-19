@@ -1,0 +1,92 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "9ff49e2e-08bd-435d-abbf-b39f52dac707",
+      "title": "GOST Admission Order Template Study-Form & Funding-Source Clauses",
+      "jtbd": "When an educational administrator generates a residency or postgraduate admission order from GOST templates, I want the operative clause to automatically include exact regulatory wording for full-time study form and federal-budget vs. paid-contract funding from admission_records, so that generated orders are legally complete without manual editing.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "100% GOST R 7.0.97-2016 Times New Roman 14pt typography and study-form/funding-source token compliance on generated residency admission orders",
+      "tocConstraintRef": "Hardcoded Pt(12)/Pt(13) font sizing in compile_session_to_docx and missing study-form token in TPL-01 template_registry.json",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Update compile_session_to_docx in crie_document_engine.py so body paragraphs, requisites, preamble, actions, signatures, and title/command headers use GOST R 7.0.97-2016 Times New Roman 14pt matching data/templates/template_registry.json gost_font declaration instead of hardcoded Pt(12), Pt(13), Pt(9), or Pt(10).",
+        "R2: Update template TPL-01 (residency admission order) in data/templates/template_registry.json and corresponding template rendering to require and populate a study-form token alongside BUDGET_TYPE in required_tokens."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Patch compile_session_to_docx 14pt GOST typography and TPL-01 study-form token",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing GOST typography and template token fixes for this epic, I want compile_session_to_docx and template_registry.json updated directly with automated unit and integration checks, so that generated residency admission orders conform to GOST R 7.0.97-2016 14pt formatting and include both study form and funding source.",
+          "acceptanceCriteria": "Given compile_session_to_docx in crie_document_engine.py renders an order session, When a .docx file is generated, Then body paragraphs, requisites, preamble, actions, signatures, and headers use Times New Roman Pt(14) matching the gost_font specification in data/templates/template_registry.json.\nGiven template TPL-01 in data/templates/template_registry.json is loaded and rendered for a residency admission order, When required_tokens are validated and substituted, Then a study-form token (e.g. STUDY_FORM) is required and rendered alongside BUDGET_TYPE, ORD_ID, FULL_NAME, SPECIALTY_CODE, SPECIALTY_NAME, ORDER_NUMBER, and DATE.\nGiven pytest unit and integration tests for crie_document_engine.py and data/templates/template_registry.json are executed, When inspecting generated .docx XML/runs and TPL-01 schema validation, Then all font sizes equal 14pt and missing study-form parameters fail validation deterministically.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Hardcoded font point constants in crie_document_engine.py and incomplete required_tokens array in TPL-01",
+          "sixSigmaMetric": "0 font-size or missing-token defects in generated TPL-01 .docx documents across test runs",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        }
+      ]
+    },
+    {
+      "existingEpicId": null,
+      "title": "PR Diff-Evidence Verification & Knowledge-First Review Gate Remediation",
+      "jtbd": "When the automated delivery pipeline evaluates pull requests for merge approval, I want every approval verdict to require direct inspection of actual diff and target file evidence, so that unverified PRs are reliably blocked rather than falsely approved.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "0% false-green approval verdicts emitted when PR diffs or target files are absent from review context",
+      "tocConstraintRef": "Lenient approve verdicts emitted in review records despite documented absence of PR diff and target file evidence",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Enforce the BARCAN-TAG-00 binary review protocol and Knowledge-First Gate (ELVIN_GOLDMAN_02_KNOWLEDGE_FIRST_GATE) so any review context missing actual diff or target file evidence withholds approval (reject or block) until diff, security, and acceptance-criteria evidence are inspected.",
+        "R2: Audit and verify PR #419 target files (including crie_normative_knowledge.py and persistent memory/KCP modules if present in history), kcp_parameters schema, Order #824 seed values, and idempotency.",
+        "R3: Audit and verify PR #415 diff and target files against its acceptance criteria prior to sign-off.",
+        "R4: Audit and verify PR #416 and PR #417 diffs for acceptance criteria compliance, security issues, and absence of committed build artifacts.",
+        "R5: Audit and verify PR #407, PR #408, PR #413, PR #418, PR #420, and PR #421 diffs including SQLite tables, deduplication constraints, PDF parser extraction, and diff-backed verification evidence."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Audit uninspected PR diffs and document knowledge-first review gate remediation",
+          "roleTag": "BARCAN-TAG-00",
+          "jtbd": "When implementing PR diff-audit remediation for this epic, I want every previously uninspected PR (#407, #408, #413, #415-#421) audited against repository history and the binary absent-diff rejection rule codified in a committed audit artifact, so that authorization ambiguity and false-green approvals are eliminated.",
+          "acceptanceCriteria": "Given the list of PRs approved without diff inspection (#407, #408, #413, #415, #416, #417, #418, #419, #420, #421), When repository commits, diffs, and target files (such as crie_normative_knowledge.py, SQLite schemas, Order #824 seeds, and build-artifact status) are inspected, Then a committed markdown audit report (docs/review-diff-audit-report.md) records concrete diff evidence, verified statuses, and any remaining gaps for each PR.\nGiven a review context where target diffs or required source/test files are absent or uninspectable, When applying the Knowledge-First Gate and BARCAN-TAG-00 binary review criteria, Then the documented gate policy mandates rejecting or blocking approval with explicit missing-evidence findings rather than emitting an approve verdict.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Missing diff inspection evidence across ten historical PRs (#407-#421) in review records",
+          "sixSigmaMetric": "100% of cited PRs (#407, #408, #413, #415-#421) reconciled with explicit diff-inspection evidence or documented gap escalation",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1",
+            "R2",
+            "R3",
+            "R4",
+            "R5"
+          ]
+        },
+        {
+          "title": "Add automated QA verification for PR target modules and absent-diff gate enforcement",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When implementing QA verification for this epic, I want automated unit and integration checks verifying the audited target modules and enforcing refusal on missing-diff review payloads, so that regressions in target functionality or lenient approval logic fail CI immediately.",
+          "acceptanceCriteria": "Given the audited target modules present in the repository (including crie_normative_knowledge.py, SQLite persistence/deduplication helpers, and repository build-artifact hygiene), When the new pytest verification suite (tests/test_pr_diff_gate_verification.py) runs, Then unit and integration assertions confirm schema idempotency, deduplication, seed integrity, and absence of unintended committed build artifacts.\nGiven simulated review-gate validation inputs with missing diff payloads or unresolved high-severity uninspected-file concerns, When the gate validator test executes, Then approval is deterministically rejected in compliance with the Knowledge-First Gate.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Lack of automated regression tests checking audited PR invariants and absent-diff refusal behavior",
+          "sixSigmaMetric": "100% pass rate on pytest unit and integration checks for audited module invariants and absent-diff refusal rules",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1",
+            "R2",
+            "R3",
+            "R4",
+            "R5"
+          ]
+        }
+      ]
+    }
+  ]
+}
