@@ -1,0 +1,335 @@
+{
+  "epics": [
+    {
+      "existingEpicId": null,
+      "title": "Synchronous Physical DOCX/CSV Generation, File Registry & Anti-Hallucination Download Links",
+      "jtbd": "When an educational administrator or faculty member asks the CRIE assistant for a downloadable DOCX reference or CSV/Excel table, I want the backend to synchronously generate the physical file, persist its hash in SQLite, verify it exists on disk, and inject the real URL into a dedicated prompt slot, so that every download link actually works and the LLM never fabricates broken links.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "0% hallucinated download URLs and 100% HTTP 200 physical file resolution for export-intent requests",
+      "tocConstraintRef": "LLM fabricating unbacked /crie/api/download/... URLs before or without physical file creation on disk",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Detect file-export intent in user chat queries via deterministic triggers (file, download, link, DOCX, official reference, Excel/CSV table) and resolve the target format (DOCX vs CSV).",
+        "R2: Implement synchronous physical DOCX and CSV generation in crie_document_engine.py writing structured artifacts (including official 2027 KCP reference DOCX documents exceeding 10 KB and UTF-8 CSV tables) to the exports directory.",
+        "R3: Persist generated export metadata in a SQLite file-registry table storing unique filename, SHA-256 hash, format, MIME type, byte size, and creation timestamp.",
+        "R4: Verify os.path.exists() and non-zero file size before binding /crie/api/download/<real_filename> to the [GENERATED_FILE_URL] slot, and return an explicit generation-failure notice without any download link if file creation or disk verification fails.",
+        "R5: Update system prompts in crie_regulatory_canon.py and crie_thought_agent.py to strictly prohibit LLM self-generation of /crie/api/download/... strings unless injected via [GENERATED_FILE_URL], enforced by a server-side post-processor that strips unverified download links.",
+        "R6: Harden GET /crie/api/download/{filename} in crie_assistant_api.py with path-traversal protection, accurate MIME types (application/vnd.openxmlformats-officedocument.wordprocessingml.document for .docx and text/csv; charset=utf-8 for .csv), and HTTP 200 streaming.",
+        "R7: Cover intent detection, SQLite hash registration, prompt/post-processor URL guard, and end-to-end 2027 KCP DOCX generation plus GET /crie/api/download/{filename} MIME and >10 KB size verification with automated tests."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "SQLite Generated File Registry & Disk Verification Helper",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing persistent export tracking for this epic, I want a SQLite file-registry schema and disk-verification helper, so that every emitted download URL corresponds to a hashed, verified file on disk.",
+          "acceptanceCriteria": "Given a newly generated DOCX or CSV file path, When the registry helper in crie_document_engine.py records the artifact, Then a SQLite row is committed with filename, SHA-256 digest, MIME type, byte size, and timestamp.\nGiven a missing or zero-byte file path, When os.path.exists() and size validation run, Then registration raises an explicit error and refuses to return a download URL.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Unindexed or unverified files in generated_documents/ lacking persistent hash provenance",
+          "sixSigmaMetric": "100% of registered export rows match on-disk SHA-256 digest and byte size",
+          "hasUi": false,
+          "requirementRefs": ["R3", "R4"]
+        },
+        {
+          "title": "Synchronous DOCX & CSV Export Pipeline in Document Engine",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing physical file generation for this epic, I want deterministic export-intent detection and synchronous DOCX/CSV builders in crie_document_engine.py, so that real structured documents are written to disk during chat processing.",
+          "acceptanceCriteria": "Given a query matching export-intent keywords for a DOCX reference (such as 2027 KCP official reference), When the synchronous generator executes in crie_document_engine.py, Then a valid GOST-formatted .docx file larger than 10 KB is saved to generated_documents/ and verified on disk.\nGiven a query requesting an Excel/CSV table export, When the CSV builder executes, Then a UTF-8 CSV file with BOM and structured headers/rows is saved, hashed, and registered in SQLite.\nGiven an internal rendering exception during generation, When the builder handles the failure, Then no partial file is registered and a structured failure result is returned to the caller.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Asynchronous or bypassed document generation leaving chat responses without physical files",
+          "sixSigmaMetric": "100% valid OOXML/CSV structure and >10 KB size for official DOCX references",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R4"]
+        },
+        {
+          "title": "Prompt Slot [GENERATED_FILE_URL] & Anti-Hallucination Link Guard",
+          "roleTag": "BARCAN-TAG-04",
+          "jtbd": "When implementing LLM prompt grounding for this epic, I want explicit system prompt prohibitions and a response post-processor for [GENERATED_FILE_URL], so that the model never invents /crie/api/download/... URLs.",
+          "acceptanceCriteria": "Given updated system prompts in crie_regulatory_canon.py and crie_thought_agent.py, When the LLM receives a query without a backend-populated [GENERATED_FILE_URL] slot, Then the prompt explicitly forbids emitting any /crie/api/download/... path.\nGiven a raw LLM completion containing a fabricated /crie/api/download/... string that does not match [GENERATED_FILE_URL], When the backend response post-processor runs, Then the fabricated link is stripped and replaced with a clear notice that no file was generated.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Stochastic LLM tendency to hallucinate plausible download URLs from training context",
+          "sixSigmaMetric": "0 unverified /crie/api/download/... URLs surviving post-processing",
+          "hasUi": false,
+          "requirementRefs": ["R5"]
+        },
+        {
+          "title": "Chat Export Orchestration & Hardened Download Endpoint in API",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing API orchestration and file delivery for this epic, I want crie_assistant_api.py to invoke the synchronous export pipeline and serve verified .docx/.csv files safely, so that clients download real files with exact HTTP headers.",
+          "acceptanceCriteria": "Given a POST /crie/api/chat request with file-export intent, When crie_assistant_api.py processes the turn, Then it synchronously runs file generation, verifies os.path.exists(), injects [GENERATED_FILE_URL], and returns the verified link in the payload.\nGiven a GET /crie/api/download/{filename} request for a generated .docx or .csv file, When the download endpoint responds, Then it rejects path-traversal inputs with HTTP 400/404 and streams valid files with HTTP 200 OK and the exact DOCX OOXML or text/csv MIME type.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Missing CSV MIME type handling and decoupled chat-to-file-generation API flow",
+          "sixSigmaMetric": "100% HTTP 200 responses with valid Content-Type and Content-Disposition for registered exports",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R4", "R6"]
+        },
+        {
+          "title": "Automated Unit & API Integration Tests for File Export & Link Guard",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying the file-generation epic, I want automated unit and API integration tests covering intent routing, SQLite hashing, anti-hallucination stripping, and 2027 KCP DOCX download, so that regressions are caught before release.",
+          "acceptanceCriteria": "Given pytest unit tests for export-intent matching, SQLite hash persistence, and post-processor link stripping, When the suite runs, Then all unit assertions pass including failure-mode tests when disk verification fails.\nGiven an API integration test posting the 2027 KCP DOCX reference prompt and calling GET /crie/api/download/<filename>, When the response is inspected, Then HTTP status is 200, Content-Type equals application/vnd.openxmlformats-officedocument.wordprocessingml.document, and content length exceeds 10240 bytes.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Lack of automated regression verification across prompt guard and download endpoint",
+          "sixSigmaMetric": "100% pass rate across unit and FastAPI TestClient integration assertions",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5", "R6", "R7"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": null,
+      "title": "Verified CRIE Faculty Registry (staff_pps) & Fictional Persona Purge",
+      "jtbd": "When an educational administrator, resident, or stakeholder queries the CRIE assistant about faculty or Educational Center staff, I want all synthetic demo personas purged from prompts and staff answers dynamically grounded in a real SQLite staff_pps registry, so that the assistant cites only verified employees and explicitly denies nonexistent persons.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "0% fictional staff mentions in codebase/responses and 100% negative-lookup accuracy on non-registry names",
+      "tocConstraintRef": "Hardcoded demo faculty names in system prompts causing authoritative hallucinations about nonexistent staff",
+      "sourceIndex": 1,
+      "requirements": [
+        "R1: Audit and remove all mentions of fictional personas (Semenova E.V., Klimova O.N., Popova N.V., and any other synthetic/demo names) from crie_regulatory_canon.py, crie_normative_knowledge.py, crie_memorilla.py, and prompt slots.",
+        "R2: Create the staff_pps SQLite table in crie_persistent_memory.py with columns id, full_name, degree, title, position, department, curated_specialties, clinical_base, source_order, and is_active, enforcing non-empty full_name and source_order provenance.",
+        "R3: Populate staff_pps exclusively with verified Educational Center and FBUN CRIE faculty/staff records and support idempotent upsert/updates sourced from real HR orders and RUP documents.",
+        "R4: Wire dynamic SQL loading of slot [3: КАДРОВЫЙ РЕЕСТР ППС] in crie_smart_consultant.py directly from active staff_pps rows without static hardcoded staff lists.",
+        "R5: Enforce strict negative-lookup grounding in crie_smart_consultant.py so that queries referencing individuals absent from staff_pps (including turn #73 test names) return an explicit confirmation that no such employee exists in the CRIE database registry.",
+        "R6: Expose verified staff_pps lookup and HR-order sync operations in crie_assistant_api.py / crie_persistent_memory.py with validation rejecting unattributed entries lacking source_order.",
+        "R7: Implement automated QA tests verifying codebase-wide grep absence of fictional names (Semenova, Klimova, Popova), staff_pps schema/seed integrity, and turn #73 negative-lookup consultant behavior."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "staff_pps SQLite Schema, Provenance Rules & Verified Seed",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing persistent HR data storage for this epic, I want the staff_pps table and verified seed logic in crie_persistent_memory.py, so that only real CRIE faculty with official order provenance are stored.",
+          "acceptanceCriteria": "Given crie_persistent_memory.py initialization, When the database schema is migrated, Then table staff_pps exists with all 10 required columns (id through is_active) and rejects rows missing full_name or source_order.\nGiven verified Educational Center and CRIE faculty data, When the idempotent seed/upsert runs, Then only confirmed active staff are inserted and existing rows update cleanly without duplicates.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Absence of a normalized SQLite staff table with official source_order provenance",
+          "sixSigmaMetric": "100% of staff_pps records carry non-null source_order and verified institutional attributes",
+          "hasUi": false,
+          "requirementRefs": ["R2", "R3"]
+        },
+        {
+          "title": "Purge Fictional Faculty Personas from Canon & Knowledge Prompts",
+          "roleTag": "BARCAN-TAG-04",
+          "jtbd": "When implementing canon sanitization for this epic, I want all synthetic demo staff names removed from crie_regulatory_canon.py, crie_normative_knowledge.py, and crie_memorilla.py, so that prompts no longer prime the LLM with fake employees.",
+          "acceptanceCriteria": "Given crie_regulatory_canon.py, crie_normative_knowledge.py, and crie_memorilla.py, When all prompt text slots and examples are sanitized, Then zero occurrences of Semenova E.V., Klimova O.N., Popova N.V., or other demo names remain.\nGiven the sanitized prompt templates, When compiled into a system prompt, Then the staff section defers exclusively to the dynamically injected SQL slot.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Scattered synthetic names across legacy prompt constants and knowledge strings",
+          "sixSigmaMetric": "0 grep matches for forbidden fictional staff surnames across prompt and source files",
+          "hasUi": false,
+          "requirementRefs": ["R1"]
+        },
+        {
+          "title": "Dynamic SQL Slot [3: КАДРОВЫЙ РЕЕСТР ППС] & Negative-Lookup Grounding",
+          "roleTag": "BARCAN-TAG-04",
+          "jtbd": "When implementing consultant grounding for this epic, I want crie_smart_consultant.py to load slot [3: КАДРОВЫЙ РЕЕСТР ППС] from SQLite and enforce negative-lookup replies, so that unknown names are explicitly denied.",
+          "acceptanceCriteria": "Given a consultant request in crie_smart_consultant.py, When assembling the prompt context, Then slot [3: КАДРОВЫЙ РЕЕСТР ППС] is populated dynamically via SQL query against active staff_pps records.\nGiven a user query asking about an individual not present in staff_pps (such as turn #73 personas), When the consultant evaluates the query, Then it deterministically confirms the person is absent from the CRIE PPS database registry without inventing roles or degrees.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "LLM filling missing roster gaps with plausible-sounding fabricated faculty attributes",
+          "sixSigmaMetric": "100% accuracy distinguishing registered staff_pps members from unregistered names",
+          "hasUi": false,
+          "requirementRefs": ["R4", "R5"]
+        },
+        {
+          "title": "Backend API & Service Interface for Staff Registry Lookup & Sync",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing backend access to staff_pps for this epic, I want API/service handlers in crie_assistant_api.py for querying and updating verified staff records, so that HR updates from orders stay synchronized.",
+          "acceptanceCriteria": "Given a staff lookup or HR-order sync request in crie_assistant_api.py, When valid verified staff attributes and source_order are provided, Then staff_pps is queried or updated and a confirmation payload is returned.\nGiven a sync payload missing source_order or full_name, When validation runs, Then the API returns HTTP 400 with a descriptive validation error and leaves existing rows unchanged.",
+          "leanValue": "valuable",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Lack of a validated runtime path to update staff_pps from new HR orders without code edits",
+          "sixSigmaMetric": "100% rejection of unattributed staff writes and <15ms SQL lookup latency",
+          "hasUi": false,
+          "requirementRefs": ["R3", "R6"]
+        },
+        {
+          "title": "Codebase Grep Audit, DB Integrity & Turn #73 Negative-Lookup QA Suite",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying the staff registry epic, I want automated grep, SQLite, and consultant integration tests, so that fictional names cannot return and turn #73 behavior is continuously verified.",
+          "acceptanceCriteria": "Given a repository-wide automated grep check inside pytest, When scanning Python and JSON/prompt files for the forbidden fictional names (Semenova, Klimova, Popova), Then zero matches are found.\nGiven an integration test simulating the turn #73 query against crie_smart_consultant.py and the API, When the response is evaluated, Then it explicitly confirms those individuals are not present in the CRIE PPS database.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Risk of reintroducing demo personas or breaking SQL slot injection during future refactors",
+          "sixSigmaMetric": "100% pass rate on grep audit, schema constraint tests, and turn #73 integration check",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5", "R6", "R7"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": null,
+      "title": "Curriculum RUP SQLite Registry, Document Indexing & Contact-Hour Workload Calculation",
+      "jtbd": "When a department head, faculty planner, or CRIE assistant calculates resident teaching workload, I want verified curricula stored in a curricula_rup SQLite table, RUP documents indexed for search, and annual faculty load computed strictly from contact_work_hours per study year, so that workload planning reflects exact curriculum norms without self-study inflation.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "100% deterministic match between computed year-1/year-2 faculty workload and curricula_rup contact_work_hours",
+      "tocConstraintRef": "Unstructured RUP documents and conflation of total/self-study hours with contact teaching hours",
+      "sourceIndex": 2,
+      "requirements": [
+        "R1: Create the curricula_rup SQLite table in crie_persistent_memory.py and crie_normative_knowledge.py with columns id, specialty_code, specialty_name, education_level, study_year (constrained to 1 or 2), total_ze, total_hours, contact_work_hours, self_study_hours, practice_contact_hours, and attestation_hours plus rup_filename, populated with verified RUP records.",
+        "R2: Update crie_assistant_index.py to index and tag all documents containing the prefix or substring 'РУП' (RUP) so curriculum plans are discoverable by specialty code, education level, and RUP category.",
+        "R3: Implement a deterministic faculty teaching-workload calculation function in crie_normative_knowledge.py computing hours strictly from contact_work_hours for 1 academic year separately for study_year=1 and study_year=2 per RUP.",
+        "R4: Integrate deterministic curricula_rup lookup and per-year contact-hour calculation into crie_smart_consultant.py and crie_assistant_api.py, returning explicit validation errors when a requested specialty or study_year is missing from curricula_rup.",
+        "R5: Build automated unit and integration tests verifying curricula_rup schema constraints, RUP document indexing in crie_assistant_index.py, and deterministic year-1/year-2 contact_work_hours calculation."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "curricula_rup SQLite Schema, Seed Data & RUP Corpus Indexing",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing curriculum storage and search indexing for this epic, I want the curricula_rup SQLite table and RUP document indexing in crie_assistant_index.py, so that structured RUP hours and source RUP files are reliably queried.",
+          "acceptanceCriteria": "Given crie_persistent_memory.py and crie_normative_knowledge.py initialization, When schema setup runs, Then curricula_rup is created with all 12 required columns, enforces study_year IN (1, 2), and holds verified specialty RUP rows.\nGiven corpus_catalog.json entries containing 'РУП', When NormativeInvertedIndex loads in crie_assistant_index.py, Then all RUP documents are indexed under searchable RUP tokens and specialty codes.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Missing structured RUP table and incomplete indexing of RUP-prefixed catalog files",
+          "sixSigmaMetric": "100% of catalog RUP documents indexed and 100% curricula_rup rows passing study_year constraints",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        },
+        {
+          "title": "Deterministic Contact-Hour Workload Calculator & API/Consultant Binding",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing faculty workload calculation for this epic, I want a deterministic function in crie_normative_knowledge.py wired into the API and consultant, so that year-1 and year-2 loads use contact_work_hours exclusively.",
+          "acceptanceCriteria": "Given a specialty code and study_year (1 or 2), When the deterministic workload calculator runs in crie_normative_knowledge.py, Then it returns annual faculty workload equal strictly to contact_work_hours for that study year, excluding self_study_hours and splitting year 1 from year 2.\nGiven a request to the API or consultant for a specialty not in curricula_rup or an invalid study_year, When validation executes, Then a clear structured error is returned instead of estimated hours.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Risk of LLM or legacy calculators mixing total_hours or self_study_hours into faculty teaching load",
+          "sixSigmaMetric": "0% variance between calculated per-resident annual contact load and curricula_rup.contact_work_hours",
+          "hasUi": false,
+          "requirementRefs": ["R3", "R4"]
+        },
+        {
+          "title": "Unit & Integration QA Suite for RUP Indexing & Contact-Hour Calculation",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying the RUP workload epic, I want automated unit and integration tests covering schema rules, RUP search hits, and per-year contact-hour calculations, so that calculation accuracy is guaranteed.",
+          "acceptanceCriteria": "Given pytest unit tests for curricula_rup and the contact-hour calculator, When executed for study_year=1 and study_year=2 across specialties, Then outputs match contact_work_hours exactly and exclude self_study_hours.\nGiven integration tests against NormativeInvertedIndex and the consultant/API flow, When querying RUP documents and resident workload, Then RUP documents appear in search results and backend-injected contact hours match SQLite rows.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "No automated regression guard ensuring self_study_hours remain excluded from PPS load",
+          "sixSigmaMetric": "100% test pass rate across schema, index, unit calculation, and integration checks",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": null,
+      "title": "KCP Admission Quota Parameters Registry & Order #824 Calculation Grounding",
+      "jtbd": "When an educational administrator or admission officer prepares 2027 KCP admission quota calculations, I want verified Order #824 para 12 reference values stored in a kcp_parameters SQLite table and injected deterministically by the backend, so that calculation groups, prior KCP baselines, and Ministry of Health limits are never misquoted.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "100% fidelity to verified Order #824 RG (5/3), prior KCP (7/8/11), and MoH limits (7/10/16) in 2027 KCP outputs",
+      "tocConstraintRef": "Unstructured regulatory constants causing LLM miscalculations of RG groups and MoH admission caps",
+      "sourceIndex": 2,
+      "requirements": [
+        "R1: Create the kcp_parameters SQLite table in crie_persistent_memory.py and crie_normative_knowledge.py and seed verified Order #824 para 12 values: Appendix 8 calculation groups RG (residency = 5, postgraduate = 3), prior-period approved KCP (Pediatrics = 7, Infectious Diseases = 8, Epidemiology = 11), and Ministry of Health upper limits (Pediatrics = 7, Infectious Diseases = 10, Epidemiology = 16).",
+        "R2: Implement a deterministic Order #824 para 12 KCP lookup and calculation service in crie_normative_knowledge.py that reads parameters exclusively from kcp_parameters, applies MoH ceiling checks, and raises a clear validation error for unconfigured specialties.",
+        "R3: Integrate kcp_parameters DB injection into crie_smart_consultant.py and crie_assistant_api.py so 2027 KCP calculation queries populate exact RG, prior KCP, and MoH limit values from SQLite.",
+        "R4: Provide automated unit and integration tests asserting exact seeded values in kcp_parameters, Order #824 calculation boundary behavior, and grounded 2027 KCP query outputs."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "kcp_parameters SQLite Table & Verified Order #824 Seed",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing KCP parameter persistence for this epic, I want the kcp_parameters table seeded with verified Order #824 constants, so that official RG, prior KCP, and MoH limit numbers live in a single authoritative DB source.",
+          "acceptanceCriteria": "Given crie_persistent_memory.py and crie_normative_knowledge.py initialization, When schema setup completes, Then kcp_parameters contains rows for residency (RG=5) and postgraduate (RG=3) plus Pediatrics (KCP=7, limit=7), Infectious Diseases (KCP=8, limit=10), and Epidemiology (KCP=11, limit=16).\nGiven re-execution of the seed routine, When kcp_parameters already contains those rows, Then seeding is idempotent without duplicating specialty records.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Hardcoded or inconsistent KCP baselines across documents and prompts",
+          "sixSigmaMetric": "100% exact numeric match against verified Order #824 para 12 baseline table",
+          "hasUi": false,
+          "requirementRefs": ["R1"]
+        },
+        {
+          "title": "Deterministic Order #824 KCP Calculation Service & Consultant/API Wiring",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing KCP calculation logic for this epic, I want a deterministic Order #824 calculator wired into the consultant and API, so that 2027 KCP responses always embed verified DB parameters.",
+          "acceptanceCriteria": "Given a 2027 KCP calculation request for residency or postgraduate specialties, When crie_normative_knowledge.py computes the quota under Order #824 para 12, Then it pulls RG (5/3), prior KCP (7/8/11), and MoH limits (7/10/16) directly from kcp_parameters and caps proposals at the MoH limit.\nGiven a request for an unconfigured specialty code, When the service validates inputs, Then it returns an explicit missing-parameter error instead of guessing values.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Uncapped or LLM-estimated KCP quota figures bypassing MoH limits",
+          "sixSigmaMetric": "0% deviation from Order #824 para 12 DB parameters in KCP calculation responses",
+          "hasUi": false,
+          "requirementRefs": ["R2", "R3"]
+        },
+        {
+          "title": "Unit & Integration QA Suite for kcp_parameters & 2027 KCP Calculation",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying the KCP parameters epic, I want automated unit and integration tests for DB seed accuracy, Order #824 math, and 2027 KCP assistant responses, so that quota errors are prevented.",
+          "acceptanceCriteria": "Given pytest unit tests querying kcp_parameters and the Order #824 calculator, When executed, Then assertions verify RG=5/3, prior KCP=7/8/11, MoH limits=7/10/16, and MoH ceiling enforcement.\nGiven an integration test submitting a 2027 KCP calculation query through the backend consultant/API pipeline, When the response payload is checked, Then all returned figures match kcp_parameters exactly.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Absence of automated verification tying KCP calculations to SQLite kcp_parameters",
+          "sixSigmaMetric": "100% pass rate on KCP DB, calculation, and integration assertions",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": null,
+      "title": "GOST Admission Order Template Study-Form & Funding-Source Clauses",
+      "jtbd": "When an educational administrator generates a residency or postgraduate admission order from GOST templates, I want the operative clause to automatically include exact regulatory wording for full-time study form and federal-budget vs. paid-contract funding from admission_records, so that generated orders are legally complete without manual editing.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "100% of generated admission orders contain legally exact study-form and funding-basis clauses and feedback id=1 resolved",
+      "tocConstraintRef": "Omission of mandatory study-form and financing-source requisites in TPL-APPROVED-ADMISSION-RESIDENCY operative clause",
+      "sourceIndex": 3,
+      "requirements": [
+        "R1: Update TPL-APPROVED-ADMISSION-RESIDENCY and related postgraduate admission order templates in crie_template_manager.py and crie_document_engine.py to include mandatory parameterizable study-form and funding-basis attributes in the operative 'ПРИКАЗЫВАЮ: 1. Зачислить...' clause.",
+        "R2: Derive default normative clauses in crie_template_manager.py from admission_records order/funding type: full-time federal-budget KCP wording ('по очной форме обучения на места в рамках контрольных цифр приема за счет бюджетных ассигнований федерального бюджета') for budget/target quota, and full-time paid-contract wording ('по очной форме обучения по договорам об образовании за счет средств физических и (или) юридических лиц') for paid admission.",
+        "R3: Enforce input validation and deterministic fallback logging in template session creation/patching so unknown funding types either raise an explicit validation error or log the defaulted normative clause in change_log.",
+        "R4: Verify draft order generation via TPL-APPROVED-ADMISSION-RESIDENCY for specialty 32.08.12 (Epidemiology), confirming the compiled DOCX text contains the exact full-time and federal-budget allocation wording.",
+        "R5: Transition record id=1 in feedback.jsonl to status 'resolved' via crie_feedback_manager.py once the automated template verification passes."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "admission_records Funding-Type Mapping & Feedback Status Sync",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing data bindings for this epic, I want deterministic funding-type lookup from admission_records and gated feedback.jsonl status updating via crie_feedback_manager.py, so that order clauses match persisted admission records and feedback id=1 closes only upon verification.",
+          "acceptanceCriteria": "Given an admission_records entry classified as budget or target quota vs paid contract, When the funding-clause mapper queries the record, Then it returns the exact corresponding normative funding key and fails explicitly on corrupted/unmapped enum values.\nGiven passing verification of the updated admission template, When crie_feedback_manager.py updates record id=1 in data/feedback/feedback.jsonl, Then status transitions to 'resolved' with an audit note and timestamp.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Disconnected admission_records funding classification and manual feedback.jsonl status tracking",
+          "sixSigmaMetric": "100% deterministic mapping of admission_records funding types and valid JSONL status update for id=1",
+          "hasUi": false,
+          "requirementRefs": ["R2", "R3", "R5"]
+        },
+        {
+          "title": "Parameterize GOST Admission Order Templates in Template Manager & Doc Engine",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing GOST template updates for this epic, I want TPL-APPROVED-ADMISSION-RESIDENCY and postgraduate admission templates in crie_template_manager.py and crie_document_engine.py to render study-form and funding clauses, so that every compiled DOCX order includes mandatory legal wording.",
+          "acceptanceCriteria": "Given TPL-APPROVED-ADMISSION-RESIDENCY or a postgraduate admission order template invoked for specialty 32.08.12 with budget/target-quota parameters, When compile_session_to_docx renders the DOCX, Then the operative 'ПРИКАЗЫВАЮ: 1. Зачислить...' paragraph contains exact wording for full-time study form and federal budget KCP allocations.\nGiven paid-tuition admission parameters, When the template compiles, Then the operative paragraph contains the exact paid-education contract wording for individuals and legal entities and records parameter defaults in session change_log.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Static operative-part text in crie_template_manager.py lacking parameterized study form and financing source",
+          "sixSigmaMetric": "100% presence of mandatory study-form and financing clauses in compiled residency and postgraduate DOCX orders",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3"]
+        },
+        {
+          "title": "Automated DOCX Clause Test for Specialty 32.08.12 & Feedback Resolution",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying the GOST admission template epic, I want an automated pytest suite generating the 32.08.12 order and inspecting DOCX XML text before confirming feedback id=1 resolution, so that template compliance is proved end-to-end.",
+          "acceptanceCriteria": "Given an automated pytest case generating a draft order from TPL-APPROVED-ADMISSION-RESIDENCY for specialty 32.08.12, When the output .docx paragraphs are extracted with python-docx, Then the text contains the exact full-time and federal-budget allocation clause, and a companion paid-admission test verifies the paid-contract clause.\nGiven the template autotest passes, When the feedback resolution check executes via crie_feedback_manager.py, Then record id=1 in feedback.jsonl has status 'resolved'.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "No automated DOCX paragraph-content assertion guarding legal wording in admission orders",
+          "sixSigmaMetric": "100% DOCX text-assertion pass rate for residency (32.08.12) and postgraduate templates",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5"]
+        }
+      ]
+    }
+  ]
+}
