@@ -391,7 +391,7 @@
     --border-strong: #3b5f94;
     --text-primary: #ffffff;
     --text-secondary: #cbd5e1;
-    --text-muted: #94a3b8;
+    --text-muted: #cbd5e1;
     --accent-primary: #38bdf8;
     --accent-hover: #7dd3fc;
     --accent-active: #0284c7;
@@ -478,8 +478,8 @@
     font-size: 0.65rem;
     font-weight: 700;
     color: #ffffff;
-    background: #0f766e;
-    padding: 0.1rem 0.4rem;
+    background: #064e3b;
+    padding: 0.15rem 0.45rem;
     border-radius: 4px;
     letter-spacing: 0.05em;
   }
@@ -599,7 +599,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--text-muted);
+    color: var(--text-secondary);
   }
 
   .telemetry-value {
@@ -674,7 +674,7 @@
   }
 
   .search-input-wrapper input[type='search']::placeholder {
-    color: var(--text-muted);
+    color: var(--text-secondary);
   }
 
   .btn-search, .btn-retry {
@@ -906,13 +906,13 @@
     padding: 0.2rem 0.55rem;
     border-radius: 0.25rem;
     background: var(--surface-elevated);
-    color: var(--accent-primary);
+    color: #7dd3fc;
     border: 1px solid var(--border-subtle);
   }
 
   .doc-date {
     font-size: 0.75rem;
-    color: var(--text-muted);
+    color: var(--text-secondary);
   }
 
   .doc-title {
