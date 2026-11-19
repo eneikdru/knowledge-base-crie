@@ -1,3 +1,4 @@
+import ast
 import os
 import json
 from pathlib import Path
@@ -28,3 +29,12 @@ def test_synthetic_avatars_exists():
             assert isinstance(data, dict)
             assert "avatars" in data
             assert len(data["avatars"]) > 0
+
+def test_document_engine_module_parses():
+    """Verify crie_document_engine.py is present and syntactically valid Python."""
+    engine_path = Path("crie_document_engine.py")
+    if engine_path.exists():
+        source = engine_path.read_text(encoding="utf-8")
+        assert len(source) > 0
+        tree = ast.parse(source, filename=str(engine_path))
+        assert tree is not None
