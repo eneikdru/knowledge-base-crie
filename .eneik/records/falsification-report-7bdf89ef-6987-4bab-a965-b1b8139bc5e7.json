@@ -1,0 +1,48 @@
+{
+  "violations": [
+    {
+      "roleTag": "BARCAN-TAG-00",
+      "type": "refusal_criteria",
+      "prNumber": 421,
+      "reason": "PR #421 (.eneik/records/review-verdict-86c720e0-7abd-4295-9424-419348e1d85d.json) emitted verdict 'approve' for PR #419 while explicitly stating that PR #419's diff and target files (crie_persistent_memory.py, crie_normative_knowledge.py, and PR test files) were not included in the review context and that kcp_parameters schema, Order #824 seed values, and idempotency could not be verified. This violates BARCAN-TAG-00's review protocol requiring verified correspondence to all criteria before APPROVE."
+    },
+    {
+      "roleTag": "BARCAN-TAG-00",
+      "type": "refusal_criteria",
+      "prNumber": 420,
+      "reason": "PR #420 (.eneik/records/review-verdict-da27aa1e-febf-4337-8f73-ab4074c23444.json) emitted verdict 'approve' for PR #415 while explicitly admitting it was 'approved leniently without diff inspection' and could not be verified against acceptance criteria. This violates BARCAN-TAG-00's binary review protocol requiring verified compliance before APPROVE."
+    },
+    {
+      "roleTag": "BARCAN-TAG-00",
+      "type": "refusal_criteria",
+      "prNumber": 418,
+      "reason": "PR #418 (.eneik/records/review-verdict-56306457-2d01-452b-9e7f-768e52342410.json) emitted verdict 'approve' for both PR #417 and PR #416 despite severity 'high' concerns explicitly stating that neither diff could be inspected for GQM telemetry acceptance criteria, SQLite backup/restore, data-subject export/erasure, security issues, or committed build artifacts."
+    },
+    {
+      "roleTag": "BARCAN-TAG-00",
+      "type": "refusal_criteria",
+      "prNumber": 413,
+      "reason": "PR #413 (.eneik/records/review-verdict-ba1cecbd-a7ed-40e2-9fb2-803b7a491720.json) emitted verdict 'approve' for both PR #407 and PR #408 while explicitly stating their diffs were absent from the review payload and leaving SQLite tables (uploaded_documents, admission_records), deduplication constraints, PDF parser extraction across files [1], [10], and [11], and tests unverified."
+    },
+    {
+      "roleTag": "BARCAN-TAG-07",
+      "type": "methodological",
+      "philosopher": "Элвин Голдман",
+      "thesis": "Merged PR review verdicts (#413, #418, #420, #421) systematically authorized approvals for PRs #407, #408, #415, #416, #417, and #419 without diff inspection or knowledge-grade evidence, violating ELVIN_GOLDMAN_02_KNOWLEDGE_FIRST_GATE.",
+      "score": "1",
+      "mustBe": "PR approval gates must require direct diff inspection and verified acceptance and security evidence before issuing verdict 'approve'.",
+      "performance": "Four merged review PRs (#413, #418, #420, #421) issued 'approve' verdicts while logging medium/high concerns that the target diffs were missing and uninspected.",
+      "attractive": "Review automation should fail closed when PR diffs are unavailable rather than recording unverified approvals."
+    },
+    {
+      "roleTag": "BARCAN-TAG-06",
+      "type": "methodological",
+      "philosopher": "Карл Поппер",
+      "thesis": "Merged review verdicts (#413, #418, #420, #421) create institutional 'approve' statuses without running falsifying checks against the underlying PR diffs (#407, #408, #415, #416, #417, #419), producing D008 False green gates.",
+      "score": "1",
+      "mustBe": "Quality and review gates must evaluate actual code diffs and test evidence capable of refuting defects before recording an approved institutional status.",
+      "performance": "Review verdicts in PRs #413, #418, #420, and #421 recorded 'approve' despite explicitly lacking the PR diffs needed to confirm or refute acceptance criteria and security invariants.",
+      "attractive": "Missing diff context in automated review pipelines should automatically block an 'approve' verdict."
+    }
+  ]
+}
