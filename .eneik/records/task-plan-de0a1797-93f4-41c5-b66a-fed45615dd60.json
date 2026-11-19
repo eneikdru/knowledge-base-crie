@@ -1,0 +1,36 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "9ff49e2e-08bd-435d-abbf-b39f52dac707",
+      "title": "GOST Admission Order Template Study-Form & Funding-Source Clauses",
+      "jtbd": "When an educational administrator generates a residency or postgraduate admission order from GOST templates, I want the operative clause to automatically include exact regulatory wording for full-time study form and federal-budget vs. paid-contract funding from admission_records, so that generated orders are legally complete without manual editing.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "100% of generated GOST admission orders comply with Times New Roman 14pt typography and include both study-form and funding-source tokens without manual post-editing",
+      "tocConstraintRef": "Manual post-generation formatting and parameter correction in GOST R 7.0.97-2016 admission order drafts",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Update compile_session_to_docx in crie_document_engine.py so all document runs (requisites, preamble, actions, signatures, title, command headers, doc_type, visas, approval mark, and table cell runs in t_elem) explicitly set font.name to Times New Roman and font.size to Pt(14) per GOST R 7.0.97-2016 and data/templates/template_registry.json gost_font.",
+        "R2: Update template TPL-01 in data/templates/template_registry.json so required_tokens includes a study-form parameter alongside BUDGET_TYPE (e.g., STUDY_FORM) in compliance with the admission order specification for form of study and financing source."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Enforce GOST 14pt Times New Roman in compile_session_to_docx and add study-form token to TPL-01",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing the GOST R 7.0.97-2016 typography and TPL-01 template parameter fixes for this epic, I want compile_session_to_docx to apply Times New Roman 14pt across all paragraph and table cell runs and TPL-01 to require a study-form token alongside BUDGET_TYPE, so that generated .docx admission orders match the client specification without manual editing.",
+          "acceptanceCriteria": "Given a document session compiled via compile_session_to_docx in crie_document_engine.py, When the output .docx paragraphs (requisites, title, doc_type, preamble, command headers, actions, signatures, visas, approval mark) and table cell runs in t_elem are inspected, Then every run sets font.name to 'Times New Roman' and font.size to Pt(14).\nGiven template TPL-01 in data/templates/template_registry.json, When required_tokens is read, Then it includes a dedicated study-form token alongside 'BUDGET_TYPE' and all existing required tokens.\nGiven automated pytest unit and integration checks for document generation and template registry validation, When the test suite runs after the patch, Then generated .docx run fonts/sizes and TPL-01 required_tokens pass with zero regressions.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Hardcoded non-14pt font sizes in compile_session_to_docx and missing study-form token in TPL-01",
+          "sixSigmaMetric": "0 runs deviating from Times New Roman Pt(14) and 100% required_tokens schema match for TPL-01 in automated tests",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        }
+      ]
+    }
+  ]
+}
