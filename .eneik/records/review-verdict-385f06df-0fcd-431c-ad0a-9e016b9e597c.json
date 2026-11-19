@@ -1,0 +1,10 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "block",
+      "criticalReason": "PR #430 (https://github.com/eneikdru/knowledge-base-crie/pull/430) diff is absent from the review context and tool calls are prohibited, so the required QA verification pytest module, build-artifact cleanliness, security checks, and Acceptance Criteria compliance cannot be inspected or verified. Approval is withheld until diff evidence is available.",
+      "concerns": []
+    }
+  ]
+}
