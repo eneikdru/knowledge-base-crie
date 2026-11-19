@@ -1,0 +1,106 @@
+{
+  "epics": [
+    {
+      "existingEpicId": null,
+      "title": "PR Review Knowledge-First Diff Gate & Unverified Verdict Remediation",
+      "jtbd": "When an engineering delivery lead or automated merge gate evaluates pull requests for the CRIE platform, I want review approvals strictly blocked whenever target diffs or files are absent and retroactive diff-backed verification completed for previously uninspected PRs, so that no unverified code bypasses security, schema, or acceptance criteria checks.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "0% false-green PR approvals emitted without inspected diff evidence",
+      "tocConstraintRef": "PR review context lacking actual diff hunks and target source files",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Retroactively inspect the actual git diffs and target files (crie_persistent_memory.py, crie_normative_knowledge.py, and PR test files) for PR #419 to verify the kcp_parameters schema, Order #824 seed values, idempotency, and acceptance criteria before certifying merge compliance.",
+        "R2: Retroactively inspect the actual git diff for PR #415 against its acceptance criteria to replace the lenient uninspected approval with an evidence-backed verification outcome.",
+        "R3: Retroactively inspect the actual git diffs for PR #416 and PR #417 to verify acceptance criteria, security checks, and absence of committed build artifacts.",
+        "R4: Retroactively inspect the actual git diffs for PR #407 and PR #408 to verify SQLite tables, deduplication constraints, PDF parser extraction, and test coverage.",
+        "R5: Enforce the Knowledge-First Gate across PRs #413, #418, #420, #421 and BARCAN-TAG-00/BARCAN-TAG-07 review rules so any review missing diff evidence must withhold approval (reject or block) until diff inspection, security verification, and acceptance checks are documented."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Audit uninspected PR diffs and codify Knowledge-First Gate refusal policy",
+          "roleTag": "BARCAN-TAG-00",
+          "jtbd": "When implementing diff-backed PR hygiene verification for this epic, I want every uninspected PR diff (#407, #408, #413, #415-#421) audited against its target files and the Knowledge-First diff-inspection refusal rule codified in a committed audit and gate specification file, so that false-green merge approvals are eliminated.",
+          "acceptanceCriteria": "Given PRs #407, #408, #413, #415, #416, #417, #418, #419, #420, and #421 had approval verdicts recorded without diff inspection, When the merge-hygiene audit inspects each PR's actual git diff and target files and writes docs/architecture/pr-diff-verification-audit.md, Then every PR has an explicit evidence-backed pass/fail table covering schema/seed idempotency, security checks, build artifact hygiene, and acceptance criteria.\nGiven a review context where target diffs or changed files are absent or truncated, When the Knowledge-First Gate protocol in docs/architecture/pr-diff-verification-audit.md is evaluated, Then it mandates a binary reject or block verdict and prohibits emitting approve with unverified concerns.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Reconstructing missing diff context across ten historical PRs",
+          "sixSigmaMetric": "100% of audited PRs mapped to concrete commit/diff evidence or explicit block status",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5"]
+        },
+        {
+          "title": "Automated QA verification of PR diff-gate rules and audited target modules",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When implementing QA verification for this epic, I want automated unit and integration tests validating that missing-diff review payloads are rejected and that the audited behaviors of PRs #407-#421 pass repository test assertions, so that Knowledge-First Gate compliance is continuously enforced.",
+          "acceptanceCriteria": "Given a review payload missing diff content or carrying unresolved high/medium uninspected-file concerns, When the gate-validation unit tests in tests/test_pr_review_gate.py run, Then the validator asserts approval is withheld (reject/block) and never returns approve.\nGiven the audited PR target behaviors present in the repository (normative knowledge, persistent memory/SQLite schemas, deduplication, and build-artifact cleanliness), When the integration test suite runs via pytest, Then all verified assertions pass without skipped or relaxed checks and results are recorded in the committed test file.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Lack of automated regression checks for review-gate refusal criteria",
+          "sixSigmaMetric": "100% pass rate on Knowledge-First Gate refusal and target integration tests",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": "87d85378-01b9-44cf-a0b4-76d81047eb95",
+      "title": "Personal AI Regulatory Assistant & GOST Order Generator",
+      "jtbd": "When an educational administrator, instructor, or resident needs regulatory guidance or administrative drafts, I want an AI assistant grounded in institutional knowledge and a one-click GOST R 7.0.97-2016 .docx order generator, so that official administrative tasks are executed accurately in seconds.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "100% of generated DOCX paragraphs conforming to GOST R 7.0.97-2016 14pt Times New Roman typography",
+      "tocConstraintRef": "Hardcoded 12pt/13pt/9pt/10pt font sizes in compile_session_to_docx",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Update compile_session_to_docx in crie_document_engine.py so body paragraphs, requisites, preamble, actions, signatures, headers, and approval/visa blocks use Times New Roman 14pt (Pt(14)) in accordance with GOST R 7.0.97-2016 instead of hardcoded Pt(12), Pt(13), Pt(9), and Pt(10).",
+        "R2: Align generated DOCX font configuration with the 'gost_font': 'Times New Roman 14pt' specification declared in data/templates/template_registry.json and verify rendered DOCX run/style font sizes via automated tests."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Enforce Times New Roman 14pt GOST R 7.0.97-2016 font in compile_session_to_docx",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing GOST typography compliance for this epic, I want compile_session_to_docx in crie_document_engine.py patched to emit Times New Roman 14pt across all order sections with automated unit and DOCX-inspection integration tests, so that generated orders match template_registry.json and GOST R 7.0.97-2016.",
+          "acceptanceCriteria": "Given a document session compiled via compile_session_to_docx in crie_document_engine.py, When the resulting .docx file is inspected with python-docx, Then body paragraphs, requisites, preamble, actions, signatures, command headers, and approval/visa runs all specify Times New Roman 14pt (Pt(14)) matching data/templates/template_registry.json.\nGiven the patched DOCX compiler, When unit and integration tests in tests/test_document_gost_formatting.py execute end-to-end session compilation, Then every generated run and paragraph style passes the 14pt Times New Roman assertion without relying on hardcoded 12pt/13pt/9pt/10pt sizes.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Multiple hardcoded Pt() constants scattered across compile_session_to_docx sections",
+          "sixSigmaMetric": "0 DOCX runs deviating from Times New Roman 14pt in compile_session_to_docx output",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": "9ff49e2e-08bd-435d-abbf-b39f52dac707",
+      "title": "GOST Admission Order Template Study-Form & Funding-Source Clauses",
+      "jtbd": "When an educational administrator generates a residency or postgraduate admission order from GOST templates, I want the operative clause to automatically include exact regulatory wording for full-time study form and federal-budget vs. paid-contract funding from admission_records, so that generated orders are legally complete without manual editing.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "100% of TPL-01 admission order parameter schemas declaring both study-form and funding-source tokens",
+      "tocConstraintRef": "Missing study-form token in TPL-01 required_tokens in template_registry.json",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Add the study-form parameter token (e.g., STUDY_FORM) alongside BUDGET_TYPE in TPL-01 ('Residency Admission Order') required_tokens within data/templates/template_registry.json.",
+        "R2: Ensure template token validation and rendering in crie_template_manager.py and crie_document_engine.py populate and preserve both study form and financing source for TPL-01, verified by automated unit and integration tests."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Add study-form token to TPL-01 required_tokens and verify admission order rendering",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing TPL-01 admission order completeness for this epic, I want data/templates/template_registry.json patched to include the study-form token in TPL-01 required_tokens alongside BUDGET_TYPE and verified through template rendering tests, so that residency admission orders always capture both form of study and funding source.",
+          "acceptanceCriteria": "Given data/templates/template_registry.json defines template TPL-01, When its required_tokens array is inspected after patching, Then it includes both the study-form token and BUDGET_TYPE alongside ORD_ID, FULL_NAME, SPECIALTY_CODE, SPECIALTY_NAME, ORDER_NUMBER, and DATE.\nGiven a TPL-01 residency admission order session instantiated via crie_template_manager.py and compiled to DOCX, When automated unit and integration tests execute in pytest, Then both study form and financing source parameters are accepted, substituted into the operative clause without unresolved placeholders, and verified in the output document.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "TPL-01 token list discrepancy between template_registry.json and admission order generator",
+          "sixSigmaMetric": "100% required_tokens parity for TPL-01 study-form and funding-source parameters",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        }
+      ]
+    }
+  ]
+}
