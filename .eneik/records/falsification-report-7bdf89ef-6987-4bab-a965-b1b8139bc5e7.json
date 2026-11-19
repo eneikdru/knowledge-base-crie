@@ -1,0 +1,28 @@
+{
+  "violations": [
+    {
+      "roleTag": "BARCAN-TAG-00",
+      "type": "methodological",
+      "prNumber": 418,
+      "philosopher": "Майкл Дамит",
+      "thesis": "Verificationist code review in BARCAN-TAG-00 requires an APPROVE verdict to rest on verifiable rule compliance ('верифицируемого соответствия правилам') rather than unverified assumption.",
+      "score": "1",
+      "mustBe": "Review verdicts in .eneik/records/review-verdict-*.json (PRs #413, #418, #420, #421) must only emit 'approve' after inspecting the PR diff and verifying acceptance criteria and security checks.",
+      "performance": "PR #413 (.eneik/records/review-verdict-ba1cecbd-a7ed-40e2-9fb2-803b7a491720.json, PRs #407 and #408), PR #418 (.eneik/records/review-verdict-56306457-2d01-452b-9e7f-768e52342410.json, PRs #416 and #417), PR #420 (.eneik/records/review-verdict-da27aa1e-febf-4337-8f73-ab4074c23444.json, PR #415), and PR #421 (.eneik/records/review-verdict-86c720e0-7abd-4295-9424-419348e1d85d.json, PR #419) all emitted 'verdict': 'approve' while explicitly stating that the PR diffs were missing and could not be inspected.",
+      "attractive": "Unblocks merge flow when review prompts omit PR diffs.",
+      "reason": "Merged review PRs #413, #418, #420, and #421 recorded 'verdict': 'approve' for six PRs (#407, #408, #415, #416, #417, #419) without inspecting any diff or target file, creating false-green approval records."
+    },
+    {
+      "roleTag": "BARCAN-TAG-07",
+      "type": "methodological",
+      "prNumber": 418,
+      "philosopher": "Элвин Голдман",
+      "thesis": "Reliabilism (ELVIN_GOLDMAN_02_KNOWLEDGE_FIRST_GATE) prohibits authorizing risky security or data-lifecycle changes without knowledge-grade evidence from a reliable check.",
+      "score": "1",
+      "mustBe": "PR #418 reviewing PR #416 (SQLite backup/restore and data-subject export/erasure) and PR #417 (GQM telemetry) must not emit 'approve' when security issues, committed build artifacts, and acceptance criteria remain unverified.",
+      "performance": "In PR #418 (.eneik/records/review-verdict-56306457-2d01-452b-9e7f-768e52342410.json), both sourceIndex 0 (PR #417) and sourceIndex 1 (PR #416) were marked 'verdict': 'approve' despite severity='high' concerns stating the diffs could not be inspected for security issues, committed build artifacts, or acceptance criteria.",
+      "attractive": "Allows automated review step to complete immediately without diff access.",
+      "reason": "PR #418 authorized 'approve' on security-sensitive PRs (#416 and #417) while logging severity='high' unverified security and acceptance-criteria gaps."
+    }
+  ]
+}
