@@ -398,6 +398,8 @@
     --success-accent: #34d399;
     --danger: #f87171;
     --danger-surface: #450a0a;
+    --focus-ring: #38bdf8;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   }
 
   :global(html) {
@@ -414,8 +416,9 @@
     padding: 0;
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
   }
 
@@ -442,6 +445,7 @@
     position: sticky;
     top: 0;
     z-index: 40;
+    backdrop-filter: blur(8px);
   }
 
   .top-bar-inner {
@@ -467,7 +471,7 @@
   }
 
   .institute-badge {
-    font-size: 0.75rem;
+    font-size: clamp(0.7rem, 0.9vw, 0.75rem);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--accent-primary);
@@ -485,11 +489,12 @@
   }
 
   .app-title {
-    font-size: 1.15rem;
+    font-size: clamp(1.05rem, 1.8vw, 1.25rem);
     font-weight: 700;
     margin: 0;
     color: var(--text-primary);
     letter-spacing: -0.01em;
+    line-height: 1.25;
   }
 
   /* Desktop Navigation */
@@ -516,14 +521,15 @@
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    min-height: 40px;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, outline 0.15s ease;
   }
 
   .desktop-nav-link:hover,
   .desktop-nav-link:focus-visible {
     background: var(--surface);
     color: var(--text-primary);
-    outline: 2px solid var(--accent-primary);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
 
@@ -565,16 +571,18 @@
 
   .hero-text h2 {
     margin: 0 0 0.35rem;
-    font-size: 1.625rem;
+    font-size: clamp(1.4rem, 2.5vw + 0.5rem, 1.85rem);
     font-weight: 700;
     color: var(--text-primary);
+    line-height: 1.2;
+    letter-spacing: -0.015em;
   }
 
   .subtitle {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 0.9375rem;
-    line-height: 1.4;
+    font-size: clamp(0.875rem, 1.1vw, 1rem);
+    line-height: 1.45;
   }
 
   .telemetry-cards {
@@ -592,10 +600,15 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    transition: border-color 0.15s ease;
+  }
+
+  .telemetry-card:hover {
+    border-color: var(--border-strong);
   }
 
   .telemetry-label {
-    font-size: 0.75rem;
+    font-size: clamp(0.7rem, 0.9vw, 0.75rem);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -603,7 +616,7 @@
   }
 
   .telemetry-value {
-    font-size: 1.25rem;
+    font-size: clamp(1.15rem, 1.8vw, 1.45rem);
     font-weight: 800;
     color: var(--text-primary);
     line-height: 1.2;
@@ -646,12 +659,14 @@
     border: 1px solid var(--border-strong);
     border-radius: 0.375rem;
     padding: 0 0.85rem;
-    transition: border-color 0.2s;
+    min-height: 44px;
+    transition: border-color 0.2s, box-shadow 0.2s;
     min-width: 0;
   }
 
   .search-input-wrapper:focus-within {
-    outline: 2px solid var(--accent-primary);
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 1px;
     border-color: var(--accent-primary);
   }
 
@@ -667,7 +682,7 @@
     padding: 0.75rem 0;
     border: none;
     outline: none;
-    font-size: 0.95rem;
+    font-size: clamp(0.875rem, 1.1vw, 0.95rem);
     color: var(--text-primary);
     background: transparent;
     min-width: 0;
@@ -690,7 +705,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.2s;
+    min-height: 44px;
+    transition: background-color 0.15s ease, transform 0.1s ease;
     flex-shrink: 0;
   }
 
@@ -699,9 +715,15 @@
     background-color: var(--accent-hover);
   }
 
+  .btn-search:active:not(:disabled),
+  .btn-retry:active:not(:disabled) {
+    background-color: var(--accent-active);
+    transform: scale(0.99);
+  }
+
   .btn-search:focus-visible,
   .btn-retry:focus-visible {
-    outline: 2px solid var(--accent-primary);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
 
@@ -758,9 +780,11 @@
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease-in-out;
+    min-height: 36px;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
     display: inline-flex;
     align-items: center;
+    user-select: none;
   }
 
   .chip:hover {
@@ -769,9 +793,13 @@
     border-color: var(--border-strong);
   }
 
+  .chip:active {
+    transform: scale(0.97);
+  }
+
   .chip:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 1px;
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
 
   .chip-active {
@@ -886,7 +914,7 @@
   .document-card:hover {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
     border-color: var(--border-strong);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
   }
 
   .card-header-meta {
@@ -917,8 +945,8 @@
 
   .doc-title {
     margin: 0 0 0.5rem;
-    font-size: 1.05rem;
-    line-height: 1.4;
+    font-size: clamp(1rem, 1.3vw, 1.15rem);
+    line-height: 1.35;
     font-weight: 700;
     color: var(--text-primary);
   }
@@ -931,7 +959,7 @@
 
   .doc-annotation {
     margin: 0.25rem 0 1.25rem;
-    font-size: 0.875rem;
+    font-size: clamp(0.8125rem, 1vw, 0.875rem);
     color: var(--text-secondary);
     flex: 1;
     line-height: 1.5;
@@ -959,7 +987,12 @@
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+    min-height: 40px;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  }
+
+  .btn-download:active {
+    transform: scale(0.98);
   }
 
   .btn-download-docx {
@@ -985,7 +1018,7 @@
   }
 
   .btn-download:focus-visible {
-    outline: 2px solid var(--accent-primary);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
 
@@ -1031,7 +1064,7 @@
   }
 
   .bottom-nav-item:focus-visible {
-    outline: 2px solid var(--accent-primary);
+    outline: 2px solid var(--focus-ring);
     outline-offset: -2px;
   }
 
