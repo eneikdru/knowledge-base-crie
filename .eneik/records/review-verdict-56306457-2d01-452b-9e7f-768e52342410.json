@@ -1,0 +1,26 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "PR #417 diff was not included in the prompt context and tool calls are prohibited by the execution contract, so the diff could not be inspected for GQM telemetry acceptance criteria, security issues, or committed build artifacts.",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "sourceIndex": 1,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "PR #416 diff was not included in the prompt context and tool calls are prohibited by the execution contract, so the diff could not be inspected for SQLite backup/restore and data-subject export/erasure acceptance criteria, security issues, or committed build artifacts.",
+          "severity": "high"
+        }
+      ]
+    }
+  ]
+}
