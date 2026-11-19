@@ -1,0 +1,15 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "PR #440 diff was not included in the review context and could not be read under the zero-tool-call contract; unable to directly verify compile_session_to_docx Times New Roman 14pt formatting, data/templates/template_registry.json TPL-01 study-form token, or absence of generated artifacts.",
+          "severity": "medium"
+        }
+      ]
+    }
+  ]
+}
