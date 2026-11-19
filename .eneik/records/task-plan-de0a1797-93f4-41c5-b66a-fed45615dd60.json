@@ -1,0 +1,36 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "87d85378-01b9-44cf-a0b4-76d81047eb95",
+      "title": "Personal AI Regulatory Assistant & GOST Order Generator",
+      "jtbd": "When an educational administrator, instructor, or resident needs regulatory guidance or administrative drafts, I want an AI assistant grounded in institutional knowledge and a one-click GOST R 7.0.97-2016 .docx order generator, so that official administrative tasks are executed accurately in seconds.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "100% of generated GOST R 7.0.97-2016 .docx documents conform to Times New Roman 14pt and include all required admission template parameters",
+      "tocConstraintRef": "Hardcoded non-14pt font sizes in compile_session_to_docx and missing study-form parameter in TPL-01",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Standardize compile_session_to_docx in crie_document_engine.py so every run across requisites, title, doc_type, preamble, command headers, actions, table cells in t_elem, signatures, visas, and approval mark explicitly sets font.name to Times New Roman and font.size to Pt(14), matching gost_font in data/templates/template_registry.json.",
+        "R2: Add a study-form parameter token alongside BUDGET_TYPE in required_tokens for template TPL-01 in data/templates/template_registry.json so residency admission orders capture both study form and financing source."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Enforce Times New Roman 14pt in compile_session_to_docx and add study-form token to TPL-01",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing GOST formatting and template token fixes for this epic, I want compile_session_to_docx and TPL-01 in template_registry.json patched with automated tests, so that generated .docx orders uniformly use Times New Roman 14pt and require both study-form and financing-source parameters.",
+          "acceptanceCriteria": "Given a document session rendered by compile_session_to_docx in crie_document_engine.py containing requisites, title, doc_type, preamble, command headers, actions, t_elem table cells, signatures, visas, and approval mark, When the .docx output is generated and inspected, Then every paragraph run and table cell run has font.name equal to 'Times New Roman' and font.size equal to Pt(14).\nGiven template TPL-01 in data/templates/template_registry.json, When the template registry is loaded, Then required_tokens includes the study-form parameter alongside ORD_ID, FULL_NAME, SPECIALTY_CODE, SPECIALTY_NAME, BUDGET_TYPE, ORDER_NUMBER, and DATE.\nGiven automated unit and integration tests exercising compile_session_to_docx and template_registry.json loading, When the test suite runs after the patch, Then all font assertions (including table cell runs) and TPL-01 token assertions pass without regressions.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Hardcoded Pt(9)-Pt(16) literals in crie_document_engine.py and incomplete required_tokens list in template_registry.json",
+          "sixSigmaMetric": "0 non-Times-New-Roman or non-14pt runs in compiled .docx files and 100% required_tokens coverage on TPL-01",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        }
+      ]
+    }
+  ]
+}
