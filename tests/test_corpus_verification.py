@@ -78,3 +78,24 @@ def test_normative_search_retrieves_syllabi_and_reviews(
 
     assert len(syllabi_matches) >= 1, f"Expected accredited syllabi for '{search_query}', found 0"
     assert len(reviews_matches) >= 1, f"Expected accredited reviews for '{search_query}', found 0"
+
+
+def test_corpus_catalog_rup_entries_metadata(corpus_catalog):
+    """
+    Verify any RUP entries in the seeded corpus catalog have valid
+    file_name, relative_path, and positive size_bytes.
+    """
+    rup_files = [
+        file_entry
+        for cat in corpus_catalog.get("categories", [])
+        for file_entry in cat.get("files", [])
+        if "руп" in file_entry.get("file_name", "").lower()
+        or "руп" in file_entry.get("relative_path", "").lower()
+    ]
+
+    for entry in rup_files:
+        assert entry.get("file_name"), "RUP catalog entry must define file_name"
+        assert entry.get("relative_path"), "RUP catalog entry must define relative_path"
+        assert entry.get("size_bytes", 0) > 0, (
+            f"RUP file {entry.get('file_name')} must have positive size_bytes"
+        )

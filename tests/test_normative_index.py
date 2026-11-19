@@ -130,3 +130,23 @@ def test_facet_combinations_exhaustive(index):
     res_empty = index.search(query="несуществующийтерминxyz999", code="31.08.19")
     assert res_empty["total_hits"] == 0
     assert len(res_empty["results"]) == 0
+
+
+def test_rup_tokenization_and_specialty_search(index):
+    """Verify RUP tokens and specialty code filters work together in NormativeInvertedIndex."""
+    for code in ("31.08.19", "31.08.35"):
+        tokens = tokenize_text(f"РУП {code}")
+        assert "руп" in tokens
+        compact = code.replace(".", "")
+        assert any(compact in t or code in t for t in tokens)
+
+    res_rup = index.search("РУП", limit=20)
+    assert res_rup["elapsed_ms"] < 10.0
+    assert res_rup["total_hits"] > 0
+    assert len(res_rup["results"]) > 0
+    assert "snippet" in res_rup["results"][0]
+
+    res_rup_code = index.search("РУП", code="31.08.19", limit=20)
+    assert res_rup_code["elapsed_ms"] < 10.0
+    for item in res_rup_code["results"]:
+        assert item["code"] == "31.08.19" or "310819" in item["relative_path"]
