@@ -1,23 +1,61 @@
 <script>
   import { onMount } from 'svelte';
 
-  // Active tab state: 'assistant' | 'orders' | 'workload'
+  // Active tab state: 'assistant' | 'orders' | 'catalog' | 'workload'
   export let activeTab = 'assistant';
+
+  const CHAT_STORAGE_KEY = 'crie_chat_session_messages';
 
   // Chat State
   let chatQuery = '';
   let isSubmitting = false;
   let chatError = null;
   let copySuccessId = null;
-  let messages = [
+
+  const initialMessages = [
     {
       id: 'm-1',
       sender: 'assistant',
       text: 'Здравствуйте! Я ИИ-помощник Образовательного центра ФБУН ЦНИИ Эпидемиологии. Готов проконсультировать по стандартам ФГОС ВО, структуре учебного года, СанПиН, требованиям ВАК или подготовить проект приказа.',
-      citations: ['ФГОС ВО 31.08.36', 'Регламент ГИА 2026'],
+      citations: ['ФГОС ВО 32.08.12', 'Регламент ГИА 2026'],
       timestamp: '09:00'
     }
   ];
+
+  let messages = [...initialMessages];
+
+  // Session persistence via localStorage and sessionStorage
+  onMount(() => {
+    try {
+      const stored = localStorage.getItem(CHAT_STORAGE_KEY) || sessionStorage.getItem(CHAT_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          messages = parsed;
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to restore chat session from storage', err);
+    }
+  });
+
+  function persistChat(updatedMessages) {
+    try {
+      const payload = JSON.stringify(updatedMessages);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(CHAT_STORAGE_KEY, payload);
+      }
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem(CHAT_STORAGE_KEY, payload);
+      }
+    } catch (err) {
+      console.warn('Failed to persist chat session to storage', err);
+    }
+  }
+
+  $: if (messages && messages.length > 0) {
+    persistChat(messages);
+  }
 
   // Document Generator State
   // Document classes according to GOST R 7.0.97-2016 and Brief item 3:
@@ -46,7 +84,7 @@
   ];
   let orderSubtype = 'admission';
   let recipientName = 'Иванов Иван Иванович';
-  let specialtyCode = '31.08.36';
+  let specialtyCode = '32.08.12';
 
   // UMS Protocol fields
   let umsProtocolNum = '04/2026';
@@ -128,8 +166,9 @@
   $: deficitHours = isUnderload ? DEPT_FLOOR - totalHours : 0;
   $: gaugePercent = Math.min(100, Math.round((totalHours / DEPT_CEILING) * 100));
 
+  // Normative residency specialty facets
   const specialties = [
-    { code: '31.08.36', name: 'Эпидемиология' },
+    { code: '32.08.12', name: 'Эпидемиология' },
     { code: '31.08.35', name: 'Инфекционные болезни' },
     { code: '31.08.19', name: 'Педиатрия' }
   ];
@@ -241,13 +280,17 @@
 
     try {
       docGenerationProgress = 50;
+      const specLabel = specialtyCode === '32.08.12'
+        ? '32.08.12 «Эпидемиология»'
+        : (specialtyCode === '31.08.35' ? '31.08.35 «Инфекционные болезни»' : '31.08.19 «Педиатрия»');
+
       const resp = await fetch('/api/documents/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           doc_type: selectedDocCategory,
           subtype: orderSubtype,
-          specialty: specialtyCode === '32.08.12' ? '32.08.12 «Эпидемиология»' : (specialtyCode === '31.08.35' ? '31.08.35 «Инфекционные болезни»' : '32.08.12 «Эпидемиология»'),
+          specialty: specLabel,
           students: recipientName || 'Иванов И.И., Петров П.П.',
           number: docNumber || '26-ОД/01',
           date: docDate,
@@ -267,7 +310,6 @@
       generationSuccess = true;
       generatedDocFilename = docData.file_name;
 
-      // Автоматический старт скачивания подлинного Word-файла
       const a = document.createElement('a');
       a.href = docData.download_url;
       a.download = docData.file_name;
@@ -391,18 +433,18 @@
     </section>
   {/if}
 
-  <!-- Official Document Generator View (Slice 547b86fb) -->
-  {#if activeTab === 'orders'}
+  <!-- Official Document Registry / Catalog View -->
+  {#if activeTab === 'orders' || activeTab === 'catalog'}
     <section
       id="tabpanel-orders"
       role="tabpanel"
       aria-labelledby="tab-btn-orders"
       class="orders-section"
-      aria-label="Генератор официальных документов"
+      aria-label="Генератор и реестр официальных документов"
     >
       <div class="order-card">
         <div class="generator-header">
-          <h2 class="card-title">Генератор официальных документов ОЦ по ГОСТ Р 7.0.97-2016</h2>
+          <h2 class="card-title">Реестр и генератор официальных документов ОЦ по ГОСТ Р 7.0.97-2016</h2>
           <p class="card-desc">
             Прямой экспорт и скачивание стандартизированных .DOCX файлов в один клик: протоколы УМС, приказы директора института, экзаменационные сессии, учебные планы, кадровые справки и локальные акты.
           </p>
@@ -510,7 +552,7 @@
                   </select>
                 </div>
                 <div class="form-group col">
-                  <label for="order-spec" class="field-label">Специальность / Профиль</label>
+                  <label for="order-spec" class="field-label">Специальность / Профиль ординатуры</label>
                   <select id="order-spec" bind:value={specialtyCode} class="form-control">
                     {#each specialties as spec}
                       <option value={spec.code}>{spec.code} {spec.name}</option>
@@ -870,6 +912,43 @@
       </div>
     </section>
   {/if}
+
+  <!-- Mobile Bottom Navigation (Pinned at mobile viewport) -->
+  <nav class="mobile-bottom-nav" aria-label="Мобильная навигация">
+    <button
+      type="button"
+      class="mobile-nav-btn {activeTab === 'orders' || activeTab === 'catalog' ? 'active' : ''}"
+      on:click={() => activeTab = 'orders'}
+      id="tab-btn-catalog"
+      aria-controls="tabpanel-orders"
+      aria-label="Catalog"
+    >
+      <span class="mobile-nav-icon" aria-hidden="true">📚</span>
+      <span class="mobile-nav-label">Catalog</span>
+    </button>
+    <button
+      type="button"
+      class="mobile-nav-btn {activeTab === 'assistant' ? 'active' : ''}"
+      on:click={() => activeTab = 'assistant'}
+      id="tab-btn-assistant"
+      aria-controls="tabpanel-assistant"
+      aria-label="Assistant"
+    >
+      <span class="mobile-nav-icon" aria-hidden="true">💬</span>
+      <span class="mobile-nav-label">Assistant</span>
+    </button>
+    <button
+      type="button"
+      class="mobile-nav-btn {activeTab === 'workload' ? 'active' : ''}"
+      on:click={() => activeTab = 'workload'}
+      id="tab-btn-workload"
+      aria-controls="tabpanel-workload"
+      aria-label="Workload"
+    >
+      <span class="mobile-nav-icon" aria-hidden="true">📊</span>
+      <span class="mobile-nav-label">Workload</span>
+    </button>
+  </nav>
 </div>
 
 <style>
@@ -1573,6 +1652,62 @@
     }
     .col-span-full {
       grid-column: 1 / -1;
+    }
+  }
+
+  /* Mobile Bottom Navigation (Pinned for mobile viewports) */
+  .mobile-bottom-nav {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    .cnie-container {
+      padding-bottom: 74px;
+    }
+
+    .mobile-bottom-nav {
+      display: flex;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: #ffffff;
+      border-top: 1px solid #cbd5e1;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 1000;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+      padding: 0 0.5rem;
+    }
+
+    .mobile-nav-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: #64748b;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.375rem;
+      transition: all 0.2s ease;
+      min-width: 64px;
+    }
+
+    .mobile-nav-btn .mobile-nav-icon {
+      font-size: 1.25rem;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+
+    .mobile-nav-btn.active {
+      color: #0369a1;
+      font-weight: 700;
+      background: #e0f2fe;
     }
   }
 </style>
