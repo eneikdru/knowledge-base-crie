@@ -32,7 +32,7 @@ public class TelemetryMetricsServiceTest {
         // Successful queries: 4 -> success ratio = 4/5 = 0.8
         assertEquals(0.8, summary.getSuccessRatio(), 0.001);
 
-        // Zero-result queries among successful: 2 out of 4 (or 2 out of 5 total queries depending on definition; here 2/5 = 0.4)
+        // Zero-result successful queries: 2 out of 5 total queries = 0.4
         assertEquals(0.4, summary.getZeroResultRate(), 0.001);
 
         // Latencies sorted: 100, 200, 300, 400, 500 -> median is 300
@@ -43,7 +43,7 @@ public class TelemetryMetricsServiceTest {
     }
 
     @Test
-    @DisplayName("Empty event stream returns safe zero/default telemetry metrics")
+    @DisplayName("Empty and null event streams return safe zero/default telemetry metrics")
     public void testEmptyEventsSummary() {
         TelemetryMetricsService service = new TelemetryMetricsService();
         TelemetrySummary summary = service.calculateSummary(Collections.emptyList());
@@ -52,6 +52,29 @@ public class TelemetryMetricsServiceTest {
         assertEquals(0.0, summary.getZeroResultRate(), 0.001);
         assertEquals(0.0, summary.getMedianLatencyMs(), 0.001);
         assertEquals(0.0, summary.getP95LatencyMs(), 0.001);
+        assertEquals(0L, summary.getTotalQueries());
+
+        TelemetrySummary nullSummary = service.calculateSummary(null);
+        assertEquals(0.0, nullSummary.getSuccessRatio(), 0.001);
+        assertEquals(0L, nullSummary.getTotalQueries());
+    }
+
+    @Test
+    @DisplayName("Even-count unsorted event stream computes exact median latency")
+    public void testEvenCountUnsortedMedianLatency() {
+        TelemetryMetricsService service = new TelemetryMetricsService();
+        List<TelemetryEvent> events = Arrays.asList(
+                new TelemetryEvent(400, true, 2),
+                new TelemetryEvent(100, true, 1),
+                new TelemetryEvent(300, false, 0),
+                new TelemetryEvent(200, true, 0)
+        );
+
+        TelemetrySummary summary = service.calculateSummary(events);
+        assertEquals(0.75, summary.getSuccessRatio(), 0.001);
+        assertEquals(0.25, summary.getZeroResultRate(), 0.001);
+        assertEquals(250.0, summary.getMedianLatencyMs(), 0.001);
+        assertEquals(400.0, summary.getP95LatencyMs(), 0.001);
     }
 
     @Test

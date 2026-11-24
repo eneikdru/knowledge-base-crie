@@ -13,44 +13,67 @@ public class TelemetryMetricsService {
             return new TelemetrySummary(0.0, 0.0, 0.0, 0.0, 0);
         }
 
-        long total = events.size();
+        long total = 0;
         long successful = 0;
         long zeroResults = 0;
         List<Long> latencies = new ArrayList<>();
 
         for (TelemetryEvent event : events) {
+            if (event == null) {
+                continue;
+            }
+            total++;
             if (event.isSuccess()) {
                 successful++;
-            }
-            if (event.getResultCount() == 0) {
-                zeroResults++;
+                if (event.getResultCount() == 0) {
+                    zeroResults++;
+                }
             }
             latencies.add(event.getLatencyMs());
+        }
+
+        if (total == 0) {
+            return new TelemetrySummary(0.0, 0.0, 0.0, 0.0, 0);
         }
 
         Collections.sort(latencies);
 
         double successRatio = (double) successful / total;
         double zeroResultRate = (double) zeroResults / total;
-        double medianLatency = calculatePercentile(latencies, 50.0);
+        double medianLatency = calculateMedian(latencies);
         double p95Latency = calculatePercentile(latencies, 95.0);
 
         return new TelemetrySummary(successRatio, zeroResultRate, medianLatency, p95Latency, total);
     }
 
     public Map<String, Object> formatGqmKpiResponse(TelemetrySummary summary) {
+        TelemetrySummary safeSummary = summary != null
+                ? summary
+                : new TelemetrySummary(0.0, 0.0, 0.0, 0.0, 0);
+
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("status", "UP");
 
         Map<String, Object> kpi = new LinkedHashMap<>();
-        kpi.put("total_queries", summary.getTotalQueries());
-        kpi.put("success_ratio", summary.getSuccessRatio());
-        kpi.put("zero_result_rate", summary.getZeroResultRate());
-        kpi.put("median_latency_ms", summary.getMedianLatencyMs());
-        kpi.put("p95_latency_ms", summary.getP95LatencyMs());
+        kpi.put("total_queries", safeSummary.getTotalQueries());
+        kpi.put("success_ratio", safeSummary.getSuccessRatio());
+        kpi.put("zero_result_rate", safeSummary.getZeroResultRate());
+        kpi.put("median_latency_ms", safeSummary.getMedianLatencyMs());
+        kpi.put("p95_latency_ms", safeSummary.getP95LatencyMs());
 
         response.put("kpi", kpi);
         return response;
+    }
+
+    private double calculateMedian(List<Long> sortedValues) {
+        if (sortedValues.isEmpty()) {
+            return 0.0;
+        }
+        int size = sortedValues.size();
+        if (size % 2 == 1) {
+            return sortedValues.get(size / 2);
+        }
+        return (sortedValues.get(size / 2 - 1) + sortedValues.get(size / 2)) / 2.0;
     }
 
     private double calculatePercentile(List<Long> sortedValues, double percentile) {
