@@ -110,7 +110,12 @@ it is the referent every later artifact is checked against.
 
 18. [Java 21 / Spring Boot 3 Production Parity Gate] Целевой стек бэкенда — строго Java 21 / Spring Boot 3 (pom.xml, src/main/java/com/eneik/crie/). Фронтенд (src/main/resources/static/index.html) ведёт Aesthetic Master напрямую — НЕ перезаписывать UI макетами или Svelte. Чтобы автоматический CD-контур (crie-factory-sync) переключил боевой порт 8097 на Spring Boot 3 без потери функций для пользователя, реализовать в CrieApiController.java и сервисах (с сохранением в существующую SQLite БД data/agent_memory.sqlite и data/feedback/feedback.jsonl): 1) POST /api/documents/upload и /crie/api/documents/upload (multipart файл PDF/DOCX/TXT, извлечение текста, дедупликация и запись в таблицу uploaded_documents SQLite, возврат JSON {status, doc_id, filename, summary, extracted_chars}); 2) GET/POST /api/feedback и /crie/api/feedback (чтение и запись замечаний пользователя в data/feedback/feedback.jsonl); 3) GET /api/dialogues/history и /crie/api/dialogues/history (чтение последних диалогов из таблицы conversation_logs SQLite); 4) В POST /api/chat и /crie/api/chat сохранять каждый диалог (session_id, user_message, agent_answer) в conversation_logs SQLite и подмешивать в контекст DeepSeekService текст из uploaded_documents. Все 4 эндпоинта должны быть доступны без блокирующего 401 (как /crie/health и /crie/api/chat) и покрыты Maven-тестами.
 
+19. [Java 21 Spring Boot 3 Backend | Live Production Parity Gate] Implement the missing Java 21 / Spring Boot 3 REST endpoints in `src/main/java/com/eneik/crie/controller/CrieApiController.java` (with SQLite persistence in `data/agent_memory.sqlite` via `pom.xml` sqlite-jdbc and Maven JUnit integration tests in `src/test/java/com/eneik/crie/`) so `crie-factory-sync` Canary Parity Gate can promote the Factory JAR to live :8097:
+   - POST /crie/api/documents/upload (PDF/DOCX/TXT multipart upload & SQLite uploaded_documents persistence)
+   - GET /crie/api/dialogues/history (SQLite data/agent_memory.sqlite conversation_logs)
+   Strict rules: Do NOT touch Python files or `src/main/resources/static/index.html` (owned by Aesthetic Master). All user interactions happen in one chat window — do NOT add feedback buttons or modals.
+
 ---
 
-Entries: 18. Anything this product claims - a page
+Entries: 19. Anything this product claims - a page
 heading, a filter, a capability - must trace to one of them or to a declared route.
