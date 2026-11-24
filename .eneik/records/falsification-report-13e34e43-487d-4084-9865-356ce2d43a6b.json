@@ -1,0 +1,26 @@
+{
+  "violations": [
+    {
+      "roleTag": "BARCAN-TAG-00",
+      "type": "refusal_criteria",
+      "prNumber": 439,
+      "reason": "In .eneik/records/review-verdict-c454d225-8b7b-4977-97ba-3af85f559774.json (PR #439), the reviewer emitted \"verdict\": \"approve\" for PR #438 while explicitly stating in \"concerns\" that PR #438's diff and data/templates/template_registry.json were not included in the review context and compile_session_to_docx was absent from the provided crie_document_engine.py snippet. Under BARCAN-TAG-00 (CODE-GUARDIAN), APPROVE asserts that the PR meets all criteria, and under BARCAN-TAG-07 (ELVIN_GOLDMAN_02_KNOWLEDGE_FIRST_GATE), authorizing approval without knowledge-grade evidence is prohibited."
+    },
+    {
+      "roleTag": "BARCAN-TAG-00",
+      "type": "refusal_criteria",
+      "prNumber": 441,
+      "reason": "In .eneik/records/review-verdict-ac05560b-cb12-4c57-af78-9d220644295c.json (PR #441), the reviewer emitted \"verdict\": \"approve\" for PR #440 while explicitly stating in \"concerns\" that PR #440's diff was not included in the review context and could not be read, leaving compile_session_to_docx Times New Roman 14pt formatting, data/templates/template_registry.json TPL-01 study-form token, and absence of generated artifacts unverified. Approving without inspecting the diff violates BARCAN-TAG-00's binary review protocol and BARCAN-TAG-07's knowledge-first gate."
+    },
+    {
+      "roleTag": "BARCAN-TAG-07",
+      "type": "methodological",
+      "philosopher": "Элвин Голдман (Elvin Goldman) / Готлоб Фреге (Gottlob Frege, ACP-102)",
+      "thesis": "Systemic review-gate contradiction across PR #439 and PR #441: emitting an 'approve' verdict is treated as satisfying the 'reviewed/verified' criterion even when the review record itself declares that the target PR #438 and PR #440 diffs were missing from context (ACP-102 'Criterion Is Not The Concept' and ELVIN_GOLDMAN_02_KNOWLEDGE_FIRST_GATE). Consequently, the R1 and R2 specification fixes planned in PR #437 from PR #436 remain unverified in the available audit trail.",
+      "score": "14.000514",
+      "mustBe": "Fail closed when target PR diffs or referenced files are absent from review context; never emit 'approve' without directly inspecting the code changes against R1 and R2.",
+      "performance": "0 blind approvals; 100% of 'approve' verdicts cite verified diff hunks for compile_session_to_docx Pt(14) runs and TPL-01 required_tokens.",
+      "attractive": "Automated pre-review context completeness gate that blocks review verdict synthesis if the target PR diff is missing."
+    }
+  ]
+}
