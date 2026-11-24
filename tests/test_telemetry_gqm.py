@@ -1,6 +1,14 @@
+import json
 import math
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Sequence
 import pytest
+
+
+CONTINGENT_GQM_ALLOWED_METRICS = (
+    "contingent_db_grounded_query_rate",
+    "pdf_deduplication_count",
+    "slot11_db_lookup_ms",
+)
 
 
 def calculate_telemetry_aggregations(queries: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -81,6 +89,98 @@ def generate_gqm_kpi_summary(telemetry_data: Dict[str, Any], system_status: str 
             }
         }
     }
+
+
+def calculate_contingent_gqm_metrics(events: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Computes only the GQM-scoped contingent registry telemetry metrics:
+    - contingent_db_grounded_query_rate
+    - pdf_deduplication_count
+    - slot11_db_lookup_ms
+    """
+    contingent_queries = [e for e in events if e.get("is_contingent_query", False)]
+    dedup_total = sum(max(0, int(e.get("pdf_deduplication_count", 0))) for e in events)
+
+    if not contingent_queries:
+        return {
+            "contingent_db_grounded_query_rate": 0.0,
+            "pdf_deduplication_count": dedup_total,
+            "slot11_db_lookup_ms": 0.0,
+        }
+
+    grounded_count = sum(1 for q in contingent_queries if q.get("db_grounded", False))
+    lookup_latencies = [max(0.0, float(q.get("slot11_db_lookup_ms", 0.0))) for q in contingent_queries]
+
+    return {
+        "contingent_db_grounded_query_rate": round(grounded_count / len(contingent_queries), 4),
+        "pdf_deduplication_count": dedup_total,
+        "slot11_db_lookup_ms": round(sum(lookup_latencies) / len(lookup_latencies), 2),
+    }
+
+
+def generate_contingent_gqm_payload(events: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Builds the GQM telemetry payload tied strictly to the stated contingent registry GQM questions.
+    """
+    metrics = calculate_contingent_gqm_metrics(events)
+    return {
+        "gqm_framework": {
+            "goal": (
+                "Ensure contingent registry queries are reliably grounded in persistent DB records "
+                "with deduplicated PDF ingestion and fast slot [11] lookup"
+            ),
+            "questions": [
+                {
+                    "id": "Q1",
+                    "question": "What proportion of contingent queries are grounded in persistent admission_records?",
+                    "metric": "contingent_db_grounded_query_rate",
+                },
+                {
+                    "id": "Q2",
+                    "question": "How many duplicate PDF files were deduplicated during ingestion?",
+                    "metric": "pdf_deduplication_count",
+                },
+                {
+                    "id": "Q3",
+                    "question": "What is the slot [11] persistent DB lookup latency in milliseconds?",
+                    "metric": "slot11_db_lookup_ms",
+                },
+            ],
+            "metrics": metrics,
+        }
+    }
+
+
+def record_contingent_gqm_telemetry_batch(
+    pdf_batch_keys: Sequence[str],
+    contingent_queries: Sequence[Dict[str, Any]],
+    slot11_lookup_latencies_ms: Sequence[float],
+) -> Dict[str, Any]:
+    """
+    Deterministic simulation helper for a PDF ingestion batch with duplicates followed by
+    zero-attachment contingent queries using injected slot [11] DB lookup timings.
+    """
+    if len(contingent_queries) != len(slot11_lookup_latencies_ms):
+        raise ValueError("slot11_lookup_latencies_ms must match contingent_queries length")
+
+    seen_keys = set()
+    duplicate_count = 0
+    for key in pdf_batch_keys:
+        if key in seen_keys:
+            duplicate_count += 1
+        else:
+            seen_keys.add(key)
+
+    events: List[Dict[str, Any]] = [{"pdf_deduplication_count": duplicate_count}]
+    for query, lookup_ms in zip(contingent_queries, slot11_lookup_latencies_ms):
+        events.append({
+            "is_contingent_query": True,
+            "has_attachments": bool(query.get("has_attachments", False)),
+            "db_grounded": bool(query.get("db_grounded", False)),
+            "slot11_db_lookup_ms": float(lookup_ms),
+        })
+
+    return generate_contingent_gqm_payload(events)
 
 
 def test_telemetry_aggregations_median_and_zero_result_rate():
@@ -183,3 +283,101 @@ def test_gqm_kpi_summary_json_formatting():
     assert sla["latency_sla_met"] is True
     assert sla["success_sla_met"] is True
     assert sla["zero_result_acceptable"] is True
+
+
+def test_contingent_gqm_pdf_dedup_and_zero_attachment_query():
+    """
+    Given a PDF ingestion batch with duplicates and a subsequent zero-attachment contingent query,
+    When contingent GQM telemetry is recorded,
+    Then pdf_deduplication_count, slot11_db_lookup_ms, and contingent_db_grounded_query_rate reflect exact inputs.
+    """
+    pdf_batch_keys = [
+        "Svedeniya_o_zachislenii_ordinatura_2026",
+        "Svedeniya_o_zachislenii_ordinatura_2026",  # duplicate [1]
+        "Svedeniya_o_prieme_ordinatura_2026",
+        "Svedeniya_o_zachislenii_aspirantura_2026",
+        "Svedeniya_o_prieme_aspirantura_2026",
+        "Svedeniya_o_zachislenii_celevaya_2026",
+        "Svedeniya_o_zachislenii_dogovor_2026",
+        "Svedeniya_o_prieme_celevaya_2026",
+        "Svedeniya_o_prieme_dogovor_2026",
+        "Svedeniya_o_zachislenii_ordinatura_2026",  # duplicate [10]
+        "Svedeniya_o_prieme_ordinatura_2026",       # duplicate [11]
+    ]
+    queries = [
+        {"has_attachments": False, "db_grounded": True},
+    ]
+    payload = record_contingent_gqm_telemetry_batch(
+        pdf_batch_keys=pdf_batch_keys,
+        contingent_queries=queries,
+        slot11_lookup_latencies_ms=[12.4],
+    )
+
+    metrics = payload["gqm_framework"]["metrics"]
+    assert metrics["pdf_deduplication_count"] == 3
+    assert math.isclose(float(metrics["contingent_db_grounded_query_rate"]), 1.0, rel_tol=1e-6)
+    assert math.isclose(float(metrics["slot11_db_lookup_ms"]), 12.4, rel_tol=1e-6)
+
+
+def test_contingent_gqm_scope_has_no_vanity_counters():
+    """
+    Given the GQM scope constraint,
+    When inspecting emitted contingent telemetry payloads,
+    Then no unrequested vanity counters are recorded outside the stated GQM questions.
+    """
+    payload = generate_contingent_gqm_payload([
+        {"pdf_deduplication_count": 2},
+        {"is_contingent_query": True, "db_grounded": True, "slot11_db_lookup_ms": 8.5},
+    ])
+
+    gqm = payload["gqm_framework"]
+    question_metrics = {q["metric"] for q in gqm["questions"]}
+    emitted_metric_keys = set(gqm["metrics"].keys())
+
+    assert question_metrics == set(CONTINGENT_GQM_ALLOWED_METRICS)
+    assert emitted_metric_keys == set(CONTINGENT_GQM_ALLOWED_METRICS)
+
+
+def test_contingent_gqm_mixed_grounding_and_empty_events():
+    """
+    Given mixed grounded and ungrounded contingent queries or an empty event list,
+    When calculating contingent GQM metrics,
+    Then grounding rate and average slot [11] lookup latency compute safely without ZeroDivisionError.
+    """
+    empty_metrics = calculate_contingent_gqm_metrics([])
+    assert empty_metrics["pdf_deduplication_count"] == 0
+    assert math.isclose(float(empty_metrics["contingent_db_grounded_query_rate"]), 0.0, abs_tol=1e-9)
+    assert math.isclose(float(empty_metrics["slot11_db_lookup_ms"]), 0.0, abs_tol=1e-9)
+
+    mixed_metrics = calculate_contingent_gqm_metrics([
+        {"pdf_deduplication_count": 1},
+        {"is_contingent_query": True, "db_grounded": True, "slot11_db_lookup_ms": 10.0},
+        {"is_contingent_query": True, "db_grounded": False, "slot11_db_lookup_ms": 20.0},
+        {"is_contingent_query": True, "db_grounded": True, "slot11_db_lookup_ms": 15.0},
+    ])
+    assert mixed_metrics["pdf_deduplication_count"] == 1
+    assert mixed_metrics["contingent_db_grounded_query_rate"] == pytest.approx(0.6667, abs=1e-4)
+    assert mixed_metrics["slot11_db_lookup_ms"] == pytest.approx(15.0, abs=1e-4)
+
+
+def test_contingent_gqm_json_roundtrip_type_safe_comparison():
+    """
+    Given a serialized contingent GQM telemetry payload,
+    When parsed back from JSON,
+    Then numeric comparisons remain type-safe across the JSON serialization boundary.
+    """
+    payload = record_contingent_gqm_telemetry_batch(
+        pdf_batch_keys=["doc_a", "doc_a", "doc_b"],
+        contingent_queries=[
+            {"has_attachments": False, "db_grounded": True},
+            {"has_attachments": False, "db_grounded": True},
+        ],
+        slot11_lookup_latencies_ms=[7.25, 11.75],
+    )
+
+    decoded = json.loads(json.dumps(payload))
+    metrics = decoded["gqm_framework"]["metrics"]
+
+    assert int(metrics["pdf_deduplication_count"]) == 1
+    assert float(metrics["contingent_db_grounded_query_rate"]) == pytest.approx(1.0, abs=1e-6)
+    assert float(metrics["slot11_db_lookup_ms"]) == pytest.approx(9.5, abs=1e-6)
