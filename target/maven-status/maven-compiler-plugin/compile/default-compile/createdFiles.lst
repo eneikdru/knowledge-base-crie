@@ -1,6 +1,7 @@
 com/eneik/crie/controller/CrieApiController.class
 com/eneik/telemetry/services/security/InternalSecurityService.class
 com/eneik/crie/controller/WebViewController.class
+com/eneik/crie/models/persistence/InternalEntity.class
 com/eneik/telemetry/models/persistence/InternalEntity.class
 com/eneik/telemetry/TelemetrySummary.class
 com/eneik/telemetry/TelemetryEvent.class
