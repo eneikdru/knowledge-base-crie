@@ -1,0 +1,74 @@
+{
+  "templates": [
+    {
+      "id": "TPL-01",
+      "name": "Приказ о зачислении в ординатуру",
+      "format": "docx",
+      "authority": "ФБУН ЦНИИ Эпидемиологии Роспотребнадзора",
+      "required_tokens": [
+        "ORD_ID",
+        "FULL_NAME",
+        "SPECIALTY_CODE",
+        "SPECIALTY_NAME",
+        "BUDGET_TYPE",
+        "ORDER_NUMBER",
+        "DATE"
+      ],
+      "gost_font": "Times New Roman 14pt",
+      "line_spacing": 1.5
+    },
+    {
+      "id": "TPL-02",
+      "name": "Приказ о допуске к Государственной итоговой аттестации (ГИА)",
+      "format": "docx",
+      "authority": "ФБУН ЦНИИ Эпидемиологии Роспотребнадзора",
+      "required_tokens": [
+        "ORD_ID",
+        "FULL_NAME",
+        "SPECIALTY_NAME",
+        "GEK_SECRETARY",
+        "EXAM_DATE"
+      ],
+      "gost_font": "Times New Roman 14pt",
+      "line_spacing": 1.5
+    },
+    {
+      "id": "TPL-03",
+      "name": "Протокол заседания Государственной экзаменационной комиссии (ГЭК)",
+      "format": "docx",
+      "authority": "ФБУН ЦНИИ Эпидемиологии Роспотребнадзора",
+      "required_tokens": [
+        "PROTOCOL_NUM",
+        "DATE",
+        "CHAIRMAN_FAC_ID",
+        "MEMBER_FAC_IDS",
+        "ORD_ID",
+        "TICKET_NUM",
+        "GRADE",
+        "DECISION"
+      ],
+      "gost_font": "Times New Roman 14pt",
+      "line_spacing": 1.15
+    },
+    {
+      "id": "TPL-04",
+      "name": "Сводная ведомость распределения учебной нагрузки ППС",
+      "format": "xlsx",
+      "authority": "Учебный отдел ОЦ",
+      "required_tokens": [
+        "FAC_ID",
+        "FULL_NAME",
+        "DEGREE",
+        "SPECIALTY",
+        "LECTURE_HOURS",
+        "SEMINAR_HOURS",
+        "EXAM_HOURS",
+        "TOTAL_HOURS"
+      ],
+      "formulas": [
+        "=SUM(E{row}:G{row})",
+        "=AVERAGE(H2:H{last_row})"
+      ]
+    }
+  ]
+}
