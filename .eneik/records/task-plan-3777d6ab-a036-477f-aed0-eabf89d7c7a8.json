@@ -1,0 +1,36 @@
+{
+  "epics": [
+    {
+      "existingEpicId": null,
+      "title": "Restore Main Branch Maven CI by Repairing Telemetry and Internal Services",
+      "jtbd": "When repository maintainers and CI pipelines validate the Java backend on the main branch, I want TelemetryMetricsService, InternalService, and their test suites diagnosed, repaired, and verified in Docker Maven, so that continuous integration passes reliably and regressions are caught before merge.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "100% pass rate (0 failing or skipped tests) for TelemetryMetricsServiceTest and InternalServiceTest in Docker Maven CI",
+      "tocConstraintRef": "Failing Java backend test assertions and service defects in com.eneik.telemetry blocking main branch CI",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Build a targeted falsification harness and repair failing assertions and underlying defects in TelemetryMetricsService, InternalService, TelemetryMetricsServiceTest, and InternalServiceTest.",
+        "R2: Verify that the full Java Maven test suite passes cleanly inside Docker Maven to restore main branch CI to green while preserving existing data schemas, API contracts, and UI layers."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Repair TelemetryMetricsService, InternalService, and failing Maven tests",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing the falsification harness and service fixes for this epic, I want to isolate and repair the defects across TelemetryMetricsService, InternalService, TelemetryMetricsServiceTest, and InternalServiceTest and validate them in Docker Maven, so that main branch CI is restored to green without adding new layers.",
+          "acceptanceCriteria": "Given failing test cases in src/test/java/com/eneik/telemetry/TelemetryMetricsServiceTest.java and src/test/java/com/eneik/telemetry/services/InternalServiceTest.java, When a targeted falsification harness reproduces each failure and the corresponding assertions and service logic in TelemetryMetricsService and InternalService are fixed, Then all unit tests in both suites pass without skipped or relaxed assertions.\nGiven existing Spring Boot service collaborations and sanitization rules covered by InternalServiceSanitizationTest and TelemetryEvent/TelemetrySummary flows, When the patched services are exercised through the Maven integration and test lifecycle, Then all backend tests pass while preserving existing persistence models, API contracts, and security boundaries.\nGiven the repository pom.xml and Docker Maven runtime, When the full Maven test suite is executed inside Docker Maven, Then the build completes with zero test errors or failures and restores main branch CI to green.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Mismatch between service behavior and test expectations in com.eneik.telemetry under Maven test execution",
+          "sixSigmaMetric": "0 test failures and 0 errors across mvn test execution in Docker for com.eneik.telemetry",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        }
+      ]
+    }
+  ]
+}
