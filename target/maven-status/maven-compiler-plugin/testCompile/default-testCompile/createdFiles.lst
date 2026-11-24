@@ -1,0 +1,6 @@
+com/eneik/telemetry/TelemetryMetricsServiceTest$1.class
+com/eneik/telemetry/services/InternalServiceTest.class
+com/eneik/telemetry/TelemetryMetricsServiceTest.class
+com/eneik/telemetry/services/InternalServiceSanitizationTest.class
+com/eneik/telemetry/services/InternalServiceTest$NavigationResult.class
+com/eneik/telemetry/services/InternalServiceSanitizationTest$ResponseSanitizer.class
