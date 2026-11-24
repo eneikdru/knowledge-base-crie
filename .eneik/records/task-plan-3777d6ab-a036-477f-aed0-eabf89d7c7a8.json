@@ -1,0 +1,36 @@
+{
+  "epics": [
+    {
+      "existingEpicId": null,
+      "title": "Restore Main Branch CI for Telemetry and Internal Services",
+      "jtbd": "When engineering teams and automated release gates validate the main branch in CI, I want TelemetryMetricsServiceTest, InternalServiceTest, and their underlying services repaired and verified in Docker Maven, so that main branch builds return to green with reliable test coverage.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "100% green main branch CI pass rate with zero regression failures across Maven test suites",
+      "tocConstraintRef": "Main branch CI gate blocked by failing TelemetryMetricsServiceTest and InternalServiceTest suites",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Reproduce the main branch CI failures in TelemetryMetricsServiceTest and InternalServiceTest using a targeted falsification harness and repair the misaligned test assertions and underlying logic in TelemetryMetricsService and InternalService while preserving existing sanitization and security contracts.",
+        "R2: Verify the repaired services and test suites execute cleanly in Docker Maven (mvn test) covering both unit and service-level integration behavior so that main branch CI is restored to green."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Repair TelemetryMetricsService, InternalService, and Maven Test Suites",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing the falsification harness and service patches for this epic, I want TelemetryMetricsService, InternalService, TelemetryMetricsServiceTest, and InternalServiceTest aligned and verified in Docker Maven, so that the main branch CI pipeline passes cleanly.",
+          "acceptanceCriteria": "Given the failing TelemetryMetricsServiceTest and InternalServiceTest cases on main, When a targeted falsification harness isolates the assertion and service mismatches, Then the root defects in src/main/java/com/eneik/telemetry/TelemetryMetricsService.java, src/main/java/com/eneik/telemetry/services/InternalService.java, and their corresponding test classes are patched without weakening sanitization or security invariants.\nGiven the patched Java services and test assertions, When the Maven test suite runs inside Docker Maven across unit tests (TelemetryMetricsServiceTest, InternalServiceTest) and existing service-layer integration checks (including InternalServiceSanitizationTest), Then all tests pass with 0 failures and 0 errors (no UI/E2E layer applies to these backend Java services).\nGiven the verified local Docker Maven green run, When the changes are committed on the branch, Then the main branch CI workflow passes cleanly.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Assertion and behavioral drift between TelemetryMetricsService/InternalService and their JUnit test suites",
+          "sixSigmaMetric": "100% pass rate on TelemetryMetricsServiceTest, InternalServiceTest, and full Docker Maven test execution",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        }
+      ]
+    }
+  ]
+}
