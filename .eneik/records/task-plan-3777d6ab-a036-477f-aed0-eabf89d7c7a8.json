@@ -1,0 +1,36 @@
+{
+  "epics": [
+    {
+      "existingEpicId": null,
+      "title": "Main Branch Telemetry and Internal Service CI Repair",
+      "jtbd": "When maintaining the CRIE telemetry and internal backend services on the main branch, I want TelemetryMetricsService, InternalService, and their failing test suites repaired and verified in Docker Maven, so that CI builds return to green with reliable regression coverage.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "100% main branch Maven CI pass rate across TelemetryMetricsServiceTest, InternalServiceTest, and related service tests with zero failures or skipped assertions",
+      "tocConstraintRef": "Failing TelemetryMetricsServiceTest and InternalServiceTest blocking main branch Maven CI pipeline",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Construct a targeted falsification harness to reproduce failures in TelemetryMetricsServiceTest and InternalServiceTest and patch the underlying defects and test assertions in TelemetryMetricsService, InternalService, TelemetryMetricsServiceTest, and InternalServiceTest while preserving existing sanitization and security behavior.",
+        "R2: Verify the patched services and full Maven test suite execute cleanly inside Docker Maven with zero failures or regressions so main branch CI is restored to green."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Repair Telemetry and Internal Services and Verify Maven CI",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing the CI defect remediation for this epic, I want to construct a targeted falsification harness, patch TelemetryMetricsService, InternalService, and their failing test assertions, and verify cleanly in Docker Maven, so that main branch CI returns to green.",
+          "acceptanceCriteria": "Given failing assertions in TelemetryMetricsServiceTest and InternalServiceTest on the main branch, When a targeted falsification harness reproduces the failing cases against TelemetryMetricsService and InternalService, Then the root cause defects and assertion mismatches are isolated in existing source and test files without adding new data schemas, API contracts, or UI layers.\nGiven the isolated defects in TelemetryMetricsService, InternalService, TelemetryMetricsServiceTest, and InternalServiceTest, When the service implementations and test assertions are patched while preserving existing InternalServiceSanitizationTest and security boundaries, Then unit and integration tests for both services pass deterministically.\nGiven the patched Java services and tests, When the complete Maven test suite is executed inside Docker Maven, Then all tests pass with zero errors, failures, or skipped assertions and main branch CI is restored to green.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Service contract defects and stale test assertions in TelemetryMetricsService and InternalService failing Maven test runs",
+          "sixSigmaMetric": "0 test failures or errors across TelemetryMetricsServiceTest, InternalServiceTest, and full Docker Maven verification",
+          "hasUi": false,
+          "requirementRefs": [
+            "R1",
+            "R2"
+          ]
+        }
+      ]
+    }
+  ]
+}
