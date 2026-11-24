@@ -5,27 +5,37 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
+import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Verification suite for Perimeter Authorization and 401 Barrier (BARCAN-TAG-06 / 152-FZ).
- * Verifies institutional security boundary, PIN barrier gating, and perimeter isolation.
+ * Verifies institutional security boundary, PIN barrier gating, fail-closed data access,
+ * and perimeter isolation against InternalSecurityService and InternalService.
  */
 public class InternalServiceTest {
 
-    private InternalService internalService;
+    private static final String TEST_INSTITUTIONAL_TOKEN = "VALID_INSTITUTIONAL_TOKEN_152FZ";
+    private static final String TEST_SERVICE_PIN = "8492";
+
     private InternalSecurityService securityService;
+    private InternalService internalService;
 
     @BeforeEach
     public void setUp() {
-        securityService = createSecurityServiceInstance();
-        internalService = createInternalServiceInstance(securityService);
+        securityService = new InternalSecurityService(
+                TEST_INSTITUTIONAL_TOKEN,
+                TEST_SERVICE_PIN,
+                3600L,
+                new DeterministicTestSecureRandom()
+        );
+        internalService = new InternalService(securityService);
     }
 
     @Test
@@ -42,18 +52,22 @@ public class InternalServiceTest {
         );
 
         for (String authHeader : invalidHeaders) {
-            int statusCode = simulateEndpointRequest("/api/v1/internal/catalog", authHeader);
-            assertEquals(401, statusCode,
+            int catalogStatus = internalService.authorizeEndpointRequest("/api/v1/internal/catalog", authHeader);
+            assertEquals(401, catalogStatus,
                     "Endpoint /api/v1/internal/catalog must reject invalid/missing header with HTTP 401");
 
-            int generatorStatus = simulateEndpointRequest("/api/v1/internal/generator", authHeader);
+            int generatorStatus = internalService.authorizeEndpointRequest("/api/v1/internal/generator", authHeader);
             assertEquals(401, generatorStatus,
                     "Endpoint /api/v1/internal/generator must reject invalid/missing header with HTTP 401");
 
-            int telemetryStatus = simulateEndpointRequest("/api/v1/internal/telemetry", authHeader);
+            int telemetryStatus = internalService.authorizeEndpointRequest("/api/v1/internal/telemetry", authHeader);
             assertEquals(401, telemetryStatus,
                     "Endpoint /api/v1/internal/telemetry must reject invalid/missing header with HTTP 401");
         }
+
+        assertEquals(200,
+                internalService.authorizeEndpointRequest("/api/v1/internal/catalog", "Bearer " + TEST_INSTITUTIONAL_TOKEN),
+                "Valid institutional Bearer token must be authorized");
     }
 
     @Test
@@ -69,13 +83,13 @@ public class InternalServiceTest {
             assertFalse(initialNav.isAccessGranted(),
                     "Access must be denied prior to PIN authorization");
 
-            boolean invalidPinResult = simulatePinAuthentication("0000");
-            assertFalse(invalidPinResult, "Invalid PIN must not grant access");
+            Optional<String> invalidPinSession = securityService.authenticate("0000");
+            assertFalse(invalidPinSession.isPresent(), "Invalid PIN must not grant access");
 
-            boolean validPinResult = simulatePinAuthentication("8492");
-            assertTrue(validPinResult, "Valid institutional PIN must be accepted");
+            Optional<String> validPinSession = securityService.authenticate(TEST_SERVICE_PIN);
+            assertTrue(validPinSession.isPresent(), "Valid institutional PIN must be accepted");
 
-            String sessionToken = generateInstitutionalSessionToken("8492");
+            String sessionToken = validPinSession.get();
             NavigationResult authorizedNav = simulateNavigation(route, sessionToken);
             assertFalse(authorizedNav.isRedirectedToPinBarrier(),
                     "Authenticated session must not redirect to PIN barrier");
@@ -87,89 +101,51 @@ public class InternalServiceTest {
     @Test
     @DisplayName("Given unauthenticated user, When requesting internal entities, Then no data is leaked")
     public void givenUnauthenticatedUser_whenRequestingInternalEntities_thenNoDataIsLeaked() {
-        if (internalService != null) {
-            Method secureFetchMethod = findMethod(internalService.getClass(), "getEntities", "fetchData", "getProtectedData");
-            if (secureFetchMethod != null) {
-                try {
-                    Object result;
-                    if (secureFetchMethod.getParameterCount() == 1) {
-                        result = secureFetchMethod.invoke(internalService, new Object[]{null});
-                    } else {
-                        result = secureFetchMethod.invoke(internalService);
-                    }
-                    assertNull(result, "Unauthenticated call must not leak internal entity payload");
-                } catch (Exception expected) {
-                    // SecurityException or InvocationTargetException wrapping 401/SecurityException is expected
-                    assertNotNull(expected);
-                }
-            }
-        }
         assertNotNull(securityService, "InternalSecurityService must be initialized");
+        assertNotNull(internalService, "InternalService must be initialized");
+
+        assertThrows(SecurityException.class, () -> internalService.getProtectedData(null),
+                "Unauthenticated call must fail closed without leaking data");
+        assertThrows(SecurityException.class, () -> internalService.getProtectedData("Bearer invalid-token"),
+                "Invalid token call must fail closed without leaking data");
+
+        InternalService unconfiguredService = new InternalService();
+        assertThrows(SecurityException.class,
+                () -> unconfiguredService.getProtectedData("Bearer " + TEST_INSTITUTIONAL_TOKEN),
+                "InternalService without security service must fail closed");
+
+        Map<String, Object> authorizedData = internalService.getProtectedData("Bearer " + TEST_INSTITUTIONAL_TOKEN);
+        assertNotNull(authorizedData);
+        assertEquals("UP", authorizedData.get("status"));
+        assertEquals(Boolean.TRUE, authorizedData.get("healthy"));
     }
 
     @Test
     @DisplayName("Given institutional security 152-FZ, When perimeter tested, Then total isolation is enforced")
     public void givenInstitutionalSecurity152FZ_whenPerimeterTested_thenTotalIsolationEnforced() {
-        String token = "VALID_INSTITUTIONAL_TOKEN_152FZ";
-        boolean isAuthorized = validatePerimeterToken(token);
-        assertTrue(isAuthorized, "Perimeter must accept valid institutional token");
+        assertTrue(securityService.isAuthorized(TEST_INSTITUTIONAL_TOKEN),
+                "Perimeter must accept valid institutional token");
+        assertFalse(securityService.isAuthorized("../bypass/token"),
+                "Perimeter bypass attempt must be denied");
 
-        boolean unauthorizedBypass = validatePerimeterToken("../bypass/token");
-        assertFalse(unauthorizedBypass, "Perimeter bypass attempt must be denied");
-    }
+        assertEquals(401,
+                internalService.authorizeEndpointRequest("/api/v1/internal/telemetry", "Bearer ../bypass/token"),
+                "Perimeter bypass header must return HTTP 401");
+        assertEquals(200,
+                internalService.authorizeEndpointRequest("/api/v1/internal/telemetry", "Bearer " + TEST_INSTITUTIONAL_TOKEN),
+                "Valid institutional header must return HTTP 200");
 
-    // --- Helper Simulation Harness for Perimeter 401 & PIN Barrier ---
-
-    private int simulateEndpointRequest(String endpoint, String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ") || authHeader.length() <= 7) {
-            return 401;
-        }
-        String token = authHeader.substring(7).trim();
-        if (!validatePerimeterToken(token)) {
-            return 401;
-        }
-        return 200;
-    }
-
-    private boolean validatePerimeterToken(String token) {
-        if (token == null || token.isBlank()) {
-            return false;
-        }
-        if (securityService != null) {
-            Method validateMethod = findMethod(securityService.getClass(), "validateToken", "isAuthorized", "checkToken");
-            if (validateMethod != null) {
-                try {
-                    Object res = validateMethod.invoke(securityService, token);
-                    if (res instanceof Boolean) {
-                        return (Boolean) res;
-                    }
-                } catch (Exception ignored) {}
-            }
-        }
-        return token.startsWith("VALID_INSTITUTIONAL_");
-    }
-
-    private boolean simulatePinAuthentication(String pin) {
-        if (securityService != null) {
-            Method pinMethod = findMethod(securityService.getClass(), "validatePin", "authenticatePin", "verifyPin");
-            if (pinMethod != null) {
-                try {
-                    Object res = pinMethod.invoke(securityService, pin);
-                    if (res instanceof Boolean) {
-                        return (Boolean) res;
-                    }
-                } catch (Exception ignored) {}
-            }
-        }
-        return "8492".equals(pin);
-    }
-
-    private String generateInstitutionalSessionToken(String pin) {
-        return "VALID_INSTITUTIONAL_SESSION_TOKEN_" + pin;
+        Map<String, Object> rawPayload = new HashMap<>();
+        rawPayload.put("id", "DOC-152FZ-01");
+        rawPayload.put("title", "Institutional Policy");
+        rawPayload.put("file_path", "/var/internal/secret.docx");
+        Map<String, Object> sanitized = internalService.sanitizeDocumentPayload(rawPayload);
+        assertFalse(sanitized.containsKey("file_path"), "Sensitive internal path must be stripped");
+        assertEquals("/api/v1/normative/download/DOC-152FZ-01", sanitized.get("download_url"));
     }
 
     private NavigationResult simulateNavigation(String targetRoute, String sessionToken) {
-        boolean hasValidAuth = sessionToken != null && validatePerimeterToken(sessionToken);
+        boolean hasValidAuth = sessionToken != null && securityService.isAuthorized(sessionToken);
         if (!hasValidAuth) {
             return new NavigationResult("#/pin-barrier", true, false);
         }
@@ -200,61 +176,17 @@ public class InternalServiceTest {
         }
     }
 
-    private InternalSecurityService createSecurityServiceInstance() {
-        try {
-            Constructor<InternalSecurityService> ctor = InternalSecurityService.class.getDeclaredConstructor();
-            ctor.setAccessible(true);
-            return ctor.newInstance();
-        } catch (Exception e) {
-            try {
-                Constructor<?>[] ctors = InternalSecurityService.class.getDeclaredConstructors();
-                if (ctors.length > 0) {
-                    ctors[0].setAccessible(true);
-                    Object[] args = new Object[ctors[0].getParameterCount()];
-                    return (InternalSecurityService) ctors[0].newInstance(args);
-                }
-            } catch (Exception ignored) {}
-        }
-        return null;
-    }
+    /**
+     * Deterministic PRNG for reproducible session token generation in unit tests.
+     */
+    private static final class DeterministicTestSecureRandom extends SecureRandom {
+        private int counter = 1;
 
-    private InternalService createInternalServiceInstance(InternalSecurityService sec) {
-        try {
-            if (sec != null) {
-                try {
-                    Constructor<InternalService> ctor = InternalService.class.getDeclaredConstructor(InternalSecurityService.class);
-                    ctor.setAccessible(true);
-                    return ctor.newInstance(sec);
-                } catch (NoSuchMethodException ignored) {}
-            }
-            Constructor<InternalService> ctor = InternalService.class.getDeclaredConstructor();
-            ctor.setAccessible(true);
-            return ctor.newInstance();
-        } catch (Exception e) {
-            try {
-                Constructor<?>[] ctors = InternalService.class.getDeclaredConstructors();
-                if (ctors.length > 0) {
-                    ctors[0].setAccessible(true);
-                    Object[] args = new Object[ctors[0].getParameterCount()];
-                    if (args.length > 0 && sec != null && ctors[0].getParameterTypes()[0].isInstance(sec)) {
-                        args[0] = sec;
-                    }
-                    return (InternalService) ctors[0].newInstance(args);
-                }
-            } catch (Exception ignored) {}
-        }
-        return null;
-    }
-
-    private Method findMethod(Class<?> clazz, String... candidateNames) {
-        for (String name : candidateNames) {
-            for (Method m : clazz.getDeclaredMethods()) {
-                if (m.getName().equalsIgnoreCase(name)) {
-                    m.setAccessible(true);
-                    return m;
-                }
+        @Override
+        public synchronized void nextBytes(byte[] bytes) {
+            for (int i = 0; i < bytes.length; i++) {
+                bytes[i] = (byte) ((counter++ * 31 + i) & 0xFF);
             }
         }
-        return null;
     }
 }

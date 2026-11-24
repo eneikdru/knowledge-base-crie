@@ -1,5 +1,7 @@
 package com.eneik.telemetry.services;
 
+import com.eneik.telemetry.services.security.InternalSecurityService;
+
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
@@ -11,14 +13,16 @@ import java.util.logging.Logger;
 
 /**
  * InternalService provides operational health, request tracking,
- * and internal metrics aggregation for API services, including
- * the /api/chat normative assistant endpoint, document sanitization/download telemetry,
+ * perimeter authorization integration, and internal metrics aggregation for API services,
+ * including the /api/chat normative assistant endpoint, document sanitization/download telemetry,
  * and official document generator (/api/v1/generator/*) telemetry.
  */
 public class InternalService {
 
     private static final Logger LOGGER = Logger.getLogger(InternalService.class.getName());
+    private static final String BEARER_PREFIX = "Bearer ";
 
+    private final InternalSecurityService securityService;
     private final AtomicLong totalRequests = new AtomicLong(0);
     private final AtomicLong successfulRequests = new AtomicLong(0);
     private final AtomicLong failedRequests = new AtomicLong(0);
@@ -38,6 +42,57 @@ public class InternalService {
     private final AtomicLong totalGeneratorDurationMs = new AtomicLong(0);
 
     public InternalService() {
+        this.securityService = null;
+    }
+
+    public InternalService(InternalSecurityService securityService) {
+        this.securityService = Objects.requireNonNull(securityService, "InternalSecurityService cannot be null");
+    }
+
+    /**
+     * Evaluates perimeter authorization for a protected internal endpoint using a Bearer token.
+     * Fails closed (HTTP 401) if no security service is configured or if the token is missing/invalid.
+     *
+     * @param endpoint            target endpoint path
+     * @param authorizationHeader HTTP Authorization header value
+     * @return 200 if authorized, 401 otherwise
+     */
+    public int authorizeEndpointRequest(String endpoint, String authorizationHeader) {
+        String token = extractBearerToken(authorizationHeader);
+        boolean authorized = token != null
+                && this.securityService != null
+                && this.securityService.isAuthorized(token);
+        recordCall(endpoint, authorized);
+        return authorized ? 200 : 401;
+    }
+
+    /**
+     * Returns protected internal telemetry summary only when presented with a valid Bearer token.
+     * Fails closed with SecurityException on unauthenticated or unauthorized requests.
+     *
+     * @param authorizationHeader HTTP Authorization header value
+     * @return unmodifiable map of operational metrics without filesystem paths
+     */
+    public Map<String, Object> getProtectedData(String authorizationHeader) {
+        if (authorizeEndpointRequest("/api/v1/internal/telemetry", authorizationHeader) != 200) {
+            throw new SecurityException("Unauthorized access to protected internal telemetry data");
+        }
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("status", "UP");
+        payload.put("healthy", isHealthy());
+        payload.put("total_requests", getTotalRequests());
+        payload.put("successful_requests", getSuccessfulRequests());
+        payload.put("failed_requests", getFailedRequests());
+        payload.put("total_sanitized_documents", getTotalSanitizedDocuments());
+        return Collections.unmodifiableMap(payload);
+    }
+
+    private static String extractBearerToken(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)) {
+            return null;
+        }
+        String token = authorizationHeader.substring(BEARER_PREFIX.length()).trim();
+        return token.isEmpty() ? null : token;
     }
 
     public void recordCall(String endpoint, boolean success) {
@@ -57,10 +112,10 @@ public class InternalService {
     /**
      * Validates and records a chat query execution for the /api/chat endpoint.
      *
-     * @param query       the incoming user question
-     * @param durationMs  elapsed execution time in milliseconds
-     * @param citations   number of grounded citation paths returned
-     * @param success     whether the chat query succeeded
+     * @param query      the incoming user question
+     * @param durationMs elapsed execution time in milliseconds
+     * @param citations  number of grounded citation paths returned
+     * @param success    whether the chat query succeeded
      */
     public void recordChatQuery(String query, long durationMs, int citations, boolean success) {
         if (query == null || query.trim().isEmpty()) {
@@ -167,10 +222,14 @@ public class InternalService {
         sanitized.remove("relativePath");
         sanitized.remove("technical_path");
         sanitized.remove("filesystem_path");
+        sanitized.remove("source_path");
+        sanitized.remove("full_path");
+        sanitized.remove("local_path");
+        sanitized.remove("absolute_path");
 
         Object docId = rawPayload.getOrDefault("id", rawPayload.get("document_id"));
         if (docId != null) {
-            String idStr = String.valueOf(docId);
+            String idStr = sanitizeIdentifier(String.valueOf(docId));
             sanitized.put("id", idStr);
             sanitized.put("download_url", "/api/v1/normative/download/" + idStr);
         }
@@ -220,13 +279,14 @@ public class InternalService {
         if (jobId == null || jobId.trim().isEmpty()) {
             throw new IllegalArgumentException("Job ID cannot be null or empty");
         }
+        String safeJobId = sanitizeIdentifier(jobId);
         Map<String, Object> response = new HashMap<>();
-        response.put("job_id", jobId);
+        response.put("job_id", safeJobId);
         response.put("document_type", documentType != null ? documentType : "official_document");
         response.put("preview", previewText != null ? previewText : "");
         response.put("status", "READY");
-        response.put("download_token", "tok_" + jobId.replaceAll("[^a-zA-Z0-9]", ""));
-        response.put("download_url", "/api/v1/generator/export/" + jobId + "/docx");
+        response.put("download_token", "tok_" + safeJobId.replaceAll("[^a-zA-Z0-9]", ""));
+        response.put("download_url", "/api/v1/generator/export/" + safeJobId + "/docx");
         return Collections.unmodifiableMap(response);
     }
 
@@ -240,9 +300,10 @@ public class InternalService {
      */
     public static Map<String, String> buildGeneratorExportHeaders(String jobId, String filename) {
         Map<String, String> headers = new HashMap<>();
-        String cleanName = (filename != null && !filename.trim().isEmpty())
-                ? filename.replaceAll("[^a-zA-Z0-9._-]", "_")
-                : "generated_document_" + Objects.toString(jobId, "job");
+        String cleanName = sanitizeFilenameSegment(filename);
+        if (cleanName == null) {
+            cleanName = "generated_document_" + sanitizeIdentifier(Objects.toString(jobId, "job"));
+        }
 
         if (!cleanName.toLowerCase().endsWith(".docx")) {
             cleanName += ".docx";
@@ -267,9 +328,10 @@ public class InternalService {
      */
     public static Map<String, String> buildDownloadHeaders(String documentId, String filename, String format) {
         Map<String, String> headers = new HashMap<>();
-        String cleanName = (filename != null && !filename.trim().isEmpty())
-                ? filename.replaceAll("[^a-zA-Z0-9._-]", "_")
-                : "normative_document_" + Objects.toString(documentId, "file");
+        String cleanName = sanitizeFilenameSegment(filename);
+        if (cleanName == null) {
+            cleanName = "normative_document_" + sanitizeIdentifier(Objects.toString(documentId, "file"));
+        }
 
         String extension = (format != null && format.equalsIgnoreCase("pdf")) ? ".pdf" : ".docx";
         if (!cleanName.toLowerCase().endsWith(extension)) {
@@ -284,6 +346,24 @@ public class InternalService {
         }
         headers.put("X-Content-Type-Options", "nosniff");
         return Collections.unmodifiableMap(headers);
+    }
+
+    private static String sanitizeFilenameSegment(String rawFilename) {
+        if (rawFilename == null || rawFilename.trim().isEmpty()) {
+            return null;
+        }
+        String normalized = rawFilename.replace('\\', '/');
+        int lastSlash = normalized.lastIndexOf('/');
+        String base = (lastSlash >= 0) ? normalized.substring(lastSlash + 1) : normalized;
+        String cleaned = base.replace("..", "").replaceAll("[^a-zA-Z0-9._-]", "_").trim();
+        return cleaned.isEmpty() ? null : cleaned;
+    }
+
+    private static String sanitizeIdentifier(String rawId) {
+        if (rawId == null) {
+            return "";
+        }
+        return rawId.replace("..", "").replace('/', '_').replace('\\', '_').trim();
     }
 
     public long getTotalRequests() {
