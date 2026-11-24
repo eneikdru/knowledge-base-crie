@@ -1,5 +1,7 @@
 import math
-from typing import Dict, List, Any
+from pathlib import Path
+import sqlite3
+from typing import Any, Dict, List, Optional
 import pytest
 
 
@@ -183,3 +185,252 @@ def test_gqm_kpi_summary_json_formatting():
     assert sla["latency_sla_met"] is True
     assert sla["success_sla_met"] is True
     assert sla["zero_result_acceptable"] is True
+
+
+CONTINGENT_GQM_EVENTS_DDL = """
+CREATE TABLE IF NOT EXISTS contingent_gqm_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_type TEXT NOT NULL,
+    order_doc_id TEXT,
+    parsed_row_count INTEGER NOT NULL DEFAULT 0,
+    failed_row_count INTEGER NOT NULL DEFAULT 0,
+    sql_backed INTEGER NOT NULL DEFAULT 0,
+    citation_present INTEGER NOT NULL DEFAULT 0,
+    latency_ms REAL NOT NULL DEFAULT 0.0,
+    created_at TEXT NOT NULL
+);
+"""
+
+CONTINGENT_GQM_INDEX_DDL = (
+    "CREATE INDEX IF NOT EXISTS idx_contingent_gqm_events_type "
+    "ON contingent_gqm_events (event_type);"
+)
+
+
+def init_contingent_gqm_schema(conn: sqlite3.Connection) -> None:
+    """Initialize the SQLite contingent_gqm_events telemetry table."""
+    conn.execute(CONTINGENT_GQM_EVENTS_DDL)
+    conn.execute(CONTINGENT_GQM_INDEX_DDL)
+    conn.commit()
+
+
+def record_contingent_gqm_event(
+    conn: sqlite3.Connection,
+    event_type: str,
+    order_doc_id: Optional[str] = None,
+    parsed_row_count: int = 0,
+    failed_row_count: int = 0,
+    sql_backed: bool = False,
+    citation_present: bool = False,
+    latency_ms: float = 0.0,
+    created_at: str = "2026-11-24T00:00:00Z",
+) -> int:
+    """Insert a single ingestion or query telemetry event into SQLite."""
+    if event_type not in ("ingestion", "query"):
+        raise ValueError(f"Unsupported contingent GQM event_type: {event_type}")
+
+    cursor = conn.execute(
+        """
+        INSERT INTO contingent_gqm_events (
+            event_type,
+            order_doc_id,
+            parsed_row_count,
+            failed_row_count,
+            sql_backed,
+            citation_present,
+            latency_ms,
+            created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            event_type,
+            order_doc_id,
+            int(parsed_row_count),
+            int(failed_row_count),
+            1 if sql_backed else 0,
+            1 if citation_present else 0,
+            float(latency_ms),
+            created_at,
+        ),
+    )
+    conn.commit()
+    return int(cursor.lastrowid)
+
+
+def get_contingent_gqm_summary(conn: sqlite3.Connection) -> Dict[str, Any]:
+    """Compute Q1 completeness, Q2 SQL-grounded citation rate, and Q3 failure count from SQLite."""
+    row = conn.execute(
+        """
+        SELECT
+            COUNT(*) AS total_events,
+            COALESCE(SUM(CASE WHEN event_type = 'ingestion' THEN 1 ELSE 0 END), 0) AS ingestion_events,
+            COALESCE(SUM(CASE WHEN event_type = 'query' THEN 1 ELSE 0 END), 0) AS query_events,
+            COALESCE(SUM(CASE WHEN event_type = 'ingestion' THEN parsed_row_count ELSE 0 END), 0) AS total_parsed_rows,
+            COALESCE(SUM(CASE WHEN event_type = 'ingestion' THEN failed_row_count ELSE 0 END), 0) AS ingestion_failed_rows,
+            COALESCE(SUM(failed_row_count), 0) AS total_failed_rows,
+            COALESCE(SUM(CASE WHEN event_type = 'query' AND sql_backed = 1 THEN 1 ELSE 0 END), 0) AS sql_backed_queries,
+            COALESCE(SUM(CASE WHEN event_type = 'query' AND citation_present = 1 THEN 1 ELSE 0 END), 0) AS cited_queries,
+            COALESCE(SUM(CASE WHEN event_type = 'query' AND sql_backed = 1 AND citation_present = 1 THEN 1 ELSE 0 END), 0) AS sql_grounded_cited_queries,
+            COALESCE(AVG(latency_ms), 0.0) AS avg_latency_ms
+        FROM contingent_gqm_events
+        """
+    ).fetchone()
+
+    total_events = int(row[0])
+    ingestion_events = int(row[1])
+    query_events = int(row[2])
+    total_parsed_rows = int(row[3])
+    ingestion_failed_rows = int(row[4])
+    total_failed_rows = int(row[5])
+    sql_backed_queries = int(row[6])
+    cited_queries = int(row[7])
+    sql_grounded_cited_queries = int(row[8])
+    avg_latency_raw = float(row[9])
+
+    attempted_rows = total_parsed_rows + ingestion_failed_rows
+    q1_completeness_rate = round(total_parsed_rows / attempted_rows, 4) if attempted_rows > 0 else 0.0
+    q2_sql_grounded_citation_rate = (
+        round(sql_grounded_cited_queries / query_events, 4) if query_events > 0 else 0.0
+    )
+
+    return {
+        "q1_completeness_rate": q1_completeness_rate,
+        "q2_sql_grounded_citation_rate": q2_sql_grounded_citation_rate,
+        "q3_failure_count": total_failed_rows,
+        "total_events": total_events,
+        "ingestion_events": ingestion_events,
+        "query_events": query_events,
+        "total_parsed_rows": total_parsed_rows,
+        "total_failed_rows": total_failed_rows,
+        "sql_backed_queries": sql_backed_queries,
+        "cited_queries": cited_queries,
+        "sql_grounded_cited_queries": sql_grounded_cited_queries,
+        "avg_latency_ms": round(avg_latency_raw, 2) if total_events > 0 else 0.0,
+    }
+
+
+def test_contingent_gqm_schema_setup(tmp_path: Path) -> None:
+    """
+    Given SQLite storage initialization,
+    When schema setup runs,
+    Then contingent_gqm_events exists with all required telemetry columns.
+    """
+    db_path = tmp_path / "contingent_telemetry.db"
+    with sqlite3.connect(db_path) as conn:
+        init_contingent_gqm_schema(conn)
+        columns = {
+            row[1]
+            for row in conn.execute("PRAGMA table_info(contingent_gqm_events)").fetchall()
+        }
+
+    expected_columns = {
+        "id",
+        "event_type",
+        "order_doc_id",
+        "parsed_row_count",
+        "failed_row_count",
+        "sql_backed",
+        "citation_present",
+        "latency_ms",
+        "created_at",
+    }
+    assert expected_columns.issubset(columns)
+
+
+def test_contingent_gqm_summary_fresh_install_zeroed_defaults(tmp_path: Path) -> None:
+    """
+    Given zero recorded events on a fresh install,
+    When summary aggregation runs,
+    Then safe zeroed defaults are returned without division-by-zero errors.
+    """
+    db_path = tmp_path / "fresh_telemetry.db"
+    with sqlite3.connect(db_path) as conn:
+        init_contingent_gqm_schema(conn)
+        summary = get_contingent_gqm_summary(conn)
+
+    assert summary == {
+        "q1_completeness_rate": 0.0,
+        "q2_sql_grounded_citation_rate": 0.0,
+        "q3_failure_count": 0,
+        "total_events": 0,
+        "ingestion_events": 0,
+        "query_events": 0,
+        "total_parsed_rows": 0,
+        "total_failed_rows": 0,
+        "sql_backed_queries": 0,
+        "cited_queries": 0,
+        "sql_grounded_cited_queries": 0,
+        "avg_latency_ms": 0.0,
+    }
+
+
+def test_contingent_gqm_summary_q1_q2_q3_and_restart_persistence(tmp_path: Path) -> None:
+    """
+    Given ingestion and query telemetry events recorded to SQLite,
+    When the connection closes (simulating restart) and get_contingent_gqm_summary runs,
+    Then exact Q1 completeness, Q2 SQL-grounded citation rate, and Q3 failure count are returned.
+    """
+    db_path = tmp_path / "persistent_telemetry.db"
+    with sqlite3.connect(db_path) as conn:
+        init_contingent_gqm_schema(conn)
+        record_contingent_gqm_event(
+            conn,
+            event_type="ingestion",
+            order_doc_id="order_pdf_1",
+            parsed_row_count=18,
+            failed_row_count=2,
+            latency_ms=42.0,
+            created_at="2026-11-24T10:00:00Z",
+        )
+        record_contingent_gqm_event(
+            conn,
+            event_type="ingestion",
+            order_doc_id="order_pdf_2",
+            parsed_row_count=20,
+            failed_row_count=0,
+            latency_ms=38.0,
+            created_at="2026-11-24T10:01:00Z",
+        )
+        record_contingent_gqm_event(
+            conn,
+            event_type="query",
+            order_doc_id="order_pdf_1",
+            sql_backed=True,
+            citation_present=True,
+            latency_ms=12.0,
+            created_at="2026-11-24T10:02:00Z",
+        )
+        record_contingent_gqm_event(
+            conn,
+            event_type="query",
+            order_doc_id="order_pdf_2",
+            sql_backed=True,
+            citation_present=True,
+            latency_ms=14.0,
+            created_at="2026-11-24T10:03:00Z",
+        )
+        record_contingent_gqm_event(
+            conn,
+            event_type="query",
+            order_doc_id=None,
+            sql_backed=True,
+            citation_present=False,
+            latency_ms=19.0,
+            created_at="2026-11-24T10:04:00Z",
+        )
+
+    with sqlite3.connect(db_path) as reopened_conn:
+        summary = get_contingent_gqm_summary(reopened_conn)
+
+    assert summary["total_events"] == 5
+    assert summary["ingestion_events"] == 2
+    assert summary["query_events"] == 3
+    assert summary["total_parsed_rows"] == 38
+    assert summary["total_failed_rows"] == 2
+    assert summary["q1_completeness_rate"] == 0.95
+    assert summary["q2_sql_grounded_citation_rate"] == 0.6667
+    assert summary["q3_failure_count"] == 2
+    assert summary["sql_backed_queries"] == 3
+    assert summary["cited_queries"] == 2
+    assert summary["sql_grounded_cited_queries"] == 2
+    assert summary["avg_latency_ms"] == pytest.approx(25.0, abs=0.01)
