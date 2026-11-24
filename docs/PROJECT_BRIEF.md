@@ -100,7 +100,9 @@ it is the referent every later artifact is checked against.
    3. Обновить статус записи id=1 в feedback.jsonl через crie_feedback_manager.py на `resolved` после прохождения автотеста шаблона.
    4. Проверка: сгенерировать проект приказа по шаблону `TPL-APPROVED-ADMISSION-RESIDENCY` для специальности 32.08.12 — в тексте документа должна присутствовать точная формулировка об очной форме обучения и бюджетных ассигнованиях федерального бюджета.
 
+14. [Парсинг PDF-сведений о зачислении в реальную таблицу БД контингента ординаторов и аспирантов] В crie_persistent_memory.py и crie_document_parser.py создать реальную SQLite-таблицу enrolled_trainees (id, full_name, snils_or_code, level ['ординатура'|'аспирантура'], specialty, financing_type ['бюджет'|'целевая квота'|'договор'|'допконкурс'], score, order_doc_id, updated_at). Реализовать в crie_document_parser.py детерминированный экстрактор табличных и списочных данных из уже загруженных PDF (ID 1–11: Svedeniya_o_zachislenii_*, Svedeniya_o_prieme_*) и автоматически заполнить таблицу enrolled_trainees при старте и при загрузке новых файлов. В crie_assistant_api.py и контексте агента (crie_autonomous_agent.py) подключить прямой SQL-запрос к enrolled_trainees для ответов по контингенту. Проверка: выполнить запрос к API/БД на вывод списка зачисленных аспирантов и ординаторов по формам финансирования и убедиться, что данные возвращаются строго из таблицы enrolled_trainees со ссылкой на исходный PDF.
+
 ---
 
-Entries: 13. Anything this product claims - a page
+Entries: 14. Anything this product claims - a page
 heading, a filter, a capability - must trace to one of them or to a declared route.
