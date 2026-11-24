@@ -1,0 +1,306 @@
+{
+  "epics": [
+    {
+      "existingEpicId": null,
+      "title": "Content-Hash Document Upload Deduplication & Legacy Duplicate Consolidation",
+      "jtbd": "When an educational administrator uploads an administrative PDF or DOCX document to the CRIE portal, I want the system to detect identical content via SHA-256 hash and consolidate legacy duplicate rows without losing extracted records, so that duplicate document entries never pollute the SQLite registry and I can immediately review or update previously extracted data.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "0% duplicate document creation rate on identical re-uploads and 100% foreign-key preservation across merged IDs 1, 10, and 11",
+      "tocConstraintRef": "Lack of deterministic content-hash constraint and legacy duplicate rows ID 1, 10, 11 splitting child records",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Add a content_sha256 column plus normalized filename and extracted-text-size fallback metadata with a lookup index to the SQLite documents table in crie_document_engine.py, computed deterministically during ingestion.",
+        "R2: Implement deterministic duplicate resolution in crie_document_engine.py so any upload matching an existing content_sha256 (or normalized filename and extracted-text-size fallback for legacy rows) prevents inserting a new document row and resolves the canonical existing document ID.",
+        "R3: Update the upload endpoint in crie_assistant_api.py to return deduplicated=true, the canonical existing document_id, the list of already-extracted structured records (enrolled_trainees, pps_staff, rup_curricula), and a clear prompt/action to review or correct existing records when a duplicate is uploaded.",
+        "R4: Handle empty, corrupted, or unsupported uploads and storage/hash errors with explicit structured HTTP 4xx/5xx error responses without creating orphan document rows or discarding user upload context.",
+        "R5: Provide an idempotent, transactional SQLite migration and cleanup script (scripts/merge_duplicate_documents.py) that merges existing duplicate documents ID 1, 10, and 11 into one canonical record, backfills content_sha256, and remaps all child foreign keys without data loss.",
+        "R6: Surface deduplicated upload feedback in the web upload interface so users clearly see that the document already exists, inspect its extracted records, and transition into record correction rather than retrying blindly.",
+        "R7: Verify hash calculation, duplicate interception, legacy ID 1/10/11 merge idempotency, and upload endpoint response shape (deduplicated=true and original document ID) across unit, integration, and E2E tests."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Document Hash Schema & Transactional Duplicate Merge Migration",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing persistent document hashing and legacy cleanup for this epic, I want deterministic SHA-256 storage and an atomic merge script for IDs 1, 10, and 11, so that the SQLite documents registry remains canonical without orphaned child rows.",
+          "acceptanceCriteria": "Given an existing SQLite database containing documents ID 1, 10, and 11, When scripts/merge_duplicate_documents.py runs inside a transaction, Then duplicate rows are merged into the canonical document ID with all child foreign keys in enrolled_trainees, pps_staff, and rup_curricula remapped and content_sha256 backfilled.\nGiven the migration script has already run once, When it is executed a second time, Then it completes idempotently with zero errors and zero record loss.\nGiven a document uploaded via crie_document_engine.py, When its byte stream is ingested, Then content_sha256 and normalized filename plus text-size metadata are persisted and indexed.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Foreign-key remapping across legacy documents 1, 10, 11 during schema migration",
+          "sixSigmaMetric": "100% foreign-key referential integrity after migration with 0 orphaned child records",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R5"]
+        },
+        {
+          "title": "Upload Deduplication API & Extracted-Records Contract",
+          "roleTag": "BARCAN-TAG-12",
+          "jtbd": "When implementing parallel backend and frontend upload-deduplication handling for this epic, I want a shared OpenAPI/JSON contract defining the deduplicated response payload and error shapes, so that API and UI slices integrate cleanly without schema drift.",
+          "acceptanceCriteria": "Given a duplicate document upload, When the contract defines the HTTP 200 deduplicated payload, Then it specifies deduplicated (boolean), document_id (integer), message, extracted_records grouped by table, and suggested_action fields.\nGiven an invalid or corrupted upload, When the contract defines error responses, Then HTTP 400/422 payload fields preserve error code, human-readable detail, and filename context.\nGiven the contract file in docs/contracts/, When reviewed by backend and frontend engineers, Then request multipart fields and response DTOs are unambiguous and complete.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Cross-layer DTO alignment for grouped extracted_records and deduplicated flags",
+          "sixSigmaMetric": "0 schema-mismatch defects between backend upload response and frontend handler",
+          "hasUi": false,
+          "requirementRefs": ["R3", "R4", "R6"]
+        },
+        {
+          "title": "Upload Endpoint Hash Check & Existing-Record Resolution",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing the upload endpoint in crie_assistant_api.py for this epic, I want incoming files checked against stored content_sha256 and legacy fallback keys before insertion, so that re-uploads return deduplicated=true with extracted records instead of creating duplicates.",
+          "acceptanceCriteria": "Given a PDF already stored in SQLite, When it is re-uploaded to the upload endpoint in crie_assistant_api.py, Then no new row is inserted into documents and the endpoint returns deduplicated=true with the canonical document_id.\nGiven a deduplicated match, When building the response payload, Then the endpoint queries and includes existing extracted records from enrolled_trainees, pps_staff, and rup_curricula along with a prompt to review or correct them.\nGiven a zero-byte or unreadable file upload, When validation fails, Then the endpoint returns HTTP 400 with an explicit error message and leaves SQLite unmodified.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Upload endpoint short-circuiting before document parser row creation",
+          "sixSigmaMetric": "< 50ms hash lookup overhead and 0 duplicate rows created on repeat uploads",
+          "hasUi": false,
+          "requirementRefs": ["R2", "R3", "R4"]
+        },
+        {
+          "title": "Duplicate-Upload Feedback Banner & Correction Trigger UI",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing the browser upload flow for this epic, I want duplicate-upload responses rendered as an actionable card with existing records and an edit trigger, so that users never wonder whether their upload succeeded or accidentally re-submit repeatedly.",
+          "acceptanceCriteria": "Given a user uploads a file that returns deduplicated=true, When the UI receives the response on desktop or mobile (375px+), Then a clear feedback banner displays the existing document ID, lists extracted records, and offers an accessible button to open record correction.\nGiven an upload fails due to validation or network error, When the error renders, Then the selected filename and user context remain intact with a clear retry/fix message and no silent failure.\nGiven keyboard-only navigation and WCAG 2.1 AA requirements, When focusing the duplicate alert and action controls, Then all interactive controls have visible focus indicators, semantic labels, and >= 4.5:1 text contrast.",
+          "leanValue": "valuable",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Responsive duplicate-state feedback rendering in static/frontend UI",
+          "sixSigmaMetric": "100% WCAG 2.1 AA contrast and keyboard operability compliance on upload feedback controls",
+          "hasUi": true,
+          "requirementRefs": ["R6"]
+        },
+        {
+          "title": "Deduplication & Duplicate-Merge Full-Pyramid QA Suite",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When implementing quality verification for this epic, I want unit, integration, and E2E tests covering hashing, legacy merge migration, and re-upload UX, so that deduplication invariants hold end-to-end before release.",
+          "acceptanceCriteria": "Given unit tests for crie_document_engine.py and scripts/merge_duplicate_documents.py, When run against seeded duplicate IDs 1, 10, and 11, Then hash computation, fallback matching, and idempotent FK remapping pass with zero row loss.\nGiven FastAPI integration tests for the upload endpoint, When an existing PDF is uploaded twice, Then the SQLite document count remains unchanged and the second response contains deduplicated=true and the original document ID.\nGiven a Playwright E2E test on desktop and mobile viewports, When a user re-uploads an existing PDF, Then the duplicate-upload feedback card and extracted records appear with zero console errors.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Isolated SQLite fixture seeding for legacy duplicate IDs 1, 10, 11 across test layers",
+          "sixSigmaMetric": "100% pass rate across unit, API integration, and E2E deduplication tests",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5", "R6", "R7"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": null,
+      "title": "Interactive Structured Registry CRUD, Chat Correction Tools & Revision Audit",
+      "jtbd": "When an educational administrator uploads or selects a document in the CRIE portal, I want to inspect extracted enrolled_trainees, pps_staff, and rup_curricula records and correct individual fields via UI or chat commands with full revision logging, so that SQLite always holds verified institutional data reflected immediately in assistant responses.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "100% of validated field corrections persisted atomically with revision audit entries and reflected in the very next assistant response",
+      "tocConstraintRef": "Read-only extracted SQLite tables lacking typed CRUD mutations, agent update tools, and prompt cache invalidation",
+      "sourceIndex": 1,
+      "requirements": [
+        "R1: Create a SQLite registry_revisions audit table and transactional CRUD persistence methods in crie_persistent_memory.py for reading, updating, and confirming safe deletion of rows in enrolled_trainees, pps_staff, and rup_curricula scoped by document_id.",
+        "R2: Enforce strict domain validation on record updates (non-empty full name, valid specialty code, valid study/funding basis, valid pps_staff binding, non-negative rup_curricula hours) and record before/after values, actor, timestamp, and reason in registry_revisions.",
+        "R3: Expose REST endpoints in crie_assistant_api.py to list structured records linked to any document ID (including IDs 1-11), apply targeted field updates, and retrieve revision history.",
+        "R4: Implement agent tools in crie_autonomous_agent.py and crie_smart_consultant.py that display a structured card of records extracted from an uploaded or selected document and execute natural-language correction commands directly against SQLite.",
+        "R5: Ensure subsequent assistant turns query live SQLite state from crie_persistent_memory.py and invalidate any stale cached context so corrected trainee, faculty, or curriculum values appear immediately in the next answer.",
+        "R6: Build responsive UI record cards and inline editing controls in the web interface so administrators can inspect extracted records, edit fields, confirm destructive removals, and view update confirmation on desktop and mobile.",
+        "R7: Return clear validation and persistence error feedback in both REST and chat responses without mutating SQLite or discarding user-entered edits when validation or network errors occur.",
+        "R8: Verify SQLite revision logging, REST CRUD endpoints, chat-driven record correction on document IDs 1-11, and immediate next-turn assistant grounding via unit, SQL integration, and E2E tests."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Structured Registry CRUD & Revision Audit Log Storage",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing persistent record-correction storage for this epic, I want validated SQLite CRUD helpers and a registry_revisions table in crie_persistent_memory.py, so that every edit to enrolled_trainees, pps_staff, or rup_curricula is atomic and auditable.",
+          "acceptanceCriteria": "Given an existing record in enrolled_trainees, pps_staff, or rup_curricula, When a validated field update executes in crie_persistent_memory.py, Then the target column updates atomically and a corresponding row with old_value, new_value, table_name, record_id, and timestamp is written to registry_revisions.\nGiven an invalid field payload such as negative RUP hours or an empty name, When validation runs, Then a structured validation error is raised and zero SQLite rows are modified.\nGiven a document_id query for IDs 1-11, When fetching linked records, Then all matching rows across the three structured tables are returned deterministically without stale cache hits.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Multi-table schema validation and atomic revision-log transaction in SQLite",
+          "sixSigmaMetric": "0 unlogged mutations and 100% validation rejection on malformed inputs",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R5"]
+        },
+        {
+          "title": "Structured Registry CRUD & Record-Card Shared API Contract",
+          "roleTag": "BARCAN-TAG-12",
+          "jtbd": "When implementing parallel API, agent, and UI record-correction slices for this epic, I want a shared OpenAPI/JSON schema for document record cards, patch payloads, and revision entries, so that all consumers share exact field names and error formats.",
+          "acceptanceCriteria": "Given document-scoped record retrieval, When defining GET/PATCH/DELETE and revision endpoints in docs/contracts/, Then payloads specify table_name enum (enrolled_trainees, pps_staff, rup_curricula), record_id, editable field schemas, and revision metadata.\nGiven a validation error on PATCH, When defining the HTTP 422 response, Then it specifies per-field error messages so the UI can preserve user-entered form values.\nGiven chat card payloads, When defining the assistant response extension, Then structured record_card metadata is explicitly typed for frontend rendering.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Synchronizing field schemas across 3 heterogeneous SQLite tables in one unified contract",
+          "sixSigmaMetric": "0 breaking contract mismatches across backend, agent, and frontend slices",
+          "hasUi": false,
+          "requirementRefs": ["R3", "R4", "R6", "R7"]
+        },
+        {
+          "title": "Structured Registry REST CRUD & Revision Endpoints",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing REST endpoints in crie_assistant_api.py for this epic, I want routes to inspect document-linked records, patch individual fields, and query revision logs, so that both the UI and external tools can edit SQLite records safely.",
+          "acceptanceCriteria": "Given a document ID from 1 to 11, When GET /api/registry/documents/{document_id}/records is called, Then grouped records from enrolled_trainees, pps_staff, and rup_curricula are returned with HTTP 200.\nGiven a valid field patch payload for an enrolled trainee, When PATCH /api/registry/records/{table_name}/{record_id} is called, Then SQLite reflects the updated value, a revision entry is returned, and subsequent reads return the new value.\nGiven an invalid field value or unknown record ID, When PATCH or DELETE is called, Then HTTP 422 or 404 is returned with an explicit error detail and SQLite state remains unchanged.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Route-level table whitelisting and typed Pydantic validation per table",
+          "sixSigmaMetric": "100% of invalid table/field mutations blocked with structured 4xx responses",
+          "hasUi": false,
+          "requirementRefs": ["R3", "R5", "R7"]
+        },
+        {
+          "title": "Agent Record-Card Display & Natural-Language Correction Tools",
+          "roleTag": "BARCAN-TAG-04",
+          "jtbd": "When implementing chat-driven record management for this epic, I want agent tools in crie_autonomous_agent.py and crie_smart_consultant.py that surface extracted record cards and apply natural-language edits to SQLite, so that corrections work seamlessly inside the dialog.",
+          "acceptanceCriteria": "Given a user uploads a file or selects document IDs 1-11 in chat, When the agent processes the turn, Then it outputs a structured card listing the extracted DB records linked to that document.\nGiven a user sends a chat command to change an enrolled trainee's full name, specialty, or funding basis, When the agent executes the correction tool, Then SQLite is updated with a revision log entry and the reply confirms the old and new values.\nGiven the user asks a follow-up question in the next turn about that trainee or workload, When the agent builds context, Then it reads fresh SQLite data and cites the updated value rather than stale memory.",
+          "leanValue": "essential",
+          "cynefinDomain": "complex",
+          "tocConstraintRef": "Accurate slot extraction from free-text Russian correction commands into typed SQLite updates",
+          "sixSigmaMetric": "0 silent coercion errors and 100% next-turn SQL freshness after chat edits",
+          "hasUi": false,
+          "requirementRefs": ["R4", "R5", "R7"]
+        },
+        {
+          "title": "Interactive Extracted-Records Card & Inline Correction UI",
+          "roleTag": "BARCAN-TAG-11",
+          "jtbd": "When implementing the browser interface for this epic, I want an interactive record card and inline table editor with validation feedback and delete confirmation, so that administrators can verify and correct extracted records on desktop and mobile.",
+          "acceptanceCriteria": "Given a document upload or registry selection in the UI, When records load on desktop or mobile (375px+), Then an accessible card displays enrolled_trainees, pps_staff, and rup_curricula rows with clear labels, >= 4.5:1 contrast, and keyboard-navigable edit controls.\nGiven an administrator edits a field and submits, When the save succeeds, Then an inline confirmation banner shows the saved change; When the save fails validation, Then the error is shown inline and the user's unsaved input remains in the form.\nGiven an administrator clicks delete on a record row, When prompted, Then an explicit confirmation modal/step prevents accidental deletion before sending the request.",
+          "leanValue": "valuable",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Preserving dirty inline form state across validation failures and mobile card layout",
+          "sixSigmaMetric": "0 lost user edits on validation failure and 100% WCAG 2.1 AA form compliance",
+          "hasUi": true,
+          "requirementRefs": ["R6", "R7"]
+        },
+        {
+          "title": "Record Correction, SQL Persistence & Chat Reflection QA Suite",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When implementing quality verification for this epic, I want unit, SQL-verified API/chat integration, and E2E tests covering record cards and corrections, so that direct SQLite updates and next-turn agent accuracy are proven end-to-end.",
+          "acceptanceCriteria": "Given unit tests for crie_persistent_memory.py, When valid and invalid patches run across all three tables, Then valid edits log revisions and invalid edits fail cleanly.\nGiven an integration test selecting a document from registry IDs 1-11 and sending a chat correction command for an enrolled trainee, When followed by a direct SQL query and a subsequent chat query, Then SQLite shows the updated field and the next agent response uses the updated value.\nGiven a Playwright E2E test on desktop and mobile viewports, When a user edits a record via the inline card and triggers a validation error, Then unsaved input is preserved on error and persisted state survives page reload on success.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "End-to-end synchronization between SQLite state, agent tool execution, and UI refresh",
+          "sixSigmaMetric": "100% pass rate across unit, SQL integration, and E2E record-correction journeys",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": null,
+      "title": "Document Lifecycle, Deduplication & Registry Correction Telemetry (GQM)",
+      "jtbd": "When operating the CRIE document upload, deduplication, and interactive registry correction workflows, I want Goal-Question-Metric telemetry measuring Goal: enabling administrators to maintain a duplicate-free, accurate SQLite registry without manual SQL fixes or jargon confusion by answering Q1 (are duplicate uploads intercepted without creating redundant rows?), Q2 (do record corrections succeed with revision audit and immediate next-turn reflection?), and Q3 (do upload/edit help questions receive jargon-free DB-grounded guidance?), so that operational effectiveness is objectively verified.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "100% GQM metric coverage answering Q1-Q3 with zero unrequested counter bloat",
+      "tocConstraintRef": "Lack of structured event instrumentation linking upload deduplication, record edits, and help compliance to outcomes",
+      "sourceIndex": 1,
+      "requirements": [
+        "R1: State the GQM Goal (duplicate-free, self-service accurate structured registry without jargon confusion) and Questions Q1 (duplicate upload interception), Q2 (validated record correction & freshness), and Q3 (jargon-free live guidance compliance) in telemetry schemas and storage.",
+        "R2: Record lightweight GQM events in SQLite/telemetry storage solely for Q1 (deduplicated vs new upload counts), Q2 (correction attempts, validation rejections, revision writes, and post-edit query hits), and Q3 (upload-help queries checked against the banned-jargon filter).",
+        "R3: Expose a concise GQM summary endpoint in crie_assistant_api.py computing only the derived rates answering Q1, Q2, and Q3.",
+        "R4: Ensure telemetry instrumentation fails open without blocking primary upload, correction, or chat paths if metric logging encounters an error.",
+        "R5: Verify GQM metric derivations and non-blocking event capture with unit and API integration tests."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "GQM Document-Lifecycle Event Schema & Non-Blocking Recorder",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing GQM telemetry storage for this epic, I want a focused SQLite event table and fail-open recorder tied strictly to Q1-Q3, so that operational metrics never slow or break uploads and edits.",
+          "acceptanceCriteria": "Given upload deduplication, registry correction, or upload-help chat events, When recorded in SQLite, Then only fields required for Q1, Q2, and Q3 are stored with timestamps.\nGiven a simulated telemetry write failure, When an upload or record edit occurs, Then the primary operation still succeeds and logs a non-fatal warning.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Keeping metric schema strictly scoped to Q1-Q3 without dashboard noise",
+          "sixSigmaMetric": "0 primary-request failures caused by telemetry logging",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        },
+        {
+          "title": "GQM Summary Endpoint & Lifecycle Instrumentation Hooks",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing GQM reporting in crie_assistant_api.py for this epic, I want instrumentation hooks and a summary endpoint computing Q1-Q3 indicators, so that administrators can verify deduplication, edit accuracy, and guidance quality.",
+          "acceptanceCriteria": "Given recorded deduplication, correction, and help events, When GET /api/telemetry/document-lifecycle-gqm is queried, Then it returns Goal metadata and exact Q1 interception rate, Q2 correction/freshness rates, and Q3 jargon-free compliance rate.\nGiven an empty event table, When the summary endpoint is queried, Then it returns zero-safe defaults without division-by-zero errors.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Zero-safe SQL aggregation for Q1-Q3 rates across empty and populated datasets",
+          "sixSigmaMetric": "100% deterministic Q1-Q3 rate calculation under empty and populated states",
+          "hasUi": false,
+          "requirementRefs": ["R2", "R3", "R4"]
+        },
+        {
+          "title": "GQM Lifecycle Telemetry Unit & Integration Verification",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When implementing quality checks for this epic, I want unit and API integration tests verifying Q1-Q3 aggregation and fail-open behavior, so that GQM metrics remain accurate over time.",
+          "acceptanceCriteria": "Given unit tests for the GQM aggregator, When fed mixed deduplicated uploads, valid/invalid edits, and jargon-checked help replies, Then Q1, Q2, and Q3 rates match exact expected values.\nGiven an integration test hitting the FastAPI GQM endpoint after simulated workflows, When the summary is requested, Then HTTP 200 returns accurate derived metrics with no unrelated counters.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Deterministic event seeding for Q1-Q3 assertion accuracy",
+          "sixSigmaMetric": "100% unit and integration assertion coverage for Q1-Q3",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": null,
+      "title": "Live DB Registry Guidance & Prompt-Jargon Elimination",
+      "jtbd": "When an educational administrator asks the CRIE assistant how to upload, edit, or use files to correct institutional data, I want the assistant to omit internal prompt-engineering jargon and respond with live SQLite document statistics plus clear step-by-step UI instructions, so that users immediately understand what data is already loaded and how to update it.",
+      "kanoClass": "Performance",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "0% occurrence of banned prompt-engineering jargon (such as 'slot' or 'system prompt') and 100% alignment with live SQLite document/table counts",
+      "tocConstraintRef": "Hardcoded prompt-engineering terminology in consultant/agent prompts masking live DB registry state",
+      "sourceIndex": 2,
+      "requirements": [
+        "R1: Audit and remove all internal prompt-engineering terminology (including 'slot to current reply', 'system prompt', 'context slot', and their Russian equivalents) from crie_smart_consultant.py, crie_thought_agent.py, and crie_autonomous_agent.py prompts and response templates.",
+        "R2: Implement a live SQLite registry-summary query helper returning actual uploaded document titles/IDs (such as residency and postgraduate admission orders) and exact extracted record counts across enrolled_trainees, pps_staff, and rup_curricula (plus a clear empty-state fallback when no documents are loaded).",
+        "R3: Route user questions about uploading, editing, or managing files through a live-grounded guidance builder in crie_smart_consultant.py, crie_thought_agent.py, and crie_autonomous_agent.py that cites real uploaded documents, per-table record counts, and step-by-step UI instructions (attach file button -> automatic DB parsing -> review and edit fields in chat or table).",
+        "R4: Add a deterministic output guardrail/sanitizer in the consultant and agent response pipeline that detects and strips or rewrites any forbidden prompt-engineering jargon before sending replies to the client.",
+        "R5: Ensure the chat endpoint in crie_assistant_api.py cleanly forwards upload/editing help intents through the jargon-free live-registry pipeline with consistent structured error handling.",
+        "R6: Verify across unit and chat integration tests that asking 'how do I send you files to correct data?' (including the Russian prompt equivalent) never contains 'slot' or prompt jargon and accurately reports live DB document statistics and editing steps."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Live SQLite Registry & Table-Count Summary Helper",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing live registry introspection for this epic, I want a single SQLite query helper summarizing uploaded documents and row counts across enrolled_trainees, pps_staff, and rup_curricula, so that assistant help answers never use stale or hardcoded counts.",
+          "acceptanceCriteria": "Given a SQLite database with uploaded admission orders and extracted rows, When the registry summary helper runs, Then it returns exact document names, IDs, and per-table counts for enrolled_trainees, pps_staff, and rup_curricula.\nGiven an empty documents table, When the helper runs, Then it returns zero counts and an explicit empty-state flag without raising SQL errors.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Single source-of-truth SQLite aggregation across documents and 3 structured tables",
+          "sixSigmaMetric": "100% parity between reported summary counts and direct SQL COUNT(*) queries",
+          "hasUi": false,
+          "requirementRefs": ["R2"]
+        },
+        {
+          "title": "Prompt Jargon Purge, Live Guidance Builder & Output Guardrail",
+          "roleTag": "BARCAN-TAG-04",
+          "jtbd": "When implementing consultant and agent prompt logic for this epic, I want all prompt-engineering jargon removed and file-help queries grounded in live DB statistics and UI steps, so that users receive clear, actionable guidance.",
+          "acceptanceCriteria": "Given crie_smart_consultant.py, crie_thought_agent.py, and crie_autonomous_agent.py, When prompts and templates are inspected, Then zero occurrences of 'slot', 'slot to current reply', or 'system prompt' (in English or Russian) remain.\nGiven a user query asking how to send files to correct data, When processed by the guidance builder, Then the response lists actual uploaded DB documents, extracted counts for contingent/faculty/curricula, and the 3-step workflow (attach button -> auto-parse to DB -> review and edit in chat or table).\nGiven an LLM draft containing a banned prompt-engineering term, When it passes through the output guardrail, Then the jargon is sanitized before returning to the caller.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Prompt template refactor across 3 agent modules plus deterministic post-generation sanitization",
+          "sixSigmaMetric": "0% banned-jargon leakage across all consultant and autonomous agent responses",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R3", "R4"]
+        },
+        {
+          "title": "Chat Endpoint Help-Intent Routing & Live Context Wiring",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing chat endpoint routing in crie_assistant_api.py for this epic, I want upload and data-correction help questions wired to the live-grounded consultant pipeline, so that API clients always receive real DB statistics and step-by-step instructions.",
+          "acceptanceCriteria": "Given a POST /api/chat request asking how to upload or edit files, When crie_assistant_api.py dispatches the query, Then it returns the live DB-grounded guidance response with HTTP 200.\nGiven a database connection issue during summary lookup, When handling the help intent, Then the endpoint gracefully degrades with an explicit user-facing message and never leaks internal prompt jargon or stack traces.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Deterministic intent routing for file-help questions inside /api/chat",
+          "sixSigmaMetric": "100% of file-help chat requests grounded in live DB state with < 150ms routing overhead",
+          "hasUi": false,
+          "requirementRefs": ["R3", "R5"]
+        },
+        {
+          "title": "Jargon-Ban & Live DB Guidance Unit and Chat Integration Tests",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When implementing verification for this epic, I want unit and API chat integration tests validating banned-term elimination and live DB statistics accuracy, so that regressions cannot reintroduce internal prompt jargon.",
+          "acceptanceCriteria": "Given unit tests scanning prompts and running the output guardrail, When tested against banned terms in English and Russian, Then zero banned strings pass through unblocked.\nGiven a FastAPI integration test sending the Russian query 'как отправить тебе файлы для корректировки данных?' to /api/chat against seeded SQLite documents, When the response is asserted, Then it contains zero occurrences of 'слот' or 'системный промпт', lists the seeded DB documents and record counts, and includes the step-by-step UI editing instructions.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Automated prompt-scan and chat-endpoint regression assertions against seeded SQLite state",
+          "sixSigmaMetric": "100% pass rate on jargon-prohibition and live-statistics assertions",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5", "R6"]
+        }
+      ]
+    }
+  ]
+}
