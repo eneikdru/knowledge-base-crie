@@ -1,0 +1,206 @@
+{
+  "epics": [
+    {
+      "existingEpicId": "102f35c6-445e-489e-9a8b-940b1f7b9539",
+      "title": "Persistent Admission Contingent SQLite Registry, PDF Parser & Cross-Session LLM Context",
+      "jtbd": "When an educational administrator or admission officer queries the CRIE AI assistant about previously uploaded admission and enrollment reports, I want uploaded PDFs automatically parsed, deduplicated, and stored in SQLite with the full registry and aggregated counts injected into LLM context, so that exact contingent summary tables are returned across sessions without re-attaching files.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "complicated",
+      "sixSigmaMetric": "100% extraction completeness across enrollment PDFs ID 1-11 with zero ungrounded contingent counts",
+      "tocConstraintRef": "Deterministic PDF table/list parsing accuracy and SQLite upsert consistency across heterogeneous order layouts",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Create the SQLite enrolled_trainees table in crie_persistent_memory.py and crie_document_parser.py with columns (id, full_name, snils_or_code, level [residency|postgraduate], specialty, financing_type [budget|targeted_quota|paid_contract|supplementary_competition], score, order_doc_id, updated_at), enum validation, deduplication key, and source document provenance linkage.",
+        "R2: Implement a deterministic tabular and list-based PDF extractor in crie_document_parser.py covering pre-uploaded PDFs (ID 1-11: Svedeniya_o_zachislenii_*, Svedeniya_o_prieme_*) and newly uploaded enrollment PDFs without LLM guessing, normalizing education levels, specialties, scores, and financing forms.",
+        "R3: Automatically populate and idempotently synchronize enrolled_trainees at application startup for existing PDFs (ID 1-11) and immediately upon new PDF file upload, isolating malformed rows with explicit parse diagnostics so partial failures do not crash startup or corrupt prior valid records.",
+        "R4: Expose a direct SQL-backed query endpoint in crie_assistant_api.py returning enrolled residents and postgraduates grouped and filtered by level and financing_type strictly from enrolled_trainees alongside the source PDF order_doc_id and file reference, with explicit empty-result and error responses.",
+        "R5: Connect direct SQL queries against enrolled_trainees in crie_autonomous_agent.py so contingent questions inject live SQLite rows, aggregated counts by financing form, and source PDF citations into the agent context instead of relying on unstructured text or fabricated numbers.",
+        "R6: Verify end-to-end across unit, integration, and API/DB checks that querying enrolled residents and postgraduates by financing form returns rows strictly from enrolled_trainees with valid source PDF references."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Create enrolled_trainees SQLite schema and repository",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing persistent contingent storage for this epic, I want a normalized SQLite enrolled_trainees table and idempotent upsert/query repository in crie_persistent_memory.py, so that parsed trainee records are deduplicated, traceable to order_doc_id, and safe across restarts.",
+          "acceptanceCriteria": "Given crie_persistent_memory.py initializes the SQLite database, When schema migration executes, Then the enrolled_trainees table exists with columns id, full_name, snils_or_code, level, specialty, financing_type, score, order_doc_id, and updated_at with enum constraints.\nGiven duplicate trainee entries from the same or re-ingested PDF, When upsert_enrolled_trainees runs, Then existing rows are updated idempotently with current updated_at without creating duplicate records.\nGiven a contingent query by level and financing_type, When repository query helpers run, Then rows are returned strictly from enrolled_trainees joined with source PDF metadata for order_doc_id.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Unique constraint design preventing duplicate trainee rows across re-indexed PDFs",
+          "sixSigmaMetric": "0 duplicate rows per (snils_or_code, level, order_doc_id) across repeated ingestion runs",
+          "hasUi": false,
+          "requirementRefs": ["R1"]
+        },
+        {
+          "title": "Build deterministic PDF enrollment extractor and auto-sync",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing PDF ingestion for this epic, I want a deterministic table and list parser in crie_document_parser.py that extracts PDFs ID 1-11 at startup and new PDFs on upload, so that enrolled_trainees is populated accurately without manual data entry.",
+          "acceptanceCriteria": "Given uploaded CRIE enrollment PDFs ID 1-11 (Svedeniya_o_zachislenii_*, Svedeniya_o_prieme_*), When the parser runs at startup or on new file upload, Then resident and postgraduate records with full_name, snils_or_code, specialty, financing_type, score, and order_doc_id are extracted deterministically into enrolled_trainees.\nGiven a PDF containing mixed table cells or numbered list layouts for CRIE specialties (31.08.19, 31.08.35, 32.08.12), When deterministic normalization runs, Then education levels and all four financing categories map cleanly to canonical enum values.\nGiven a corrupted or partially malformed PDF upload, When extraction runs, Then valid rows are preserved, structured error diagnostics are logged with the failing filename, and startup continues without crashing.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Multi-layout PDF table boundary detection across Svedeniya_o_zachislenii_* and Svedeniya_o_prieme_* files",
+          "sixSigmaMetric": "100% deterministic parse reproducibility on identical PDF inputs across repeated runs",
+          "hasUi": false,
+          "requirementRefs": ["R2", "R3"]
+        },
+        {
+          "title": "Expose SQL contingent query API and upload ingestion hook",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing API access for this epic, I want FastAPI endpoints and upload hooks in crie_assistant_api.py querying enrolled_trainees directly, so that callers retrieve exact resident and postgraduate lists by financing form with PDF references.",
+          "acceptanceCriteria": "Given enrolled_trainees contains parsed records, When a client requests the contingent endpoint filtered by level and financing_type, Then crie_assistant_api.py executes a parameterized SQL query against enrolled_trainees and returns matching trainees, totals, and source PDF references.\nGiven a new enrollment PDF is uploaded through the API, When upload handling completes, Then crie_document_parser.py runs synchronously to update enrolled_trainees and returns extracted row count and any parse warnings.\nGiven a filter combination with zero matching trainees or an invalid enum parameter, When the API endpoint is called, Then it returns an explicit empty dataset with total=0 or HTTP 422 validation feedback rather than fallback text.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "FastAPI query parameterization and upload-to-SQLite transaction latency",
+          "sixSigmaMetric": "P95 contingent SQL API response time <= 50 ms with 0 unvalidated filter inputs",
+          "hasUi": false,
+          "requirementRefs": ["R3", "R4"]
+        },
+        {
+          "title": "Ground autonomous agent context in enrolled_trainees SQL",
+          "roleTag": "BARCAN-TAG-04",
+          "jtbd": "When implementing AI assistant grounding for this epic, I want crie_autonomous_agent.py to query enrolled_trainees via direct SQL and inject exact rows and PDF citations into context, so that contingent answers never hallucinate trainee lists or counts.",
+          "acceptanceCriteria": "Given a user asks crie_autonomous_agent.py for enrolled postgraduates or residents by financing type, When intent routing detects a contingent query, Then the agent executes a direct SQL lookup on enrolled_trainees and injects the structured rows and aggregates into prompt context.\nGiven SQL results include order_doc_id and source PDF filenames, When the assistant formats its response, Then every reported trainee list and count explicitly cites the corresponding source PDF from enrolled_trainees.\nGiven enrolled_trainees has no matching records for a queried specialty or financing form, When the agent answers, Then it states zero records found in the SQL registry rather than inventing synthetic or cached names.",
+          "leanValue": "essential",
+          "cynefinDomain": "complicated",
+          "tocConstraintRef": "Intent detection routing contingent questions to deterministic SQL context before LLM synthesis",
+          "sixSigmaMetric": "0% hallucinated trainee names or ungrounded contingent counts in agent responses",
+          "hasUi": false,
+          "requirementRefs": ["R5"]
+        },
+        {
+          "title": "Verify PDF parser, SQL persistence, API, and agent pyramid",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying the enrollment contingent pipeline for this epic, I want automated unit and integration tests covering PDF parsing, SQLite storage, API queries, and agent grounding, so that all data is proven to originate strictly from enrolled_trainees with PDF citations.",
+          "acceptanceCriteria": "Given authentic CRIE residency and postgraduate PDF fixtures modeled on Svedeniya_o_zachislenii_* and Svedeniya_o_prieme_* (ID 1-11), When unit tests execute crie_document_parser.py, Then all levels, specialties, scores, and financing forms extract deterministically without network or LLM calls.\nGiven a fresh SQLite database, When integration tests trigger startup seeding, upload ingestion, API filtering by financing form, and crie_autonomous_agent.py contingent queries, Then all returned trainees match enrolled_trainees rows and include valid order_doc_id PDF references.\nGiven this epic introduces backend, database, and agent surfaces with no new browser UI, When the test suite runs in pytest, Then unit and integration layers pass with 100% coverage of success, duplicate, and malformed-PDF failure paths (browser E2E omitted due to no UI surface).",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Deterministic fixture parity between PDF parser unit tests and SQLite/API integration tests",
+          "sixSigmaMetric": "100% test pass rate across unit, SQLite integration, API, and agent contingent verification cases",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4", "R5", "R6"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": "63e9be05-24ca-4269-b118-5632d91c97e6",
+      "title": "Privacy, Data Protection & Accessibility Compliance",
+      "jtbd": "When deploying the platform for educational and clinical staff, I want data subject rights, local backup verification, and strict accessibility compliance, so that all legal and regulatory standards are fulfilled.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": "100% verified backup restore fidelity and statutory deadline compliance for trainee PII access and erasure",
+      "tocConstraintRef": "Cascading PII erasure across enrolled_trainees and SQLite snapshot integrity verification",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Provide a data subject access/export operation in crie_persistent_memory.py and crie_assistant_api.py for identifiable trainee records in enrolled_trainees (full_name, snils_or_code, specialty, financing_type, score, order_doc_id) exportable in machine-readable format within statutory deadlines.",
+        "R2: Provide a data subject erasure operation with an immutable deletion audit record so identifiable trainee PII in enrolled_trainees is removed or irreversibly anonymized upon verified request across SQLite and agent caches.",
+        "R3: Extend scripts/backup_restore.py to back up the SQLite database containing enrolled_trainees and perform an automated verified restore test confirming row counts and provenance survive simulated data loss."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Add trainee PII erasure audit schema and repository ops",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing data protection persistence for this epic, I want export and erasure repository methods plus an audit log table in crie_persistent_memory.py, so that trainee PII access and deletion requests execute atomically and remain auditable.",
+          "acceptanceCriteria": "Given an identifiable trainee in enrolled_trainees matched by snils_or_code or id, When export_trainee_subject_data executes, Then all stored fields and order_doc_id provenance are returned as a structured dictionary.\nGiven an erasure request for a trainee record, When erase_trainee_subject_data executes inside a SQLite transaction, Then PII fields in enrolled_trainees are deleted or irreversibly scrubbed and a non-PII audit entry is persisted.\nGiven a nonexistent trainee identifier, When export or erasure is invoked, Then the repository returns an explicit not-found status without mutating other records.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Atomic SQLite transaction locking during PII scrubbing and audit logging",
+          "sixSigmaMetric": "0 orphaned PII rows remaining in enrolled_trainees after confirmed erasure execution",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        },
+        {
+          "title": "Expose trainee data subject access and erasure API",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing compliance endpoints for this epic, I want access/export and erasure routes in crie_assistant_api.py backed by crie_persistent_memory.py, so that authorized operators can fulfill statutory data subject requests reliably.",
+          "acceptanceCriteria": "Given an authorized request to export trainee personal data, When the API endpoint is called, Then crie_assistant_api.py returns a downloadable JSON/CSV package containing the trainee's enrolled_trainees record and source PDF reference.\nGiven an authorized erasure request with confirmation, When the erasure endpoint runs, Then PII is removed via crie_persistent_memory.py, cached query results in crie_assistant_api.py are invalidated, and confirmation metadata is returned.\nGiven a missing confirmation flag or unknown subject key, When erasure is requested, Then the API rejects the destructive action with HTTP 400 or 404 and leaves database state unchanged.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Cache invalidation synchronization after SQLite PII erasure",
+          "sixSigmaMetric": "100% cache invalidation consistency after trainee erasure requests",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        },
+        {
+          "title": "Verify SQLite enrolled_trainees backup and restore flow",
+          "roleTag": "BARCAN-TAG-05",
+          "jtbd": "When implementing resilience for this epic, I want scripts/backup_restore.py to archive the SQLite contingent database and run a verified restore check, so that enrollment data availability meets regulatory recovery obligations.",
+          "acceptanceCriteria": "Given an active SQLite database containing enrolled_trainees rows, When scripts/backup_restore.py creates a backup snapshot, Then the SQLite file is backed up using consistent SQLite online backup semantics with checksum recording.\nGiven a backup archive and a clean restore target path, When the restore verification routine runs, Then it restores the database and asserts identical enrolled_trainees row counts, checksums, and order_doc_id references.\nGiven a corrupted or missing backup archive, When restore verification executes, Then it exits with a non-zero error and explicit diagnostic message.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Consistent SQLite hot-backup snapshot without write-lock corruption",
+          "sixSigmaMetric": "100% checksum and row-count parity after simulated SQLite restore",
+          "hasUi": false,
+          "requirementRefs": ["R3"]
+        },
+        {
+          "title": "Test trainee PII rights and backup restore compliance",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying compliance controls for this epic, I want automated unit and integration tests for PII export, erasure, and SQLite backup-restore, so that regulatory obligations are continuously proven.",
+          "acceptanceCriteria": "Given seeded trainee PII records in a temporary SQLite database, When unit and integration tests exercise the export and erasure API endpoints, Then exported data matches stored fields and post-erasure queries return zero PII for the erased subject.\nGiven an executed backup via scripts/backup_restore.py followed by simulated database deletion, When the restore test runs, Then restored enrolled_trainees rows and financing totals match pre-backup state 100%.\nGiven this compliance epic has no browser UI surface, When pytest executes the compliance suite, Then unit and integration layers pass without skipped assertions (browser E2E omitted as non-applicable).",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Isolated temporary SQLite fixture setup for destructive erasure and restore tests",
+          "sixSigmaMetric": "100% compliance test pass rate across export, erasure, and restore verification",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3"]
+        }
+      ]
+    },
+    {
+      "existingEpicId": null,
+      "title": "Contingent Extraction & SQL-Grounded Answer Quality Telemetry (GQM)",
+      "jtbd": "When operating the CRIE enrollment contingent registry and assistant, I want Goal-Question-Metric telemetry tracking Goal: delivering 100% SQL-grounded, source-cited contingent answers without manual PDF parsing by answering Q1 (are uploaded enrollment PDFs parsed completely without silent row loss?), Q2 (do API and agent contingent queries resolve directly from enrolled_trainees with valid PDF citations?), and Q3 (how often do parse errors or ungrounded fallback queries occur?), so that product effectiveness is objectively verified.",
+      "kanoClass": "Must-Be",
+      "cynefinDomain": "clear",
+      "sixSigmaMetric": ">=99% SQL-grounded contingent query resolution with 100% source PDF citation rate",
+      "tocConstraintRef": "Observing silent PDF extraction drops versus deterministic SQL query fallback paths",
+      "sourceIndex": 0,
+      "requirements": [
+        "R1: Answer GQM Question 1 (PDF ingestion completeness) by persisting per-document extraction metrics (parsed_row_count, failed_row_count, parse_status, duration_ms) in SQLite during startup and upload ingestion in crie_document_parser.py and crie_persistent_memory.py.",
+        "R2: Answer GQM Question 2 (SQL grounding and provenance fidelity) by recording per-query metrics (sql_backed_boolean, citation_present_boolean, result_row_count, latency_ms) when crie_assistant_api.py and crie_autonomous_agent.py serve contingent requests.",
+        "R3: Answer GQM Question 3 (parse failure and ungrounded query incidence) by aggregating failure rates and exposing a focused GQM health/summary endpoint in crie_assistant_api.py strictly containing metrics mapped to Q1-Q3 with zero unrelated vanity counters.",
+        "R4: Verify via unit and integration tests that every GQM metric traces directly to Q1-Q3 and updates accurately across successful parses, malformed PDFs, and SQL-backed contingent queries."
+      ],
+      "coverageComplete": true,
+      "slices": [
+        {
+          "title": "Persist GQM contingent ingestion and query metrics schema",
+          "roleTag": "BARCAN-TAG-08",
+          "jtbd": "When implementing GQM storage for this epic, I want a lightweight SQLite telemetry table and aggregation queries in crie_persistent_memory.py mapped strictly to Q1-Q3, so that extraction completeness and SQL-grounding metrics survive restarts.",
+          "acceptanceCriteria": "Given crie_persistent_memory.py initializes storage, When schema setup runs, Then a contingent_gqm_events table exists capturing event_type, order_doc_id, parsed_row_count, failed_row_count, sql_backed, citation_present, latency_ms, and created_at.\nGiven ingestion and query telemetry events are recorded, When get_contingent_gqm_summary runs, Then it computes exact Q1 completeness rate, Q2 SQL-grounded citation rate, and Q3 failure count without scanning external logs.\nGiven zero recorded events on a fresh install, When summary aggregation runs, Then safe zeroed defaults are returned without division-by-zero errors.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Lock-free or short-lived SQLite write contention during concurrent query logging",
+          "sixSigmaMetric": "0 division-by-zero or schema mismatch errors across empty and populated telemetry states",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2"]
+        },
+        {
+          "title": "Instrument parser, API, and agent with GQM summary route",
+          "roleTag": "BARCAN-TAG-02",
+          "jtbd": "When implementing GQM instrumentation for this epic, I want parser/query hooks and a GQM summary endpoint in crie_document_parser.py, crie_autonomous_agent.py, and crie_assistant_api.py, so that operators can inspect Q1-Q3 effectiveness metrics directly.",
+          "acceptanceCriteria": "Given crie_document_parser.py processes an enrollment PDF, When parsing finishes or fails, Then a Q1/Q3 ingestion telemetry event is recorded with parsed_row_count, failed_row_count, and order_doc_id.\nGiven crie_assistant_api.py or crie_autonomous_agent.py answers a contingent request, When the response is built, Then a Q2 telemetry event records sql_backed, citation_present, result_row_count, and latency_ms.\nGiven an operator calls the GQM contingent metrics endpoint in crie_assistant_api.py, When the response returns, Then it exposes only the Goal and Q1-Q3 derived metrics with no unrelated counter fields.",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Minimal-overhead telemetry emission inside contingent API and agent execution paths",
+          "sixSigmaMetric": "<= 2 ms added p95 overhead per contingent request from GQM metric emission",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3"]
+        },
+        {
+          "title": "Verify GQM metric accuracy and Q1-Q3 traceability",
+          "roleTag": "BARCAN-TAG-06",
+          "jtbd": "When verifying GQM telemetry for this epic, I want unit and integration tests validating metric recording and summary calculations across valid and failing flows, so that reported effectiveness numbers remain trustworthy.",
+          "acceptanceCriteria": "Given unit tests simulate valid and malformed PDF parses, When ingestion completes, Then Q1 completeness and Q3 error metrics match exact expected row counts.\nGiven integration tests invoke the contingent API and agent endpoints, When the GQM summary endpoint is queried afterward, Then Q2 sql_backed and citation_present rates equal 100% for grounded runs and exclude unmapped vanity metrics.\nGiven this telemetry epic has no browser UI surface, When pytest executes the GQM test module, Then unit and integration layers pass completely (browser E2E omitted due to no UI).",
+          "leanValue": "essential",
+          "cynefinDomain": "clear",
+          "tocConstraintRef": "Deterministic assertion of SQLite GQM counters across mixed success/error test scenarios",
+          "sixSigmaMetric": "100% assertion accuracy between simulated events and GQM summary API output",
+          "hasUi": false,
+          "requirementRefs": ["R1", "R2", "R3", "R4"]
+        }
+      ]
+    }
+  ]
+}
