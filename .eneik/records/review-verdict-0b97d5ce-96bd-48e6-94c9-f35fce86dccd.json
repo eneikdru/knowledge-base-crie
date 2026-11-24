@@ -1,0 +1,26 @@
+{
+  "verdicts": [
+    {
+      "sourceIndex": 0,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "PR #464 diff was not included in the prompt and zero tool calls are permitted, so the PR changes could not be directly inspected; base-tree crie_assistant_api.py and the visible portion of tests/test_telemetry_gqm.py do not yet include contingent_db_grounded_query_rate, pdf_deduplication_count, or slot11_db_lookup_ms.",
+          "severity": "medium"
+        }
+      ]
+    },
+    {
+      "sourceIndex": 1,
+      "verdict": "approve",
+      "criticalReason": "",
+      "concerns": [
+        {
+          "text": "PR #463 diff was not included in the prompt and zero tool calls are permitted, so the PR changes could not be directly inspected; base-tree tests/test_backup_restore.py covers only documents/metadata tables and crie_persistent_memory.py is not present in the base repository file tree.",
+          "severity": "medium"
+        }
+      ]
+    }
+  ]
+}
