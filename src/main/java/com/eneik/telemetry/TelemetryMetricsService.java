@@ -73,7 +73,7 @@ public class TelemetryMetricsService {
         if (size % 2 == 1) {
             return sortedValues.get(size / 2);
         }
-        return (sortedValues.get(size / 2 - 1) + sortedValues.get(size / 2)) / 2.0;
+        return (sortedValues.get(size / 2 - 1) / 2.0) + (sortedValues.get(size / 2) / 2.0);
     }
 
     private double calculatePercentile(List<Long> sortedValues, double percentile) {

@@ -226,6 +226,11 @@ public class InternalService {
         sanitized.remove("full_path");
         sanitized.remove("local_path");
         sanitized.remove("absolute_path");
+        sanitized.remove("filepath");
+        sanitized.remove("internal_path");
+        sanitized.remove("storage_path");
+        sanitized.remove("document_path");
+        sanitized.remove("dir_path");
 
         Object docId = rawPayload.getOrDefault("id", rawPayload.get("document_id"));
         if (docId != null) {

@@ -100,4 +100,31 @@ public class TelemetryMetricsServiceTest {
         assertEquals(200.0, ((Number) kpiDetails.get("median_latency_ms")).doubleValue(), 0.001);
         assertEquals(250.0, ((Number) kpiDetails.get("p95_latency_ms")).doubleValue(), 0.001);
     }
+
+    @Test
+    @DisplayName("Falsification harness: null-only events, single event, and null summary produce deterministic safe defaults")
+    public void testFalsificationBoundaryCases() {
+        TelemetryMetricsService service = new TelemetryMetricsService();
+
+        TelemetrySummary nullElementsSummary = service.calculateSummary(Arrays.asList(null, null));
+        assertEquals(0L, nullElementsSummary.getTotalQueries());
+        assertEquals(0.0, nullElementsSummary.getSuccessRatio(), 0.001);
+        assertEquals(0.0, nullElementsSummary.getZeroResultRate(), 0.001);
+        assertEquals(0.0, nullElementsSummary.getMedianLatencyMs(), 0.001);
+        assertEquals(0.0, nullElementsSummary.getP95LatencyMs(), 0.001);
+
+        TelemetrySummary singleEventSummary = service.calculateSummary(Collections.singletonList(new TelemetryEvent(42, true, 0)));
+        assertEquals(1L, singleEventSummary.getTotalQueries());
+        assertEquals(1.0, singleEventSummary.getSuccessRatio(), 0.001);
+        assertEquals(1.0, singleEventSummary.getZeroResultRate(), 0.001);
+        assertEquals(42.0, singleEventSummary.getMedianLatencyMs(), 0.001);
+        assertEquals(42.0, singleEventSummary.getP95LatencyMs(), 0.001);
+
+        Map<String, Object> fallbackResponse = service.formatGqmKpiResponse(null);
+        assertEquals("UP", fallbackResponse.get("status"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> fallbackKpi = (Map<String, Object>) fallbackResponse.get("kpi");
+        assertEquals(0L, ((Number) fallbackKpi.get("total_queries")).longValue());
+        assertEquals(0.0, ((Number) fallbackKpi.get("median_latency_ms")).doubleValue(), 0.001);
+    }
 }

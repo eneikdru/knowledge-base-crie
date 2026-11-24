@@ -144,6 +144,33 @@ public class InternalServiceTest {
         assertEquals("/api/v1/normative/download/DOC-152FZ-01", sanitized.get("download_url"));
     }
 
+    @Test
+    @DisplayName("Falsification harness: unconfigured perimeter fails closed and extended path keys are stripped")
+    public void givenFalsificationHarness_whenCheckingPerimeterAndSanitization_thenFailClosedAndZeroPathLeak() {
+        InternalService unconfigured = new InternalService();
+        assertEquals(401,
+                unconfigured.authorizeEndpointRequest("/api/v1/internal/telemetry", "Bearer " + TEST_INSTITUTIONAL_TOKEN),
+                "Service without configured security service must reject Bearer tokens with HTTP 401");
+
+        Map<String, Object> rawPayload = new HashMap<>();
+        rawPayload.put("id", "../DOC-152FZ-02");
+        rawPayload.put("name", "Normative Fallback Title");
+        rawPayload.put("description", "Sanitized annotation");
+        rawPayload.put("internal_path", "/var/internal/hidden.docx");
+        rawPayload.put("storage_path", "/tmp/storage/hidden.docx");
+        rawPayload.put("filepath", "C:\\secret\\hidden.docx");
+        rawPayload.put("document_path", "/home/user/hidden.docx");
+
+        Map<String, Object> sanitized = internalService.sanitizeDocumentPayload(rawPayload);
+        assertFalse(sanitized.containsKey("internal_path"));
+        assertFalse(sanitized.containsKey("storage_path"));
+        assertFalse(sanitized.containsKey("filepath"));
+        assertFalse(sanitized.containsKey("document_path"));
+        assertEquals("Normative Fallback Title", sanitized.get("title"));
+        assertEquals("Sanitized annotation", sanitized.get("annotation"));
+        assertEquals("/api/v1/normative/download/_DOC-152FZ-02", sanitized.get("download_url"));
+    }
+
     private NavigationResult simulateNavigation(String targetRoute, String sessionToken) {
         boolean hasValidAuth = sessionToken != null && securityService.isAuthorized(sessionToken);
         if (!hasValidAuth) {
